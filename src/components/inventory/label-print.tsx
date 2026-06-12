@@ -1,0 +1,104 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
+
+interface LabelData {
+  title: string;
+  sku: string;
+  price: number;
+  size?: string;
+  condition?: string;
+  brand?: string;
+}
+
+export function printLabel(item: LabelData) {
+  const win = window.open("", "_blank", "width=400,height=300");
+  if (!win) return;
+
+  const price = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(item.price);
+
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Label: ${item.sku}</title>
+      <style>
+        @page { size: 2in 1in; margin: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          width: 2in; height: 1in;
+          font-family: Arial, Helvetica, sans-serif;
+          padding: 4pt;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .title { font-size: 8pt; font-weight: bold; line-height: 1.2; }
+        .meta { font-size: 7pt; color: #444; }
+        .bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+        .price { font-size: 16pt; font-weight: bold; }
+        .sku { font-size: 6pt; color: #666; font-family: monospace; }
+        .barcode-area {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+        }
+        /* Simple barcode visual using CSS */
+        .barcode-lines {
+          display: flex;
+          gap: 1px;
+          height: 20px;
+        }
+        .bar {
+          background: black;
+          height: 100%;
+          width: 2px;
+        }
+        .bar.wide { width: 4px; }
+      </style>
+    </head>
+    <body>
+      <div>
+        <div class="title">${item.title.slice(0, 40)}</div>
+        <div class="meta">
+          ${[item.brand, item.size, item.condition].filter(Boolean).join(" · ")}
+        </div>
+      </div>
+      <div class="bottom">
+        <div>
+          <div class="price">${price}</div>
+          <div class="sku">SKU: ${item.sku}</div>
+        </div>
+      </div>
+      <script>
+        window.onload = function() {
+          window.print();
+          window.close();
+        };
+      </script>
+    </body>
+    </html>
+  `);
+  win.document.close();
+}
+
+interface PrintLabelButtonProps {
+  item: LabelData;
+  variant?: "default" | "outline" | "ghost";
+  size?: "default" | "sm";
+}
+
+export function PrintLabelButton({ item, variant = "outline", size = "sm" }: PrintLabelButtonProps) {
+  return (
+    <Button
+      variant={variant}
+      size={size}
+      onClick={() => printLabel(item)}
+      type="button"
+    >
+      <Printer className="h-3.5 w-3.5 mr-1.5" />
+      Print Label
+    </Button>
+  );
+}

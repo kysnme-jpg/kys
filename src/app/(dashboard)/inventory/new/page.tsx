@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhotoUpload } from "@/components/inventory/photo-upload";
 import { PrintLabelButton } from "@/components/inventory/label-print";
+import { AIEntry } from "@/components/inventory/ai-entry";
 import { ArrowLeft, Save, Tag } from "lucide-react";
 import Link from "next/link";
 
@@ -317,10 +318,31 @@ export default function NewItemPage() {
             </Card>
           </div>
 
-          {/* Right column — Photos */}
-          <div>
+          {/* Right column — AI Entry + Photos */}
+          <div className="space-y-6">
             <Card>
-              <CardHeader><CardTitle>Photos</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>AI Item Entry</CardTitle>
+                <p className="text-xs text-gray-500 mt-0.5">Upload a photo to auto-fill all fields using AI</p>
+              </CardHeader>
+              <CardContent>
+                <AIEntry
+                  onResult={(result) => {
+                    if (result.title) set("title", result.title);
+                    if (result.brand) set("brand", result.brand);
+                    if (result.condition) set("condition", result.condition);
+                    if (result.size) set("size", result.size);
+                    if (result.color) set("color", result.color);
+                    if (result.description) set("description", result.description);
+                    if (result.suggestedPrice) set("price", String(result.suggestedPrice));
+                  }}
+                  onPhotoUploaded={(url) => set("photoUrls", [...form.photoUrls, url])}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Additional Photos</CardTitle></CardHeader>
               <CardContent>
                 <PhotoUpload
                   value={form.photoUrls}

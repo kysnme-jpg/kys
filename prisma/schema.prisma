@@ -61,14 +61,17 @@ model Store {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  users         User[]
-  consignors    Consignor[]
-  items         Item[]
-  sales         Sale[]
-  payouts       Payout[]
-  categories    Category[]
-  customers     Customer[]
-  discountRules DiscountRule[]
+  users            User[]
+  consignors       Consignor[]
+  items            Item[]
+  sales            Sale[]
+  payouts          Payout[]
+  categories       Category[]
+  customers        Customer[]
+  discountRules    DiscountRule[]
+  apiKeys          ApiKey[]
+  webhookEndpoints WebhookEndpoint[]
+  contracts        Contract[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -119,6 +122,7 @@ model Consignor {
   items         Item[]
   ledgerEntries LedgerEntry[]
   payouts       Payout[]
+  contracts     Contract[]
 }
 
 // ─── CATEGORIES ───────────────────────────────────────────────────────────────
@@ -323,4 +327,72 @@ model DiscountRule {
   endsAt    DateTime?
   active    Boolean   @default(true)
   createdAt DateTime  @default(now())
+}
+
+// ─── API KEYS ─────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id])
+  name        String
+  keyHash     String    @unique
+  keyPrefix   String
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+// ─── WEBHOOK ENDPOINTS ────────────────────────────────────────────────────────
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  url       String
+  events    String[] // e.g. ["sale.created", "payout.created"]
+  secret    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           String          @id @default(cuid())
+  endpointId   String
+  endpoint     WebhookEndpoint @relation(fields: [endpointId], references: [id])
+  event        String
+  payload      Json
+  responseCode Int?
+  success      Boolean         @default(false)
+  attemptedAt  DateTime        @default(now())
+}
+
+// ─── CONSIGNMENT CONTRACTS ────────────────────────────────────────────────────
+
+enum ContractStatus {
+  DRAFT
+  SENT
+  SIGNED
+  EXPIRED
+}
+
+model Contract {
+  id           String         @id @default(cuid())
+  storeId      String
+  store        Store          @relation(fields: [storeId], references: [id])
+  consignorId  String
+  consignor    Consignor      @relation(fields: [consignorId], references: [id])
+  title        String         @default("Consignment Agreement")
+  body         String         @db.Text
+  splitPercent Float
+  status       ContractStatus @default(DRAFT)
+  signedAt     DateTime?
+  signatureData String?       @db.Text // base64 SVG/PNG of signature
+  signerIp     String?
+  expiresAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }

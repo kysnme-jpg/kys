@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { Search, X, ShoppingCart, Check, Trash2 } from "lucide-react";
+import { Search, X, ShoppingCart, Check, Trash2, Star } from "lucide-react";
 
 interface Item {
   id: string;
@@ -32,7 +32,13 @@ export default function POSPage() {
   const [lastSale, setLastSale] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD_CLOVER">("CARD_CLOVER");
   const [discount, setDiscount] = useState(0);
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customer, setCustomer] = useState<{ id: string; firstName: string; lastName: string; points: number } | null>(null);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const [lookingUp, setLookingUp] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const POINTS_PER_DOLLAR = 100; // 100 points = $1
 
   useEffect(() => {
     searchRef.current?.focus();
@@ -61,10 +67,29 @@ export default function POSPage() {
     setCart((prev) => prev.filter((i) => i.cartId !== cartId));
   };
 
+  const lookupCustomer = async () => {
+    if (!customerEmail.trim()) return;
+    setLookingUp(true);
+    const res = await fetch(`/api/customers?email=${encodeURIComponent(customerEmail.trim())}`);
+    if (res.ok) {
+      const data = await res.json();
+      setCustomer(data.customer || null);
+      setPointsToRedeem(0);
+    }
+    setLookingUp(false);
+  };
+
+  const clearCustomer = () => {
+    setCustomer(null);
+    setCustomerEmail("");
+    setPointsToRedeem(0);
+  };
+
+  const pointsDiscount = pointsToRedeem / POINTS_PER_DOLLAR;
   const subtotal = cart.reduce((sum, i) => sum + i.price, 0);
   const taxRate = 0.08; // TODO: pull from store settings
-  const taxAmount = (subtotal - discount) * taxRate;
-  const total = subtotal - discount + taxAmount;
+  const taxAmount = (subtotal - discount - pointsDiscount) * taxRate;
+  const total = subtotal - discount - pointsDiscount + taxAmount;
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
@@ -94,7 +119,9 @@ export default function POSPage() {
         body: JSON.stringify({
           items: cart.map((i) => ({ itemId: i.id, price: i.price })),
           paymentMethod,
-          discountAmount: discount,
+          discountAmount: discount + pointsDiscount,
+          customerId: customer?.id,
+          pointsRedeemed: pointsToRedeem,
           cloverOrderId,
         }),
       });
@@ -104,6 +131,7 @@ export default function POSPage() {
         setLastSale(sale);
         setCart([]);
         setDiscount(0);
+        clearCustomer();
         searchRef.current?.focus();
       }
     } finally {
@@ -213,6 +241,50 @@ export default function POSPage() {
 
         {/* Totals & checkout */}
         <div className="border-t border-gray-200 p-4 space-y-3">
+          {/* Customer / Loyalty */}
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 space-y-2">
+            <p className="text-xs font-medium text-amber-800 flex items-center gap-1.5">
+              <Star className="h-3.5 w-3.5" /> Loyalty Points
+            </p>
+            {customer ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-amber-900 font-medium">{customer.firstName} {customer.lastName}</p>
+                  <button onClick={clearCustomer} className="text-amber-600 hover:text-amber-800">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-amber-700">{customer.points} pts available (${(customer.points / POINTS_PER_DOLLAR).toFixed(2)})</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={Math.min(customer.points, Math.floor(subtotal * POINTS_PER_DOLLAR))}
+                    step={POINTS_PER_DOLLAR}
+                    value={pointsToRedeem || ""}
+                    onChange={(e) => setPointsToRedeem(Math.min(parseInt(e.target.value) || 0, customer.points))}
+                    className="h-7 text-sm flex-1"
+                    placeholder="Points to redeem"
+                  />
+                  <span className="text-xs text-amber-700 whitespace-nowrap">= {formatCurrency(pointsDiscount)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && lookupCustomer()}
+                  placeholder="Customer email..."
+                  className="h-7 text-xs flex-1"
+                />
+                <Button variant="outline" onClick={lookupCustomer} disabled={lookingUp} className="h-7 text-xs px-2">
+                  {lookingUp ? "..." : "Find"}
+                </Button>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
@@ -229,6 +301,12 @@ export default function POSPage() {
                 placeholder="0.00"
               />
             </div>
+            {pointsToRedeem > 0 && (
+              <div className="flex justify-between text-amber-600">
+                <span>Points ({pointsToRedeem} pts)</span>
+                <span>-{formatCurrency(pointsDiscount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-gray-600">
               <span>Tax (8%)</span>
               <span>{formatCurrency(taxAmount)}</span>

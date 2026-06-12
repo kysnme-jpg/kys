@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { sendPayoutEmail } from "@/lib/email";
+import { fireWebhook } from "@/lib/webhooks";
 
 const createPayoutSchema = z.object({
   consignorId: z.string(),
@@ -59,6 +61,20 @@ export async function POST(req: NextRequest) {
 
     return payout;
   });
+
+  // Non-blocking notifications
+  const store = await db.store.findUnique({ where: { id: storeId } });
+  if (consignor.email && store) {
+    sendPayoutEmail({
+      to: consignor.email,
+      consignorName: `${consignor.firstName} ${consignor.lastName}`,
+      amount: data.amount,
+      method: data.method,
+      checkNumber: data.checkNumber,
+      storeName: store.name,
+    }).catch(() => {});
+  }
+  fireWebhook(storeId, "payout.created", { payoutId: payout.id, amount: data.amount, method: data.method }).catch(() => {});
 
   return NextResponse.json(payout, { status: 201 });
 }

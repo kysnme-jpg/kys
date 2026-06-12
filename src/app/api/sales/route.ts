@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { calcConsignorCredit } from "@/lib/utils";
+import { sendItemSoldEmail } from "@/lib/email";
+import { fireWebhook } from "@/lib/webhooks";
 
 const saleItemSchema = z.object({
   itemId: z.string(),
@@ -14,6 +16,7 @@ const createSaleSchema = z.object({
   paymentMethod: z.enum(["CASH", "CARD_CLOVER", "STORE_CREDIT", "SPLIT"]).default("CARD_CLOVER"),
   customerId: z.string().optional(),
   discountAmount: z.number().min(0).default(0),
+  pointsRedeemed: z.number().int().min(0).default(0),
   cloverOrderId: z.string().optional(),
   receiptEmail: z.string().email().optional(),
   notes: z.string().optional(),
@@ -133,8 +136,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Loyalty points: deduct redeemed, award earned (1 point per $1 spent)
+    if (data.customerId) {
+      const pointsEarned = Math.floor(total);
+      await tx.customer.update({
+        where: { id: data.customerId },
+        data: { points: { decrement: data.pointsRedeemed, increment: pointsEarned } },
+      });
+    }
+
     return sale;
   });
+
+  // Post-sale: fire emails + webhooks (non-blocking)
+  const notifyPromises: Promise<any>[] = [];
+
+  for (const saleItem of data.items as any[]) {
+    const item = itemRecords.find((i: any) => i.id === saleItem.itemId)!;
+    if (item.consignorId && item.type === "CONSIGNED" && item.consignor?.email) {
+      const split = item.splitPercent ?? item.consignor.splitPercent ?? 50;
+      const credit = calcConsignorCredit(saleItem.price, split);
+      const updatedConsignor = await db.consignor.findUnique({ where: { id: item.consignorId } });
+
+      notifyPromises.push(
+        sendItemSoldEmail({
+          to: item.consignor.email,
+          consignorName: `${item.consignor.firstName} ${item.consignor.lastName}`,
+          itemTitle: item.title,
+          salePrice: saleItem.price,
+          consignorShare: credit,
+          newBalance: updatedConsignor?.balance ?? credit,
+          storeName: store.name,
+        }).catch(() => {})
+      );
+    }
+  }
+
+  notifyPromises.push(
+    fireWebhook(storeId, "sale.created", {
+      saleId: sale.id,
+      total: sale.total,
+      itemCount: data.items.length,
+    }).catch(() => {})
+  );
+
+  await Promise.allSettled(notifyPromises);
 
   return NextResponse.json(sale, { status: 201 });
 }

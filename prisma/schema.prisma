@@ -1,0 +1,326 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── STORE ───────────────────────────────────────────────────────────────────
+
+model Store {
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  address          String?
+  phone            String?
+  email            String?
+  logoUrl          String?
+  taxRate          Float    @default(0)
+  currency         String   @default("USD")
+  timezone         String   @default("America/New_York")
+  cloverApiKey     String?
+  cloverMerchantId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  users         User[]
+  consignors    Consignor[]
+  items         Item[]
+  sales         Sale[]
+  payouts       Payout[]
+  categories    Category[]
+  customers     Customer[]
+  discountRules DiscountRule[]
+}
+
+// ─── USERS (store staff) ──────────────────────────────────────────────────────
+
+enum UserRole {
+  OWNER
+  MANAGER
+  EMPLOYEE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(EMPLOYEE)
+  storeId       String?
+  store         Store?    @relation(fields: [storeId], references: [id])
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+}
+
+// ─── CONSIGNORS ───────────────────────────────────────────────────────────────
+
+model Consignor {
+  id               String    @id @default(cuid())
+  storeId          String
+  store            Store     @relation(fields: [storeId], references: [id])
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  address          String?
+  splitPercent     Float     @default(50)
+  balance          Float     @default(0)
+  notes            String?
+  contractSignedAt DateTime?
+  portalPassword   String?
+  portalEnabled    Boolean   @default(false)
+  bankAccountMask  String?
+  achEnabled       Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  items         Item[]
+  ledgerEntries LedgerEntry[]
+  payouts       Payout[]
+}
+
+// ─── CATEGORIES ───────────────────────────────────────────────────────────────
+
+model Category {
+  id       String     @id @default(cuid())
+  storeId  String
+  store    Store      @relation(fields: [storeId], references: [id])
+  name     String
+  slug     String
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  items    Item[]
+
+  @@unique([storeId, slug])
+}
+
+// ─── INVENTORY ITEMS ──────────────────────────────────────────────────────────
+
+enum ItemType {
+  CONSIGNED
+  OWNED
+}
+
+enum ItemStatus {
+  ACTIVE
+  SOLD
+  RETURNED
+  DONATED
+  EXPIRED
+}
+
+model Item {
+  id           String     @id @default(cuid())
+  storeId      String
+  store        Store      @relation(fields: [storeId], references: [id])
+  consignorId  String?
+  consignor    Consignor? @relation(fields: [consignorId], references: [id])
+  categoryId   String?
+  category     Category?  @relation(fields: [categoryId], references: [id])
+
+  sku            String     @unique @default(cuid())
+  barcode        String?
+  title          String
+  description    String?
+  brand          String?
+  size           String?
+  color          String?
+  condition      String?
+  type           ItemType   @default(CONSIGNED)
+  status         ItemStatus @default(ACTIVE)
+
+  price          Float
+  costPrice      Float?
+  splitPercent   Float?
+
+  photoUrls      String[]
+  shopifyId      String?
+
+  listedOnline   Boolean    @default(false)
+  featuredOnline Boolean    @default(false)
+
+  expiresAt      DateTime?
+  soldAt         DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  saleItems      SaleItem[]
+}
+
+// ─── CUSTOMERS ────────────────────────────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  sales Sale[]
+}
+
+// ─── SALES ────────────────────────────────────────────────────────────────────
+
+enum PaymentMethod {
+  CASH
+  CARD_CLOVER
+  STORE_CREDIT
+  SPLIT
+}
+
+enum SaleStatus {
+  COMPLETED
+  REFUNDED
+  VOIDED
+}
+
+model Sale {
+  id             String        @id @default(cuid())
+  storeId        String
+  store          Store         @relation(fields: [storeId], references: [id])
+  customerId     String?
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+
+  subtotal       Float
+  taxAmount      Float         @default(0)
+  discountAmount Float         @default(0)
+  total          Float
+  status         SaleStatus    @default(COMPLETED)
+  paymentMethod  PaymentMethod @default(CARD_CLOVER)
+  cloverOrderId  String?
+  receiptEmail   String?
+  notes          String?
+  createdAt      DateTime      @default(now())
+
+  items         SaleItem[]
+  ledgerEntries LedgerEntry[]
+}
+
+model SaleItem {
+  id           String @id @default(cuid())
+  saleId       String
+  sale         Sale   @relation(fields: [saleId], references: [id])
+  itemId       String
+  item         Item   @relation(fields: [itemId], references: [id])
+  price        Float
+  splitPercent Float
+}
+
+// ─── CONSIGNOR LEDGER ─────────────────────────────────────────────────────────
+
+enum LedgerType {
+  SALE_CREDIT
+  PAYOUT_DEBIT
+  FEE_DEBIT
+  ADJUSTMENT
+}
+
+model LedgerEntry {
+  id          String     @id @default(cuid())
+  consignorId String
+  consignor   Consignor  @relation(fields: [consignorId], references: [id])
+  saleId      String?
+  sale        Sale?      @relation(fields: [saleId], references: [id])
+  payoutId    String?
+  payout      Payout?    @relation(fields: [payoutId], references: [id])
+  type        LedgerType
+  amount      Float
+  note        String?
+  createdAt   DateTime   @default(now())
+}
+
+// ─── PAYOUTS ─────────────────────────────────────────────────────────────────
+
+enum PayoutMethod {
+  CHECK
+  CASH
+  ACH
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Payout {
+  id           String       @id @default(cuid())
+  storeId      String
+  store        Store        @relation(fields: [storeId], references: [id])
+  consignorId  String
+  consignor    Consignor    @relation(fields: [consignorId], references: [id])
+  amount       Float
+  method       PayoutMethod @default(CHECK)
+  status       PayoutStatus @default(PENDING)
+  checkNumber  String?
+  achReference String?
+  note         String?
+  createdAt    DateTime     @default(now())
+  completedAt  DateTime?
+
+  ledgerEntries LedgerEntry[]
+}
+
+// ─── DISCOUNT RULES ───────────────────────────────────────────────────────────
+
+model DiscountRule {
+  id        String    @id @default(cuid())
+  storeId   String
+  store     Store     @relation(fields: [storeId], references: [id])
+  name      String
+  type      String
+  value     Float
+  code      String?   @unique
+  startsAt  DateTime?
+  endsAt    DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+}

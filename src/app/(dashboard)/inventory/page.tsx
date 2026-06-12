@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Plus, Search, Package } from "lucide-react";
+import { Plus, Search, Package, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 interface Item {
@@ -17,9 +17,14 @@ interface Item {
   status: string;
   condition?: string;
   createdAt: string;
+  expiresAt?: string;
   consignor?: { firstName: string; lastName: string };
   category?: { name: string };
   photoUrls: string[];
+}
+
+function daysUntilExpiry(expiresAt: string): number {
+  return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000);
 }
 
 const statusColors: Record<string, string> = {
@@ -35,6 +40,10 @@ export default function InventoryPage() {
   const [status, setStatus] = useState("ACTIVE");
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const agingItems = items.filter(
+    (i) => i.status === "ACTIVE" && i.expiresAt && daysUntilExpiry(i.expiresAt) <= 14
+  );
 
   useEffect(() => {
     const timer = setTimeout(fetchItems, 300);
@@ -65,6 +74,31 @@ export default function InventoryPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Aging alerts */}
+      {status === "ACTIVE" && agingItems.length > 0 && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <p className="text-sm font-medium text-amber-800">
+              {agingItems.length} item{agingItems.length !== 1 ? "s" : ""} expiring within 14 days
+            </p>
+          </div>
+          <div className="space-y-1">
+            {agingItems.map((i) => {
+              const days = daysUntilExpiry(i.expiresAt!);
+              return (
+                <div key={i.id} className="flex items-center gap-3 text-sm">
+                  <span className="font-medium text-amber-900">{i.title}</span>
+                  <span className="text-xs text-amber-700">
+                    {days <= 0 ? "Expired" : `${days}d left`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-3">
@@ -112,6 +146,7 @@ export default function InventoryPage() {
                 <th className="text-right p-4 font-medium text-gray-600">Price</th>
                 <th className="text-left p-4 font-medium text-gray-600">Status</th>
                 <th className="text-left p-4 font-medium text-gray-600">Added</th>
+                <th className="text-left p-4 font-medium text-gray-600">Expires</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -144,6 +179,13 @@ export default function InventoryPage() {
                     </span>
                   </td>
                   <td className="p-4 text-gray-500">{formatDate(item.createdAt)}</td>
+                  <td className="p-4">
+                    {item.expiresAt ? (
+                      <span className={`text-xs ${daysUntilExpiry(item.expiresAt) <= 14 ? "text-amber-600 font-medium" : "text-gray-400"}`}>
+                        {daysUntilExpiry(item.expiresAt) <= 0 ? "Expired" : formatDate(item.expiresAt)}
+                      </span>
+                    ) : <span className="text-gray-300 text-xs">—</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

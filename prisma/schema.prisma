@@ -53,6 +53,7 @@ model Store {
   phone            String?
   email            String?
   logoUrl          String?
+  contractTemplate String?  @db.Text
   taxRate          Float    @default(0)
   currency         String   @default("USD")
   timezone         String   @default("America/New_York")

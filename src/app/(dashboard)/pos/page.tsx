@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { Search, X, ShoppingCart, Check, Trash2, Star } from "lucide-react";
+import { Search, X, ShoppingCart, Trash2, Star } from "lucide-react";
+import { ReceiptModal } from "@/components/pos/receipt-modal";
 
 interface Item {
   id: string;
@@ -30,6 +31,7 @@ export default function POSPage() {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
+  const [receiptSale, setReceiptSale] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD_CLOVER">("CARD_CLOVER");
   const [discount, setDiscount] = useState(0);
   const [customerEmail, setCustomerEmail] = useState("");
@@ -129,6 +131,7 @@ export default function POSPage() {
       if (res.ok) {
         const sale = await res.json();
         setLastSale(sale);
+        setReceiptSale(sale);
         setCart([]);
         setDiscount(0);
         clearCustomer();
@@ -196,12 +199,20 @@ export default function POSPage() {
         {/* Last sale confirmation */}
         {lastSale && (
           <div className="flex items-center gap-3 rounded-lg bg-green-50 border border-green-200 p-4">
-            <Check className="h-5 w-5 text-green-600" />
-            <div>
+            <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <ShoppingCart className="h-4 w-4 text-white" />
+            </div>
+            <div className="flex-1">
               <p className="font-medium text-green-800">Sale complete!</p>
               <p className="text-sm text-green-700">Total: {formatCurrency(lastSale.total)} · ID: {lastSale.id.slice(-8)}</p>
             </div>
-            <button onClick={() => setLastSale(null)} className="ml-auto">
+            <button
+              onClick={() => setReceiptSale(lastSale)}
+              className="text-xs text-green-700 hover:text-green-900 font-medium underline"
+            >
+              View Receipt
+            </button>
+            <button onClick={() => setLastSale(null)}>
               <X className="h-4 w-4 text-green-600" />
             </button>
           </div>
@@ -350,6 +361,13 @@ export default function POSPage() {
           </Button>
         </div>
       </div>
+
+      {receiptSale && (
+        <ReceiptModal
+          sale={receiptSale}
+          onClose={() => setReceiptSale(null)}
+        />
+      )}
     </div>
   );
 }

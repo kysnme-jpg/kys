@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Save, Store, CreditCard, Globe, Tag, Key, Webhook, Copy, Trash2, Plus, Eye, EyeOff } from "lucide-react";
+import { Save, Store, CreditCard, Globe, Tag, Key, Webhook, Copy, Trash2, Plus, Percent, FileText } from "lucide-react";
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
@@ -25,12 +25,24 @@ export default function SettingsPage() {
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>(["sale.created"]);
   const [addingWebhook, setAddingWebhook] = useState(false);
 
+  // Discount rules
+  const [discountRules, setDiscountRules] = useState<any[]>([]);
+  const [newRule, setNewRule] = useState({ name: "", type: "PERCENTAGE", value: "", code: "" });
+  const [addingRule, setAddingRule] = useState(false);
+
+  // Contract template
+  const [contractTemplate, setContractTemplate] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaved, setTemplateSaved] = useState(false);
+
   const ALL_EVENTS = ["sale.created", "sale.refunded", "payout.created", "item.created", "item.sold", "consignor.created", "contract.signed"];
 
   useEffect(() => {
     fetch("/api/categories").then((r) => r.json()).then((d) => setCategories(d.categories || []));
     fetch("/api/keys").then((r) => r.json()).then((d) => setApiKeys(d.keys || []));
     fetch("/api/webhooks/register").then((r) => r.json()).then((d) => setWebhooks(d.endpoints || []));
+    fetch("/api/discount-rules").then((r) => r.json()).then((d) => setDiscountRules(d.rules || []));
+    fetch("/api/store/template").then((r) => r.ok ? r.json() : null).then((d) => { if (d?.template) setContractTemplate(d.template); });
   }, []);
 
   const createKey = async () => {
@@ -77,6 +89,39 @@ export default function SettingsPage() {
   const deleteWebhook = async (id: string) => {
     await fetch(`/api/webhooks/register?id=${id}`, { method: "DELETE" });
     setWebhooks((prev) => prev.filter((w) => w.id !== id));
+  };
+
+  const addDiscountRule = async () => {
+    if (!newRule.name || !newRule.value) return;
+    setAddingRule(true);
+    const res = await fetch("/api/discount-rules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newRule),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setDiscountRules((prev) => [data, ...prev]);
+      setNewRule({ name: "", type: "PERCENTAGE", value: "", code: "" });
+    }
+    setAddingRule(false);
+  };
+
+  const deleteRule = async (id: string) => {
+    await fetch(`/api/discount-rules?id=${id}`, { method: "DELETE" });
+    setDiscountRules((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const saveTemplate = async () => {
+    setSavingTemplate(true);
+    await fetch("/api/store/template", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ template: contractTemplate }),
+    });
+    setTemplateSaved(true);
+    setTimeout(() => setTemplateSaved(false), 2000);
+    setSavingTemplate(false);
   };
 
   const addCategory = async () => {
@@ -355,6 +400,110 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-500">No categories yet — add one above</p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Discount Rules */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Percent className="h-5 w-5" />
+            Discount Rules
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Create percentage or fixed-amount discounts. Promo codes can be entered at checkout.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+              <Input
+                value={newRule.name}
+                onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
+                placeholder="e.g. Senior Discount"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+              <select
+                value={newRule.type}
+                onChange={(e) => setNewRule({ ...newRule, type: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="PERCENTAGE">Percentage (%)</option>
+                <option value="FIXED">Fixed Amount ($)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Value ({newRule.type === "PERCENTAGE" ? "%" : "$"})
+              </label>
+              <Input
+                type="number"
+                min={0}
+                step={newRule.type === "PERCENTAGE" ? 1 : 0.01}
+                value={newRule.value}
+                onChange={(e) => setNewRule({ ...newRule, value: e.target.value })}
+                placeholder={newRule.type === "PERCENTAGE" ? "10" : "5.00"}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Promo Code (optional)</label>
+              <Input
+                value={newRule.code}
+                onChange={(e) => setNewRule({ ...newRule, code: e.target.value.toUpperCase() })}
+                placeholder="SAVE10"
+              />
+            </div>
+          </div>
+          <Button onClick={addDiscountRule} disabled={addingRule} variant="outline" className="gap-2">
+            <Plus className="h-4 w-4" />
+            {addingRule ? "Adding..." : "Add Rule"}
+          </Button>
+          <div className="space-y-2">
+            {discountRules.map((r) => (
+              <div key={r.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{r.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {r.type === "PERCENTAGE" ? `${r.value}% off` : `$${r.value} off`}
+                    {r.code && <span className="ml-2 font-mono bg-gray-200 px-1 rounded text-gray-700">{r.code}</span>}
+                  </p>
+                </div>
+                <button onClick={() => deleteRule(r.id)} className="text-red-400 hover:text-red-600">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            {discountRules.length === 0 && <p className="text-sm text-gray-500">No discount rules yet</p>}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Contract Template */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Contract Template
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Customize the default consignment agreement template. Use <code className="text-xs bg-gray-100 px-1 rounded">{"{{storeName}}"}</code>, <code className="text-xs bg-gray-100 px-1 rounded">{"{{consignorName}}"}</code>, and <code className="text-xs bg-gray-100 px-1 rounded">{"{{splitPercent}}"}</code> as placeholders.
+          </p>
+          <textarea
+            value={contractTemplate}
+            onChange={(e) => setContractTemplate(e.target.value)}
+            rows={12}
+            className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-y"
+            placeholder="Enter your custom contract template..."
+          />
+          <Button onClick={saveTemplate} disabled={savingTemplate} className="gap-2">
+            <Save className="h-4 w-4" />
+            {templateSaved ? "Saved!" : savingTemplate ? "Saving..." : "Save Template"}
+          </Button>
         </CardContent>
       </Card>
     </div>

@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, Package, TrendingUp, LogOut, ShoppingBag, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { DollarSign, Package, TrendingUp, LogOut, ShoppingBag, Clock, Send } from "lucide-react";
 
 interface PortalData {
   firstName: string;
@@ -34,6 +36,11 @@ export default function PortalPage() {
   const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"items" | "ledger">("items");
+  const [payoutOpen, setPayoutOpen] = useState(false);
+  const [payoutMethod, setPayoutMethod] = useState("CHECK");
+  const [payoutNotes, setPayoutNotes] = useState("");
+  const [requesting, setRequesting] = useState(false);
+  const [payoutRequested, setPayoutRequested] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,6 +54,24 @@ export default function PortalPage() {
       })
       .then((d) => { if (d) { setData(d); setLoading(false); } });
   }, [router]);
+
+  const requestPayout = async () => {
+    setRequesting(true);
+    const token = localStorage.getItem("portal_token");
+    const res = await fetch("/api/portal/payout-request", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ method: payoutMethod, notes: payoutNotes }),
+    });
+    if (res.ok) {
+      setPayoutRequested(true);
+      setPayoutOpen(false);
+    }
+    setRequesting(false);
+  };
 
   const signOut = () => {
     localStorage.removeItem("portal_token");
@@ -98,9 +123,17 @@ export default function PortalPage() {
         <div className="bg-indigo-600 rounded-2xl p-6 text-white">
           <p className="text-indigo-200 text-sm font-medium">Available Balance</p>
           <p className="text-4xl font-bold mt-1">{formatCurrency(data.balance)}</p>
-          <p className="text-indigo-300 text-xs mt-2">
-            Contact the store to request a payout
-          </p>
+          {payoutRequested ? (
+            <p className="text-indigo-300 text-xs mt-3">Payout request submitted — the store will process it shortly.</p>
+          ) : (
+            <button
+              onClick={() => setPayoutOpen(true)}
+              className="mt-3 flex items-center gap-1.5 text-xs text-indigo-200 hover:text-white transition-colors"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Request payout
+            </button>
+          )}
         </div>
 
         {/* Stats row */}
@@ -214,6 +247,44 @@ export default function PortalPage() {
           )}
         </div>
       </main>
+
+      <Modal open={payoutOpen} onClose={() => setPayoutOpen(false)} title="Request Payout" className="max-w-sm">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Your current balance is <span className="font-bold text-gray-900">{formatCurrency(data.balance)}</span>.
+            The store will process your payout and contact you.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Method</label>
+            <select
+              value={payoutMethod}
+              onChange={(e) => setPayoutMethod(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="CHECK">Check</option>
+              <option value="CASH">Cash</option>
+              <option value="ACH">Bank Transfer (ACH)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+            <textarea
+              value={payoutNotes}
+              onChange={(e) => setPayoutNotes(e.target.value)}
+              className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              rows={2}
+              placeholder="Any special instructions..."
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button onClick={requestPayout} disabled={requesting} className="flex-1 gap-2">
+              <Send className="h-4 w-4" />
+              {requesting ? "Submitting..." : "Submit Request"}
+            </Button>
+            <Button variant="outline" onClick={() => setPayoutOpen(false)}>Cancel</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

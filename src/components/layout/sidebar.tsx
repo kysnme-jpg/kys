@@ -14,6 +14,7 @@ import {
   Globe,
   LogOut,
   FileText,
+  Star,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/pos", label: "Point of Sale", icon: ShoppingCart },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/consignors", label: "Consignors", icon: Users },
+  { href: "/customers", label: "Customers", icon: Star },
   { href: "/payouts", label: "Payouts", icon: DollarSign },
   { href: "/contracts", label: "Contracts", icon: FileText },
   { href: "/insights", label: "Store Insights", icon: TrendingUp },

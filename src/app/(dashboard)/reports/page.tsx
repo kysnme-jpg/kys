@@ -1,20 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, ShoppingBag, Users, DollarSign } from "lucide-react";
+import { TrendingUp, ShoppingBag, Users, DollarSign, Download } from "lucide-react";
 
 export default function ReportsPage() {
-  const [stats, setStats] = useState<any>(null);
   const [sales, setSales] = useState<any[]>([]);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/sales?limit=10").then((r) => r.json()).then((d) => setSales(d.sales || []));
+    fetch("/api/sales?limit=25").then((r) => r.json()).then((d) => setSales(d.sales || []));
   }, []);
 
   const totalRevenue = sales.reduce((s, sale) => s + sale.total, 0);
   const totalItems = sales.reduce((s, sale) => s + sale.items.length, 0);
+
+  const exportCSV = async (type: string) => {
+    setExporting(type);
+    const params = new URLSearchParams({ type });
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+
+    const res = await fetch(`/api/export?${params}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = res.headers.get("content-disposition")?.split('filename="')[1]?.replace('"', '') || `${type}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExporting(null);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -41,6 +62,48 @@ export default function ReportsPage() {
           </Card>
         ))}
       </div>
+
+      {/* CSV Exports */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Export Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-3 items-end">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40 h-9" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40 h-9" />
+            </div>
+            <p className="text-xs text-gray-400 pb-2">Leave blank for all-time</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { type: "sales", label: "Sales" },
+              { type: "inventory", label: "Inventory" },
+              { type: "consignors", label: "Consignors" },
+              { type: "ledger", label: "Ledger" },
+            ].map(({ type, label }) => (
+              <Button
+                key={type}
+                variant="outline"
+                onClick={() => exportCSV(type)}
+                disabled={exporting === type}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {exporting === type ? "Exporting..." : `Export ${label} CSV`}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent sales */}
       <Card>

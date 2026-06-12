@@ -76,11 +76,14 @@ export async function POST(req: NextRequest) {
 
   if (!consignor || !store) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const finalBody = contractBody || DEFAULT_CONTRACT(
-    store.name,
-    `${consignor.firstName} ${consignor.lastName}`,
-    consignor.splitPercent,
-  );
+  const consignorName = `${consignor.firstName} ${consignor.lastName}`;
+  const customTemplate = (store as any).contractTemplate as string | null | undefined;
+  const finalBody = contractBody || (customTemplate
+    ? customTemplate
+        .replace(/\{\{storeName\}\}/g, store.name)
+        .replace(/\{\{consignorName\}\}/g, consignorName)
+        .replace(/\{\{splitPercent\}\}/g, String(consignor.splitPercent))
+    : DEFAULT_CONTRACT(store.name, consignorName, consignor.splitPercent));
 
   const contract = await db.contract.create({
     data: {

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getSupabaseAdmin, ITEM_PHOTOS_BUCKET } from "@/lib/supabase";
 import { randomUUID } from "crypto";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
+import { UPLOAD_ROOT } from "@/lib/storage";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -14,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   if (!allowed.includes(file.type)) {
-    return NextResponse.json({ error: "Only JPEG, PNG, WEBP images allowed" }, { status: 400 });
+    return NextResponse.json({ error: "Only JPEG, PNG, WEBP, GIF images allowed" }, { status: 400 });
   }
 
   if (file.size > 10 * 1024 * 1024) {
@@ -23,23 +27,20 @@ export async function POST(req: NextRequest) {
 
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const storeId = (session.user as any).storeId;
-  const path = `${storeId}/${randomUUID()}.${ext}`;
-
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
+  const filename = `${randomUUID()}.${ext}`;
 
   try {
-    const supabase = getSupabaseAdmin();
-    const { error } = await supabase.storage
-      .from(ITEM_PHOTOS_BUCKET)
-      .upload(path, buffer, { contentType: file.type, upsert: false });
+    const dir = path.join(UPLOAD_ROOT, storeId);
+    await mkdir(dir, { recursive: true });
 
-    if (error) throw error;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(path.join(dir, filename), buffer);
 
-    const { data } = supabase.storage.from(ITEM_PHOTOS_BUCKET).getPublicUrl(path);
-
-    return NextResponse.json({ url: data.publicUrl, path });
+    // Relative URL served by /api/photos — domain-independent, works for the
+    // dashboard and the public storefront alike.
+    const relPath = `${storeId}/${filename}`;
+    return NextResponse.json({ url: `/api/photos/${relPath}`, path: relPath });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Upload failed" }, { status: 500 });
   }
 }

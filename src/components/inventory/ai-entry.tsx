@@ -38,29 +38,23 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
     reader.onload = (e) => setPreview(e.target?.result as string);
     reader.readAsDataURL(file);
 
-    // Upload to storage first
-    let imageUrl: string | null = null;
+    // Upload to storage first (for the stored photo URL)
     const form = new FormData();
     form.append("file", file);
 
     const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
     if (uploadRes.ok) {
       const { url } = await uploadRes.json();
-      imageUrl = url;
       onPhotoUploaded?.(url);
     }
 
     // Analyze with AI
     setState("analyzing");
 
-    let body: any;
-    if (imageUrl) {
-      body = { imageUrl };
-    } else {
-      // Fallback: send base64
-      const base64 = await fileToBase64(file);
-      body = { imageBase64: base64, mimeType: file.type };
-    }
+    // Send the raw image as base64 so analysis works regardless of where the
+    // photo is stored — volume-served URLs aren't publicly fetchable by OpenAI.
+    const base64 = await fileToBase64(file);
+    const body = { imageBase64: base64, mimeType: file.type };
 
     const res = await fetch("/api/ai/analyze", {
       method: "POST",

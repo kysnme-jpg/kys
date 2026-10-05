@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,15 +14,60 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Dark theme. The app uses a consistent gray/white Tailwind palette, so we
+   remap those neutral utilities under .dark to give every page a coherent
+   dark appearance from a single place. Accent colors (indigo/amber/etc.)
+   are left intact. Toggled via the theme button (persisted in localStorage).
+   ───────────────────────────────────────────────────────────────────────── */
+.dark body { background: #0f172a; color: #e2e8f0; }
+
+/* Surfaces */
+.dark .bg-white { background-color: #1e293b !important; }
+.dark .bg-gray-50 { background-color: #0f172a !important; }
+.dark .bg-gray-100 { background-color: #334155 !important; }
+
+/* Text */
+.dark .text-gray-900 { color: #f1f5f9 !important; }
+.dark .text-gray-800 { color: #e2e8f0 !important; }
+.dark .text-gray-700 { color: #cbd5e1 !important; }
+.dark .text-gray-600 { color: #a9b6c8 !important; }
+.dark .text-gray-500 { color: #94a3b8 !important; }
+.dark .text-gray-400 { color: #7d8ba0 !important; }
+.dark .text-gray-300 { color: #64748b !important; }
+
+/* Borders & dividers */
+.dark .border-gray-200 { border-color: #334155 !important; }
+.dark .border-gray-300 { border-color: #3b4a60 !important; }
+.dark .border-gray-100 { border-color: #273345 !important; }
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #273345 !important; }
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover { background-color: #273345 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }
+
+/* Form controls */
+.dark input, .dark select, .dark textarea { background-color: #0f172a; color: #f1f5f9; border-color: #3b4a60; }
+.dark input::placeholder, .dark textarea::placeholder { color: #64748b; }
+
+/* Soft colored tint backgrounds (stat tiles, info boxes, selected rows) */
+.dark .bg-indigo-50, .dark .bg-indigo-50\/50 { background-color: rgba(99,102,241,0.14) !important; }
+.dark .bg-blue-50 { background-color: rgba(59,130,246,0.14) !important; }
+.dark .bg-green-50 { background-color: rgba(34,197,94,0.14) !important; }
+.dark .bg-amber-50, .dark .bg-yellow-50 { background-color: rgba(245,158,11,0.14) !important; }
+.dark .bg-red-50 { background-color: rgba(239,68,68,0.14) !important; }
+.dark .bg-purple-50 { background-color: rgba(168,85,247,0.14) !important; }
+.dark .bg-orange-50 { background-color: rgba(249,115,22,0.14) !important; }
+
+/* Keep the always-dark sidebar and auth pages crisp */
+.dark .bg-gray-900 { background-color: #0b1220 !important; }
+.dark .bg-gray-800 { background-color: #1e293b !important; }
+.dark .bg-gray-800\/50 { background-color: rgba(30,41,59,0.5) !important; }
+.dark .bg-gray-700 { background-color: #334155 !important; }

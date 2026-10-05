@@ -13,6 +13,15 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [addingCat, setAddingCat] = useState(false);
 
+  // Store info
+  const [store, setStore] = useState({ name: "", email: "", phone: "", taxRate: "", currency: "USD" });
+  const [savingStore, setSavingStore] = useState(false);
+
+  // Clover
+  const [clover, setClover] = useState({ merchantId: "", apiKey: "", apiKeySet: false });
+  const [savingClover, setSavingClover] = useState(false);
+  const [cloverSaved, setCloverSaved] = useState(false);
+
   // API Keys
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [newKeyName, setNewKeyName] = useState("");
@@ -43,7 +52,53 @@ export default function SettingsPage() {
     fetch("/api/webhooks/register").then((r) => r.json()).then((d) => setWebhooks(d.endpoints || []));
     fetch("/api/discount-rules").then((r) => r.json()).then((d) => setDiscountRules(d.rules || []));
     fetch("/api/store/template").then((r) => r.ok ? r.json() : null).then((d) => { if (d?.template) setContractTemplate(d.template); });
+    fetch("/api/store").then((r) => r.ok ? r.json() : null).then((d) => {
+      if (!d) return;
+      setStore({
+        name: d.name || "",
+        email: d.email || "",
+        phone: d.phone || "",
+        taxRate: d.taxRate != null ? String((d.taxRate * 100).toFixed(2)) : "",
+        currency: d.currency || "USD",
+      });
+      setClover({ merchantId: d.cloverMerchantId || "", apiKey: "", apiKeySet: !!d.cloverApiKeySet });
+    });
   }, []);
+
+  const saveStore = async () => {
+    setSavingStore(true);
+    const res = await fetch("/api/store", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: store.name,
+        email: store.email || null,
+        phone: store.phone || null,
+        taxRate: store.taxRate ? parseFloat(store.taxRate) / 100 : undefined,
+        currency: store.currency,
+      }),
+    });
+    if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    setSavingStore(false);
+  };
+
+  const saveClover = async () => {
+    setSavingClover(true);
+    const res = await fetch("/api/store", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cloverMerchantId: clover.merchantId || null,
+        ...(clover.apiKey.trim() ? { cloverApiKey: clover.apiKey.trim() } : {}),
+      }),
+    });
+    if (res.ok) {
+      setCloverSaved(true);
+      setTimeout(() => setCloverSaved(false), 2000);
+      setClover((c) => ({ ...c, apiKey: "", apiKeySet: c.apiKeySet || !!c.apiKey.trim() }));
+    }
+    setSavingClover(false);
+  };
 
   const createKey = async () => {
     if (!newKeyName.trim()) return;
@@ -155,33 +210,37 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
-            <Input defaultValue="My Consign Shop" />
+            <Input value={store.name} onChange={(e) => setStore({ ...store, name: e.target.value })} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <Input type="email" defaultValue="owner@myconsignshop.com" />
+            <Input type="email" value={store.email} onChange={(e) => setStore({ ...store, email: e.target.value })} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <Input defaultValue="555-0100" />
+            <Input value={store.phone} onChange={(e) => setStore({ ...store, phone: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
-              <Input type="number" step="0.01" defaultValue="8.00" />
+              <Input type="number" step="0.01" value={store.taxRate} onChange={(e) => setStore({ ...store, taxRate: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-              <select className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <select
+                value={store.currency}
+                onChange={(e) => setStore({ ...store, currency: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
                 <option value="USD">USD — US Dollar</option>
                 <option value="CAD">CAD — Canadian Dollar</option>
                 <option value="GBP">GBP — British Pound</option>
               </select>
             </div>
           </div>
-          <Button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }} className="gap-2">
+          <Button onClick={saveStore} disabled={savingStore} className="gap-2">
             <Save className="h-4 w-4" />
-            {saved ? "Saved!" : "Save Changes"}
+            {saved ? "Saved!" : savingStore ? "Saving..." : "Save Changes"}
           </Button>
         </CardContent>
       </Card>
@@ -201,15 +260,27 @@ export default function SettingsPage() {
           </p>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Merchant ID</label>
-            <Input placeholder="Your Clover Merchant ID" />
+            <Input
+              value={clover.merchantId}
+              onChange={(e) => setClover({ ...clover, merchantId: e.target.value })}
+              placeholder="Your Clover Merchant ID"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-            <Input type="password" placeholder="Your Clover REST API token" />
+            <Input
+              type="password"
+              value={clover.apiKey}
+              onChange={(e) => setClover({ ...clover, apiKey: e.target.value })}
+              placeholder={clover.apiKeySet ? "•••••••• (saved — type to replace)" : "Your Clover REST API token"}
+            />
+            {clover.apiKeySet && !clover.apiKey && (
+              <p className="text-xs text-green-600 mt-1">An API key is saved. Leave blank to keep it.</p>
+            )}
           </div>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" onClick={saveClover} disabled={savingClover} className="gap-2">
             <Save className="h-4 w-4" />
-            Save Clover Settings
+            {cloverSaved ? "Saved!" : savingClover ? "Saving..." : "Save Clover Settings"}
           </Button>
         </CardContent>
       </Card>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
+
+export const runtime = "nodejs";
 
 const SYSTEM_PROMPT = `You are an expert consignment shop inventory assistant.
 Analyze the product image and return a JSON object with these fields:
@@ -14,15 +16,33 @@ Analyze the product image and return a JSON object with these fields:
 - suggestedPrice: estimated fair resale price in USD as a number (be conservative)
 - keywords: array of 3-5 searchable keywords
 
-Respond ONLY with valid JSON. No markdown, no explanation.`;
+Respond ONLY with valid JSON. No markdown, no code fences, no explanation.`;
+
+const ALLOWED_MEDIA = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+type AllowedMedia = (typeof ALLOWED_MEDIA)[number];
+
+// Pull a JSON object out of the model's reply, tolerating stray prose or ```json fences.
+function extractJson(text: string): any {
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    throw new Error("No JSON found in response");
+  }
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "OpenAI API key not configured" }, { status: 503 });
+    return NextResponse.json({ error: "Anthropic API key not configured" }, { status: 503 });
   }
 
   const body = await req.json();
@@ -32,32 +52,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Provide imageUrl or imageBase64" }, { status: 400 });
   }
 
-  const openai = new OpenAI({ apiKey });
+  const mediaType: AllowedMedia = ALLOWED_MEDIA.includes(mimeType) ? mimeType : "image/jpeg";
 
-  const imageContent =
-    imageUrl
-      ? { type: "image_url" as const, image_url: { url: imageUrl, detail: "high" as const } }
-      : { type: "image_url" as const, image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}`, detail: "high" as const } };
+  const imageBlock: Anthropic.ImageBlockParam = imageBase64
+    ? { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } }
+    : { type: "image", source: { type: "url", url: imageUrl } };
+
+  const client = new Anthropic({ apiKey });
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: [imageContent] },
+        {
+          role: "user",
+          content: [
+            imageBlock,
+            { type: "text", text: "Analyze this item and return the JSON described in the system prompt." },
+          ],
+        },
       ],
-      max_tokens: 500,
-      temperature: 0.2,
     });
 
-    const raw = response.choices[0]?.message?.content || "{}";
-    const parsed = JSON.parse(raw);
+    const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === "text");
+    const raw = textBlock?.text || "";
+    const parsed = extractJson(raw);
 
     return NextResponse.json({ result: parsed });
   } catch (err: any) {
+    if (err instanceof Anthropic.APIError) {
+      return NextResponse.json({ error: err.message }, { status: err.status || 500 });
+    }
     if (err.message?.includes("JSON")) {
       return NextResponse.json({ error: "AI returned invalid response, try again" }, { status: 422 });
     }
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Analysis failed" }, { status: 500 });
   }
 }

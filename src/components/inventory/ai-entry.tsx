@@ -52,7 +52,7 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
     setState("analyzing");
 
     // Send the raw image as base64 so analysis works regardless of where the
-    // photo is stored — volume-served URLs aren't publicly fetchable by OpenAI.
+    // photo is stored — volume-served URLs aren't publicly fetchable by the AI provider.
     const base64 = await fileToBase64(file);
     const body = { imageBase64: base64, mimeType: file.type };
 

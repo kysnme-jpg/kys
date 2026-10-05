@@ -40,10 +40,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const storeId = (session.user as any).storeId;
   const body = await req.json();
 
-  const consignor = await db.consignor.updateMany({
-    where: { id, storeId },
-    data: body,
-  });
+  const data: Record<string, any> = {};
+  for (const k of ["firstName", "lastName", "email", "phone", "address", "notes"] as const) {
+    if (body[k] !== undefined) data[k] = body[k] || null;
+  }
+  if (body.splitPercent !== undefined) data.splitPercent = Math.max(0, Math.min(100, Number(body.splitPercent) || 0));
+  if (body.portalEnabled !== undefined) data.portalEnabled = !!body.portalEnabled;
+
+  const consignor = await db.consignor.updateMany({ where: { id, storeId }, data });
 
   return NextResponse.json({ updated: consignor.count });
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await params;
+  const storeId = (session.user as any).storeId;
+
+  try {
+    const r = await db.consignor.deleteMany({ where: { id, storeId } });
+    if (r.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ deleted: true });
+  } catch {
+    return NextResponse.json({ error: "Can't delete a consignor with items, sales, or payouts" }, { status: 409 });
+  }
 }

@@ -5,37 +5,43 @@ import { z } from "zod";
 import { sendContractEmail } from "@/lib/email";
 
 const DEFAULT_CONTRACT = (storeName: string, consignorName: string, splitPercent: number) => `
-CONSIGNMENT AGREEMENT
+${storeName} — Consignment Agreement
 
-This Consignment Agreement ("Agreement") is entered into between ${storeName} ("Store") and ${consignorName} ("Consignor").
+This agreement is between ${storeName} and ${consignorName} ("Consignor").
 
-1. CONSIGNMENT TERMS
-   The Consignor agrees to leave items with the Store for sale on a consignment basis.
-   The Consignor will receive ${splitPercent}% of the final selling price for each item sold.
-   The Store retains ${100 - splitPercent}% as a commission for selling services.
+ITEMS WE ACCEPT
+• Clothing purchased within the last 5 years or vintage pieces
+• Clean / dry cleaned and in good or excellent condition
+• In-style, classic, or timeless fashions
+• Designer labels & boutique items
+• Women's and men's clothing
+• Handbags, shoes, belts, accessories, and jewelry
 
-2. ITEM ACCEPTANCE
-   The Store reserves the right to accept or decline any item. Items must be clean,
-   in working order, and accurately described by the Consignor.
+APPOINTMENT POLICY
+• Consignment is by appointment only, available on Saturdays.
+• First-time consignors may bring up to 10 clothing items and unlimited shoes, bags, and jewelry.
 
-3. PRICING
-   The Store has final authority on pricing. The Consignor may suggest prices,
-   which the Store will consider but is not obligated to use.
+TERMS & CONDITIONS
+• ${storeName} determines sale price and reserves the right to refuse any item. Please identify any high-value items when dropping them off.
+• Unaccepted items will be returned within 30 days.
+• The consignor will receive ${splitPercent}% of the sale price, excluding any fees for cleaning, mending, or similar services.
+• Prices may be reduced by up to 25% and are subject to sales and promotions.
+• The consignment period for designer items is four months (seasonal/exceptional items extending to 6 months). Consignors can request a pickup of unsold items anytime. Please allow 7 days for staff to gather your items.
+• Payments are made via check, Zelle, PayPal, or Cash App only. No cash payments.
+• While great care is taken with all items, ${storeName} is not responsible for missing or damaged items.
 
-4. PAYOUT
-   Consignor payments are processed on a schedule determined by the Store.
-   Payments may be made by check, cash, or electronic transfer.
+COMMISSIONS & PAYMENTS
+• Consignors receive ${splitPercent}% of the final sale price.
+• Payments are processed during the last 3 days & first 3 days each month once an account reaches a $100 balance.
+• You may use your balance as boutique credit or request payment in person on Saturdays.
 
-5. UNSOLD ITEMS
-   Items not sold within the agreed consignment period may be returned to the
-   Consignor or donated at the Store's discretion unless otherwise arranged.
+FINE PRINT
+• Items are consigned with the understanding that pricing is set by ${storeName}.
+• If a flaw is discovered after acceptance, the item may be photographed & discarded/donated, and/or held for pickup.
+• All items remain in the boutique until sold or until the consignor requests their return.
 
-6. LIABILITY
-   The Store will take reasonable precautions to protect consigned items but is
-   not responsible for loss, theft, or damage beyond normal retail care.
-
-7. AGREEMENT
-   By signing below, the Consignor agrees to all terms of this Agreement.
+ACKNOWLEDGMENT
+By signing below, you ( ${consignorName} ) agree to the terms outlined in this agreement.
 `.trim();
 
 const schema = z.object({

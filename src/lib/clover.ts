@@ -3,7 +3,9 @@
  * Docs: https://docs.clover.com/reference
  */
 
-const CLOVER_API_BASE = "https://api.clover.com/v3";
+// Production: https://api.clover.com  ·  Sandbox: https://sandbox.dev.clover.com
+// Override the host with CLOVER_API_BASE (e.g. to test against sandbox).
+const CLOVER_API_BASE = `${process.env.CLOVER_API_BASE || "https://api.clover.com"}/v3`;
 
 interface CloverConfig {
   apiKey: string;
@@ -93,12 +95,16 @@ export class CloverClient {
   }
 }
 
-export function getCloverClient(store: { cloverApiKey?: string | null; cloverMerchantId?: string | null }) {
-  if (!store.cloverApiKey || !store.cloverMerchantId) {
-    throw new Error("Clover credentials not configured for this store");
+export function getCloverClient(store?: { cloverApiKey?: string | null; cloverMerchantId?: string | null }) {
+  // Per-store credentials (DB) take precedence; otherwise fall back to env vars.
+  const apiKey = store?.cloverApiKey || process.env.CLOVER_API_KEY;
+  const merchantId = store?.cloverMerchantId || process.env.CLOVER_MERCHANT_ID;
+
+  if (!apiKey || !merchantId) {
+    throw new Error(
+      "Clover credentials not configured. Set CLOVER_API_KEY and CLOVER_MERCHANT_ID environment variables."
+    );
   }
-  return new CloverClient({
-    apiKey: store.cloverApiKey,
-    merchantId: store.cloverMerchantId,
-  });
+
+  return new CloverClient({ apiKey, merchantId });
 }

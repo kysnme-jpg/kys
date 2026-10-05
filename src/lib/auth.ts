@@ -8,6 +8,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   trustHost: true, // required behind a proxy (Railway, etc.)
+  debug: true, // TEMP: verbose auth logging for diagnosis
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -20,29 +21,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log("[AUTH] missing email or password");
+            return null;
+          }
 
-        const user = await db.user.findFirst({
-          where: { email: { equals: credentials.email as string, mode: "insensitive" } },
-          include: { store: true },
-        });
+          const user = await db.user.findFirst({
+            where: { email: { equals: credentials.email as string, mode: "insensitive" } },
+            include: { store: true },
+          });
 
-        if (!user?.passwordHash) return null;
+          console.log("[AUTH] lookup", credentials.email, "found:", !!user, "hasHash:", !!user?.passwordHash);
 
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
-        );
+          if (!user?.passwordHash) return null;
 
-        if (!valid) return null;
+          const valid = await bcrypt.compare(
+            credentials.password as string,
+            user.passwordHash
+          );
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          storeId: user.storeId,
-        };
+          console.log("[AUTH] password valid:", valid);
+
+          if (!valid) return null;
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            storeId: user.storeId,
+          };
+        } catch (err) {
+          console.error("[AUTH] authorize threw:", err);
+          return null;
+        }
       },
     }),
   ],

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Store } from "lucide-react";
@@ -12,7 +11,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,11 +23,13 @@ export default function LoginPage() {
       redirect: false,
     });
 
-    if (result?.error) {
+    if (!result || result.error) {
       setError("Invalid email or password");
       setLoading(false);
     } else {
-      router.push("/pos");
+      // Hard navigation so the freshly-set session cookie is sent with the
+      // request for /pos (a soft router.push can race the cookie and bounce).
+      window.location.href = "/pos";
     }
   }
 

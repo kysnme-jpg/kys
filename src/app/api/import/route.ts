@@ -19,6 +19,12 @@ interface ImportConsignor {
   splitPercent?: number;
   items?: ImportItem[];
 }
+interface ImportCustomer {
+  firstName?: string;
+  lastName?: string;
+  email?: string | null;
+  phone?: string | null;
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -30,9 +36,10 @@ export async function POST(req: NextRequest) {
   const storeId = (session.user as any).storeId;
 
   const body = await req.json();
-  const consignors: ImportConsignor[] = body?.consignors;
-  if (!Array.isArray(consignors)) {
-    return NextResponse.json({ error: "Expected a { consignors: [...] } file" }, { status: 400 });
+  const consignors: ImportConsignor[] = Array.isArray(body?.consignors) ? body.consignors : [];
+  const customers: ImportCustomer[] = Array.isArray(body?.customers) ? body.customers : [];
+  if (consignors.length === 0 && customers.length === 0) {
+    return NextResponse.json({ error: "File has no consignors or customers to import" }, { status: 400 });
   }
 
   // Pre-load existing consignors (match by email) to avoid duplicates.
@@ -91,5 +98,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ createdConsignors, createdItems, skippedItems });
+  // Customers (matched by email to avoid duplicates; nameless-email-less rows skipped).
+  let createdCustomers = 0;
+  let skippedCustomers = 0;
+  if (customers.length > 0) {
+    const existingCust = await db.customer.findMany({ where: { storeId }, select: { email: true } });
+    const haveEmail = new Set(existingCust.filter((c) => c.email).map((c) => c.email!.toLowerCase()));
+
+    const toCreate: { storeId: string; firstName: string; lastName: string; email: string | null; phone: string | null }[] = [];
+    for (const c of customers) {
+      const first = (c.firstName || "").trim();
+      const last = (c.lastName || "").trim();
+      if (!first && !last) { skippedCustomers++; continue; }
+      const email = c.email ? String(c.email).trim() : null;
+      if (email && haveEmail.has(email.toLowerCase())) { skippedCustomers++; continue; }
+      if (email) haveEmail.add(email.toLowerCase());
+      toCreate.push({ storeId, firstName: first || last, lastName: first ? last : "", email, phone: c.phone || null });
+    }
+    if (toCreate.length) {
+      await db.customer.createMany({ data: toCreate });
+      createdCustomers = toCreate.length;
+    }
+  }
+
+  return NextResponse.json({ createdConsignors, createdItems, skippedItems, createdCustomers, skippedCustomers });
 }

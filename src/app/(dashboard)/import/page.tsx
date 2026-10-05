@@ -20,8 +20,8 @@ export default function ImportPage() {
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
-      if (!Array.isArray(parsed?.consignors)) {
-        setError("That file doesn't look right — it should contain a list of consignors.");
+      if (!Array.isArray(parsed?.consignors) && !Array.isArray(parsed?.customers)) {
+        setError("That file doesn't look right — it should contain consignors or customers.");
         return;
       }
       setData(parsed);
@@ -32,6 +32,7 @@ export default function ImportPage() {
 
   const consignorCount = data?.consignors?.length || 0;
   const itemCount = (data?.consignors || []).reduce((s: number, c: any) => s + (c.items?.length || 0), 0);
+  const customerCount = data?.customers?.length || 0;
 
   const runImport = async () => {
     setImporting(true); setError("");
@@ -63,12 +64,20 @@ export default function ImportPage() {
             </div>
             <h2 className="text-lg font-semibold text-gray-900">Import complete!</h2>
             <p className="text-gray-600 mt-2">
-              Added <b>{result.createdConsignors}</b> consignors and <b>{result.createdItems}</b> items.
-              {result.skippedItems > 0 && <> ({result.skippedItems} already existed and were skipped.)</>}
+              {(result.createdConsignors > 0 || result.createdItems > 0) && (
+                <>Added <b>{result.createdConsignors}</b> consignors and <b>{result.createdItems}</b> items. </>
+              )}
+              {result.createdCustomers > 0 && (
+                <>Added <b>{result.createdCustomers}</b> customers. </>
+              )}
+              {(result.skippedItems > 0 || result.skippedCustomers > 0) && (
+                <>({(result.skippedItems || 0) + (result.skippedCustomers || 0)} already existed and were skipped.)</>
+              )}
             </p>
-            <div className="flex gap-3 justify-center mt-5">
-              <a href="/consignors"><Button>View Consignors</Button></a>
-              <a href="/inventory"><Button variant="outline">View Inventory</Button></a>
+            <div className="flex gap-3 justify-center mt-5 flex-wrap">
+              {result.createdConsignors > 0 && <a href="/consignors"><Button>View Consignors</Button></a>}
+              {result.createdItems > 0 && <a href="/inventory"><Button variant="outline">View Inventory</Button></a>}
+              {result.createdCustomers > 0 && <a href="/customers"><Button variant="outline">View Customers</Button></a>}
             </div>
           </CardContent>
         </Card>
@@ -95,21 +104,31 @@ export default function ImportPage() {
               <CardHeader><CardTitle>Ready to import</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 p-4 bg-indigo-50 rounded-xl">
-                    <Users className="h-6 w-6 text-indigo-600" />
-                    <div><p className="text-2xl font-bold text-gray-900">{consignorCount}</p><p className="text-xs text-gray-500">Consignors</p></div>
-                  </div>
-                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl">
-                    <Package className="h-6 w-6 text-green-600" />
-                    <div><p className="text-2xl font-bold text-gray-900">{itemCount}</p><p className="text-xs text-gray-500">Items</p></div>
-                  </div>
+                  {consignorCount > 0 && (
+                    <div className="flex items-center gap-3 p-4 bg-indigo-50 rounded-xl">
+                      <Users className="h-6 w-6 text-indigo-600" />
+                      <div><p className="text-2xl font-bold text-gray-900">{consignorCount}</p><p className="text-xs text-gray-500">Consignors</p></div>
+                    </div>
+                  )}
+                  {itemCount > 0 && (
+                    <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl">
+                      <Package className="h-6 w-6 text-green-600" />
+                      <div><p className="text-2xl font-bold text-gray-900">{itemCount}</p><p className="text-xs text-gray-500">Items</p></div>
+                    </div>
+                  )}
+                  {customerCount > 0 && (
+                    <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl">
+                      <Users className="h-6 w-6 text-amber-600" />
+                      <div><p className="text-2xl font-bold text-gray-900">{customerCount}</p><p className="text-xs text-gray-500">Customers</p></div>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-gray-500">
-                  Consignors are matched by email — anyone already in your system won&apos;t be duplicated, and items
-                  that already exist are skipped. Items import as Active, priced from the sheet, with a 50% split.
+                  Matched by email — anyone already in your system won&apos;t be duplicated, and records that
+                  already exist are skipped. Consignor items import as Active, priced from the sheet, at a 50% split.
                 </p>
                 <Button onClick={runImport} disabled={importing} className="w-full h-11 gap-2">
-                  {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</> : `Import ${consignorCount} consignors & ${itemCount} items`}
+                  {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</> : "Import now"}
                 </Button>
               </CardContent>
             </Card>

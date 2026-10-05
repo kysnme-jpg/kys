@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
+import JsBarcode from "jsbarcode";
 
 interface LabelData {
   title: string;
@@ -10,6 +11,18 @@ interface LabelData {
   size?: string;
   condition?: string;
   brand?: string;
+  barcode?: string | null;
+}
+
+// Render a real, scannable Code128 barcode as an SVG string.
+function barcodeSvg(value: string): string {
+  try {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    JsBarcode(el, value, { format: "CODE128", displayValue: false, width: 1.3, height: 32, margin: 0 });
+    return new XMLSerializer().serializeToString(el);
+  } catch {
+    return "";
+  }
 }
 
 export function printLabel(item: LabelData) {
@@ -17,6 +30,8 @@ export function printLabel(item: LabelData) {
   if (!win) return;
 
   const price = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(item.price);
+  const code = (item.barcode && item.barcode.trim()) || item.sku;
+  const svg = barcodeSvg(code);
 
   win.document.write(`
     <!DOCTYPE html>
@@ -39,23 +54,9 @@ export function printLabel(item: LabelData) {
         .bottom { display: flex; justify-content: space-between; align-items: flex-end; }
         .price { font-size: 16pt; font-weight: bold; }
         .sku { font-size: 6pt; color: #666; font-family: monospace; }
-        .barcode-area {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        }
-        /* Simple barcode visual using CSS */
-        .barcode-lines {
-          display: flex;
-          gap: 1px;
-          height: 20px;
-        }
-        .bar {
-          background: black;
-          height: 100%;
-          width: 2px;
-        }
-        .bar.wide { width: 4px; }
+        .barcode { text-align: center; }
+        .barcode svg { width: 100%; height: 30px; }
+        .code-text { font-size: 6pt; font-family: monospace; text-align: center; letter-spacing: 1px; }
       </style>
     </head>
     <body>
@@ -65,10 +66,11 @@ export function printLabel(item: LabelData) {
           ${[item.brand, item.size, item.condition].filter(Boolean).join(" · ")}
         </div>
       </div>
+      <div class="barcode">${svg}</div>
+      <div class="code-text">${code}</div>
       <div class="bottom">
         <div>
           <div class="price">${price}</div>
-          <div class="sku">SKU: ${item.sku}</div>
         </div>
       </div>
       <script>

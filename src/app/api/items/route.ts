@@ -17,6 +17,7 @@ const createItemSchema = z.object({
   price: z.number().positive(),
   costPrice: z.number().optional(),
   splitPercent: z.number().min(0).max(100).optional(),
+  sku: z.string().trim().optional(),
   barcode: z.string().optional(),
   photoUrls: z.array(z.string()).optional(),
   listedOnline: z.boolean().default(false),
@@ -80,20 +81,28 @@ export async function POST(req: NextRequest) {
     ? await db.consignor.findUnique({ where: { id: data.consignorId } })
     : null;
 
-  const item = await db.item.create({
-    data: {
-      ...data,
-      storeId,
-      sku: generateSKU(),
-      splitPercent: data.splitPercent ?? consignor?.splitPercent ?? 50,
-      photoUrls: data.photoUrls || [],
-      expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
-    },
-    include: {
-      consignor: { select: { id: true, firstName: true, lastName: true } },
-      category: { select: { id: true, name: true } },
-    },
-  });
+  const { sku: customSku, ...rest } = data;
 
-  return NextResponse.json(item, { status: 201 });
+  try {
+    const item = await db.item.create({
+      data: {
+        ...rest,
+        storeId,
+        sku: customSku && customSku.length > 0 ? customSku : generateSKU(),
+        splitPercent: data.splitPercent ?? consignor?.splitPercent ?? 50,
+        photoUrls: data.photoUrls || [],
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+      },
+      include: {
+        consignor: { select: { id: true, firstName: true, lastName: true } },
+        category: { select: { id: true, name: true } },
+      },
+    });
+    return NextResponse.json(item, { status: 201 });
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      return NextResponse.json({ error: "That SKU is already in use. Choose a different one." }, { status: 409 });
+    }
+    throw err;
+  }
 }

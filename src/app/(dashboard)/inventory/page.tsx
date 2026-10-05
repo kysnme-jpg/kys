@@ -8,13 +8,15 @@ import { Modal } from "@/components/ui/modal";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   Package, Search, Plus, Trash2, Pencil, X, Tag,
-  LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Globe,
+  LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Globe, ScanLine, Printer,
 } from "lucide-react";
+import { printLabel } from "@/components/inventory/label-print";
 
 interface Item {
   id: string;
   title: string;
   sku: string;
+  barcode?: string | null;
   brand?: string | null;
   size?: string | null;
   color?: string | null;
@@ -51,6 +53,8 @@ export default function InventoryPage() {
   const [saving, setSaving] = useState(false);
   const [bulkMdOpen, setBulkMdOpen] = useState(false);
   const [bulkMd, setBulkMd] = useState("");
+  const [scan, setScan] = useState("");
+  const [scanMsg, setScanMsg] = useState("");
 
   const load = () => {
     setLoading(true);
@@ -92,11 +96,30 @@ export default function InventoryPage() {
   const saveEdit = async () => {
     if (!editing) return;
     setSaving(true);
-    await fetch(`/api/items/${editing.id}`, {
+    const res = await fetch(`/api/items/${editing.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editing.title, brand: editing.brand, size: editing.size, color: editing.color, condition: editing.condition, price: editing.price, status: editing.status, listedOnline: editing.listedOnline }),
+      body: JSON.stringify({ title: editing.title, sku: editing.sku, barcode: editing.barcode, brand: editing.brand, size: editing.size, color: editing.color, condition: editing.condition, price: editing.price, status: editing.status, listedOnline: editing.listedOnline }),
     });
-    setSaving(false); setEditing(null); load();
+    const d = await res.json();
+    setSaving(false);
+    if (!res.ok) { alert(d.error || "Couldn't save"); return; }
+    setEditing(null); load();
+  };
+
+  // Scanner: a barcode scanner types the code then presses Enter. Match by
+  // barcode or SKU and open that item for editing.
+  const onScan = async () => {
+    const code = scan.trim();
+    if (!code) return;
+    setScanMsg("");
+    const hit = rows.find((i) => i.barcode === code || i.sku === code);
+    if (hit) { setEditing({ ...hit }); setScan(""); return; }
+    // Not in current status tab — look it up across the store.
+    const res = await fetch(`/api/items?search=${encodeURIComponent(code)}&status=${status}&limit=5`);
+    const data = await res.json();
+    const found = (data.items || []).find((i: any) => i.barcode === code || i.sku === code) || (data.items || [])[0];
+    if (found) { setEditing({ ...found }); setScan(""); }
+    else { setScanMsg(`No item found for "${code}" in ${status}`); setSearch(code); }
   };
   const deleteOne = async (id: string) => {
     if (!confirm("Delete this item?")) return;
@@ -132,6 +155,20 @@ export default function InventoryPage() {
           </div>
           <Link href="/inventory/new"><Button className="gap-2"><Plus className="h-4 w-4" /> Add Item</Button></Link>
         </div>
+      </div>
+
+      {/* Scanner box */}
+      <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2">
+        <ScanLine className="h-5 w-5 text-indigo-600 shrink-0" />
+        <input
+          value={scan}
+          onChange={(e) => setScan(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onScan(); } }}
+          placeholder="Scan a barcode or SKU here to open that item…"
+          className="flex-1 bg-transparent text-sm focus:outline-none text-gray-900 placeholder:text-indigo-400"
+          autoFocus
+        />
+        {scanMsg && <span className="text-xs text-red-600">{scanMsg}</span>}
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
@@ -230,6 +267,16 @@ export default function InventoryPage() {
               {thumb(editing, "h-20 w-20")}
               <div className="flex-1"><label className="block text-sm font-medium text-gray-700 mb-1">Title</label><Input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                <Input value={editing.sku} onChange={(e) => setEditing({ ...editing, sku: e.target.value })} className="font-mono" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1"><ScanLine className="h-3.5 w-3.5" /> Barcode</label>
+                <Input value={editing.barcode || ""} onChange={(e) => setEditing({ ...editing, barcode: e.target.value })} placeholder="Scan or type…" className="font-mono" />
+              </div>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Brand</label><Input value={editing.brand || ""} onChange={(e) => setEditing({ ...editing, brand: e.target.value })} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Size</label><Input value={editing.size || ""} onChange={(e) => setEditing({ ...editing, size: e.target.value })} /></div>
@@ -247,6 +294,7 @@ export default function InventoryPage() {
             {editing.consignor && <p className="text-xs text-gray-500">Consignor: <b className="text-gray-900">{editing.consignor.firstName} {editing.consignor.lastName}</b></p>}
             <div className="flex gap-2 pt-1">
               <Button onClick={saveEdit} disabled={saving} className="flex-1">{saving ? "Saving..." : "Save"}</Button>
+              <Button variant="outline" onClick={() => printLabel({ title: editing.title, sku: editing.sku, barcode: editing.barcode, price: editing.price, size: editing.size || undefined, brand: editing.brand || undefined, condition: editing.condition || undefined })} className="gap-1.5"><Printer className="h-4 w-4" /> Label</Button>
               <Button variant="outline" onClick={() => deleteOne(editing.id)} className="text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></Button>
             </div>
           </div>

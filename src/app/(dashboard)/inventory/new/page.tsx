@@ -45,6 +45,7 @@ export default function NewItemPage() {
     consignorId: "",
     splitPercent: "",
     categoryId: "",
+    sku: "",
     barcode: "",
     listedOnline: false,
     expiresAt: "",
@@ -77,6 +78,7 @@ export default function NewItemPage() {
       splitPercent: form.splitPercent ? parseFloat(form.splitPercent) : undefined,
       consignorId: form.consignorId || undefined,
       categoryId: form.categoryId || undefined,
+      sku: form.sku.trim() || undefined,
       barcode: form.barcode || undefined,
       expiresAt: form.expiresAt || undefined,
     };
@@ -199,9 +201,15 @@ export default function NewItemPage() {
                     placeholder="Describe the item for the online store..."
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Barcode / SKU override</label>
-                  <Input value={form.barcode} onChange={(e) => set("barcode", e.target.value)} placeholder="Scan or type barcode" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Custom SKU (optional)</label>
+                    <Input value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="Auto-generated if blank" className="font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Barcode (scan or type)</label>
+                    <Input value={form.barcode} onChange={(e) => set("barcode", e.target.value)} placeholder="Scan barcode here" className="font-mono" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>

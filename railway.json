@@ -5,7 +5,7 @@
     "buildCommand": "npm run build"
   },
   "deploy": {
-    "startCommand": "npx prisma db push --skip-generate --accept-data-loss && npm run start",
+    "startCommand": "npx prisma db push --accept-data-loss && npm run start",
     "healthcheckPath": "/login",
     "healthcheckTimeout": 180,
     "restartPolicyType": "ON_FAILURE",

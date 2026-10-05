@@ -85,6 +85,49 @@ export function printLabel(item: LabelData) {
   win.document.close();
 }
 
+// Print many labels at once — one 2"x1" label per page.
+export function printLabels(items: LabelData[]) {
+  if (!items.length) return;
+  if (items.length === 1) { printLabel(items[0]); return; }
+
+  const win = window.open("", "_blank", "width=420,height=640");
+  if (!win) return;
+
+  const pages = items.map((item) => {
+    const price = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(item.price);
+    const code = (item.barcode && item.barcode.trim()) || item.sku;
+    const svg = barcodeSvg(code);
+    return `
+      <div class="label">
+        <div>
+          <div class="title">${item.title.slice(0, 40)}</div>
+          <div class="meta">${[item.brand, item.size, item.condition].filter(Boolean).join(" · ")}</div>
+        </div>
+        <div class="barcode">${svg}</div>
+        <div class="code-text">${code}</div>
+        <div class="bottom"><div class="price">${price}</div></div>
+      </div>`;
+  }).join("");
+
+  win.document.write(`
+    <!DOCTYPE html><html><head><title>Labels (${items.length})</title><style>
+      @page { size: 2in 1in; margin: 0; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, Helvetica, sans-serif; }
+      .label { width: 2in; height: 1in; padding: 4pt; display: flex; flex-direction: column;
+        justify-content: space-between; page-break-after: always; overflow: hidden; }
+      .title { font-size: 8pt; font-weight: bold; line-height: 1.2; }
+      .meta { font-size: 7pt; color: #444; }
+      .barcode { text-align: center; } .barcode svg { width: 100%; height: 30px; }
+      .code-text { font-size: 6pt; font-family: monospace; text-align: center; letter-spacing: 1px; }
+      .bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+      .price { font-size: 16pt; font-weight: bold; }
+    </style></head><body>${pages}
+    <script>window.onload=function(){window.print();window.close();};</script>
+    </body></html>`);
+  win.document.close();
+}
+
 interface PrintLabelButtonProps {
   item: LabelData;
   variant?: "default" | "outline" | "ghost";

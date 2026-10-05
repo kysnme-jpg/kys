@@ -10,7 +10,7 @@ import {
   Package, Search, Plus, Trash2, Pencil, X, Tag,
   LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Globe, ScanLine, Printer,
 } from "lucide-react";
-import { printLabel } from "@/components/inventory/label-print";
+import { printLabel, printLabels } from "@/components/inventory/label-print";
 
 interface Item {
   id: string;
@@ -187,6 +187,7 @@ export default function InventoryPage() {
         <div className="flex items-center gap-2 bg-indigo-600 text-white rounded-xl px-4 py-2.5 sticky top-2 z-10 shadow-lg flex-wrap">
           <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="flex-1" />
+          <button onClick={() => printLabels(filtered.filter((i) => selected.has(i.id)).map((i) => ({ title: i.title, sku: i.sku, barcode: i.barcode, price: i.price, size: i.size || undefined, brand: i.brand || undefined, condition: i.condition || undefined })))} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Printer className="h-3.5 w-3.5" /> Print labels</button>
           <button onClick={() => setBulkMdOpen(true)} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> Markdown %</button>
           <button onClick={() => bulk("listOnline")} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> List online</button>
           <button onClick={() => bulk("unlistOnline")} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5">Unlist</button>

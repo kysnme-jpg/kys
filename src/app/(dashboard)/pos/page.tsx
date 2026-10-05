@@ -38,6 +38,7 @@ export default function POSPage() {
   const [customer, setCustomer] = useState<{ id: string; firstName: string; lastName: string; points: number } | null>(null);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [lookingUp, setLookingUp] = useState(false);
+  const [scanFlash, setScanFlash] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const POINTS_PER_DOLLAR = 100; // 100 points = $1
@@ -63,6 +64,28 @@ export default function POSPage() {
     setSearch("");
     setResults([]);
     searchRef.current?.focus();
+  };
+
+  // Scan-to-cart: a scanner types the code then presses Enter. Match an exact
+  // barcode/SKU and add it straight to the cart with a brief confirmation.
+  const handleScanEnter = async () => {
+    const code = search.trim();
+    if (!code) return;
+    let item = results.find((i) => i.barcode === code || i.sku === code);
+    if (!item) {
+      const res = await fetch(`/api/items?search=${encodeURIComponent(code)}&status=ACTIVE&limit=5`);
+      const data = await res.json();
+      item = (data.items || []).find((i: any) => i.barcode === code || i.sku === code);
+      if (!item && (data.items || []).length === 1) item = data.items[0];
+    }
+    if (item) {
+      addToCart(item);
+      setScanFlash(`Added: ${item.title}`);
+      setTimeout(() => setScanFlash(""), 1500);
+    } else {
+      setScanFlash(`No active item for "${code}"`);
+      setTimeout(() => setScanFlash(""), 1800);
+    }
   };
 
   const removeFromCart = (cartId: string) => {
@@ -155,6 +178,7 @@ export default function POSPage() {
             ref={searchRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleScanEnter(); } }}
             placeholder="Search by name, SKU, or scan barcode..."
             className="pl-10 text-base h-12"
           />
@@ -164,6 +188,11 @@ export default function POSPage() {
             </button>
           )}
         </div>
+        {scanFlash && (
+          <div className={`rounded-lg px-4 py-2 text-sm font-medium ${scanFlash.startsWith("Added") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+            {scanFlash}
+          </div>
+        )}
 
         {/* Results */}
         {results.length > 0 && (

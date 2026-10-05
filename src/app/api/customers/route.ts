@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const customers = await db.customer.findMany({
     where: { storeId },
     orderBy: { lastName: "asc" },
-    select: { id: true, firstName: true, lastName: true, email: true, points: true, createdAt: true },
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true, points: true, createdAt: true },
   });
 
   return NextResponse.json({ customers });

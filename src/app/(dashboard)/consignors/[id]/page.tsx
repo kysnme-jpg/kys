@@ -13,7 +13,6 @@ import {
   ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus,
   TrendingUp, CheckCircle, Clock, Banknote
 } from "lucide-react";
-import Link from "next/link";
 
 interface ConsignorDetail {
   id: string;

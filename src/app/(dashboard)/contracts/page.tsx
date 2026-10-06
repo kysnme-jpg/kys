@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
@@ -85,11 +86,12 @@ export default function ContractsPage() {
   const pending = contracts.filter((c) => c.status === "SENT").length;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
+      <SegmentedTabs tabs={[{ label: "Items", href: "/inventory" }, { label: "Contracts", href: "/contracts" }]} />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contracts</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Contracts</h1>
+          <p className="text-[15px] font-medium text-[var(--muted)] mt-1.5">
             {signed} signed · {pending} awaiting signature · {contracts.length} total
           </p>
         </div>

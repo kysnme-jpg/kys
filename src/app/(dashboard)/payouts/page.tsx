@@ -105,10 +105,10 @@ export default function PayoutsPage() {
   const methodIcon = { CHECK: Receipt, CASH: Banknote, ACH: Clock };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payouts</h1>
+          <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Payouts</h1>
           <p className="text-sm text-gray-500">
             {consignors.length} consignors with balances · {formatCurrency(totalOwed)} total owed
           </p>

@@ -8,7 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Avatar } from "@/components/ui/avatar";
 import { Tag } from "@/components/ui/tag";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { formatCurrency } from "@/lib/utils";
+
+const PEOPLE_TABS = [
+  { label: "Customers", href: "/customers" },
+  { label: "Consignors", href: "/consignors" },
+];
 import { Search, X, Delete, Plus, Check, Star, Trash2, ChevronRight, Hash } from "lucide-react";
 
 interface Customer {
@@ -125,6 +131,7 @@ export default function CustomersPage() {
             title="Customers"
             action={<Button onClick={() => setCreateOpen(true)} className="h-14 px-6 gap-2"><Plus className="h-5 w-5" /> New customer</Button>}
           />
+          <SegmentedTabs tabs={PEOPLE_TABS} />
 
           {/* Search + select */}
           <div className="flex items-center gap-3 mb-6">

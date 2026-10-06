@@ -196,8 +196,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+    <div className="px-11 pt-9 pb-6 max-w-2xl mx-auto space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
+      <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Settings</h1>
 
       {/* Store Info */}
       <Card>

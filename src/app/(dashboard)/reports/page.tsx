@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,8 +39,9 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+    <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
+      <SegmentedTabs tabs={[{ label: "Overview", href: "/insights" }, { label: "Reports", href: "/reports" }]} />
+      <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Reports</h1>
 
       {/* KPI cards */}
       <div className="grid grid-cols-4 gap-4">

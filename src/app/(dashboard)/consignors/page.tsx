@@ -6,10 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { formatCurrency } from "@/lib/utils";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import {
   Users, Search, Plus, Trash2, Pencil, X, ExternalLink,
   LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Percent,
 } from "lucide-react";
+
+const PEOPLE_TABS = [
+  { label: "Customers", href: "/customers" },
+  { label: "Consignors", href: "/consignors" },
+];
 
 interface Consignor {
   id: string;
@@ -103,11 +109,12 @@ export default function ConsignorsPage() {
   );
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="px-11 pt-9 pb-6 space-y-5 max-[767px]:px-5 max-[767px]:pt-6">
+      <SegmentedTabs tabs={PEOPLE_TABS} />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Consignors</h1>
-          <p className="text-sm text-gray-500">{rows.length} consignors · {formatCurrency(totalBalance)} owed</p>
+          <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Consignors</h1>
+          <p className="text-[15px] font-medium text-[var(--muted)] mt-1.5">{rows.length} consignors · {formatCurrency(totalBalance)} owed</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-gray-200 p-0.5 bg-white">

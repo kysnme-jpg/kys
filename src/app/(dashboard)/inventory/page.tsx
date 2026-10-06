@@ -11,6 +11,12 @@ import {
   LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Globe, ScanLine, Printer,
 } from "lucide-react";
 import { printLabel, printLabels } from "@/components/inventory/label-print";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
+
+const STOCK_TABS = [
+  { label: "Items", href: "/inventory" },
+  { label: "Contracts", href: "/contracts" },
+];
 
 interface Item {
   id: string;
@@ -141,11 +147,12 @@ export default function InventoryPage() {
     : <div className={`${size} rounded bg-gray-100 flex items-center justify-center text-gray-300`}><Package className="h-4 w-4" /></div>;
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="px-11 pt-9 pb-6 space-y-5 max-[767px]:px-5 max-[767px]:pt-6">
+      <SegmentedTabs tabs={STOCK_TABS} />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-          <p className="text-sm text-gray-500">{total} {status.toLowerCase()} · {formatCurrency(totalValue)} shown</p>
+          <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Inventory</h1>
+          <p className="text-[15px] font-medium text-[var(--muted)] mt-1.5">{total} {status.toLowerCase()} · {formatCurrency(totalValue)} shown</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-gray-200 p-0.5 bg-white">

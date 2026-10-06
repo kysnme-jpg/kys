@@ -10,6 +10,14 @@ import os, re, subprocess, datetime, markdown
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
+# Store branding shown on the cover and guide headers.
+BRAND = "Classic Consigns by KYS"
+BRAND_TAGLINE = "Consignment Boutique"
+BRAND_ADDRESS = "7214 Harford Rd, Baltimore, MD 21234"
+BRAND_PHONE = "443.841.9730"
+BRAND_EMAIL = "kimberly@classicconsigns.com"
+PLATFORM = "ConsignPro platform"
+
 GUIDES = [
     ("USER_GUIDE.md", "User Guide", "For store staff"),
     ("ADMIN_GUIDE.md", "Admin &amp; Operations Guide", "For the owner / administrator"),
@@ -50,7 +58,7 @@ for i, (path, title, sub) in enumerate(GUIDES):
     sections.append(f"""
     <section class="guide" id="{anchor}">
       <div class="guide-head">
-        <span class="kicker">ConsignPro</span>
+        <span class="kicker">{BRAND}</span>
         <h1>{title}</h1>
         <p class="subtitle">{sub}</p>
       </div>
@@ -117,16 +125,20 @@ li{margin:3px 0}
 doc = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ConsignPro — Guides</title>
+<title>Classic Consigns Guides</title>
 <style>{CSS}</style></head>
 <body><div class="page">
   <div class="cover">
     <div class="logo">&#128717;</div>
-    <h1>ConsignPro</h1>
-    <p class="tag">Consignment Point of Sale &amp; Store Management</p>
+    <span class="kicker" style="margin-bottom:18px">{BRAND_TAGLINE}</span>
+    <h1>{BRAND}</h1>
+    <p class="tag">Point of Sale &amp; Store Management &nbsp;·&nbsp; {PLATFORM}</p>
     <p class="tag" style="font-size:22px;color:var(--ink);font-weight:600;margin-bottom:8px">User &amp; Admin Guides</p>
     <div class="toc-wrap">{''.join(toc_sections)}</div>
-    <div class="meta">Updated <b>{today}</b> &nbsp;·&nbsp; Includes the Staff User Guide and the Owner/Admin Guide</div>
+    <div class="meta">
+      Updated <b>{today}</b> &nbsp;·&nbsp; Staff User Guide and Owner/Admin Guide<br>
+      <span style="display:inline-block;margin-top:8px">&#128205; {BRAND_ADDRESS} &nbsp;·&nbsp; &#128222; {BRAND_PHONE} &nbsp;·&nbsp; &#9993; {BRAND_EMAIL}</span>
+    </div>
   </div>
   {''.join(sections)}
 </div></body></html>"""

@@ -24,7 +24,27 @@ export async function GET(req: NextRequest) {
     select: { id: true, firstName: true, lastName: true, email: true, phone: true, points: true, createdAt: true },
   });
 
-  return NextResponse.json({ customers });
+  // Derived (read-only) sales stats per customer.
+  const agg = await db.sale.groupBy({
+    by: ["customerId"],
+    where: { storeId, customerId: { not: null } },
+    _count: { id: true },
+    _sum: { total: true },
+    _max: { createdAt: true },
+  });
+  const byId = new Map(agg.map((a: any) => [a.customerId, a]));
+
+  const enriched = customers.map((c) => {
+    const a: any = byId.get(c.id);
+    return {
+      ...c,
+      visits: a?._count?.id ?? 0,
+      lifetimeSpend: a?._sum?.total ?? 0,
+      lastVisitAt: a?._max?.createdAt ?? null,
+    };
+  });
+
+  return NextResponse.json({ customers: enriched });
 }
 
 export async function POST(req: NextRequest) {

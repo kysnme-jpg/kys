@@ -1,44 +1,54 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { formatDate } from "@/lib/utils";
-import {
-  Users, Search, Star, Plus, Mail, Phone, Trash2, Pencil, X,
-  LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check,
-} from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
+import { Tag } from "@/components/ui/tag";
+import { formatCurrency } from "@/lib/utils";
+import { Search, X, Delete, Plus, Check, Star, Trash2, ChevronRight, Hash } from "lucide-react";
 
 interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email?: string | null;
-  phone?: string | null;
-  points: number;
-  createdAt: string;
+  id: string; firstName: string; lastName: string;
+  email?: string | null; phone?: string | null; points: number; createdAt: string;
+  visits?: number; lifetimeSpend?: number; lastVisitAt?: string | null;
 }
+interface Detail extends Customer { recentPurchases?: { title: string; consignorName: string | null; price: number; soldAt: string }[]; }
 
-type View = "cards" | "list" | "compact";
-type SortKey = "name" | "email" | "phone" | "points" | "createdAt";
+const digitsOnly = (s?: string | null) => (s || "").replace(/\D/g, "");
+const fmtPhone = (d: string) => {
+  const a = d.slice(0, 3), b = d.slice(3, 6), c = d.slice(6, 10);
+  return [a, b, c].filter(Boolean).join(" ");
+};
+function relDate(iso?: string | null): string {
+  if (!iso) return "";
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return "today"; if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`; if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+const visitsLabel = (c: Customer) => (c.visits && c.visits > 0 ? `${c.visits} visit${c.visits === 1 ? "" : "s"}` : null);
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<View>("list");
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [digits, setDigits] = useState("");
+  const [showMore, setShowMore] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [phoneSheet, setPhoneSheet] = useState(false); // mobile keypad sheet
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
-  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", email: "" });
   const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [editing, setEditing] = useState<Customer | null>(null);
-  const [bulkPointsOpen, setBulkPointsOpen] = useState(false);
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkPoints, setBulkPoints] = useState("");
 
   const load = () => {
@@ -47,255 +57,386 @@ export default function CustomersPage() {
   };
   useEffect(() => { load(); }, []);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    const list = customers.filter((c) =>
-      `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-      (c.email || "").toLowerCase().includes(q) ||
-      (c.phone || "").toLowerCase().includes(q)
-    );
-    const dir = sortDir === "asc" ? 1 : -1;
-    return [...list].sort((a, b) => {
-      let av: any, bv: any;
-      switch (sortKey) {
-        case "name": av = `${a.lastName} ${a.firstName}`.toLowerCase(); bv = `${b.lastName} ${b.firstName}`.toLowerCase(); break;
-        case "email": av = (a.email || "").toLowerCase(); bv = (b.email || "").toLowerCase(); break;
-        case "phone": av = a.phone || ""; bv = b.phone || ""; break;
-        case "points": av = a.points; bv = b.points; break;
-        case "createdAt": av = a.createdAt; bv = b.createdAt; break;
-      }
-      if (av < bv) return -1 * dir;
-      if (av > bv) return 1 * dir;
-      return 0;
-    });
-  }, [customers, search, sortKey, sortDir]);
+  // physical keyboard → keypad when nothing is focused
+  const pushDigit = useCallback((d: string) => setDigits((p) => (p.length >= 10 ? p : p + d)), []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT")) return;
+      if (/^[0-9]$/.test(e.key)) { pushDigit(e.key); }
+      else if (e.key === "Backspace") { setDigits((p) => p.slice(0, -1)); }
+      else if (e.key === "Escape") { setDigits(""); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pushDigit]);
 
-  const totalPoints = customers.reduce((s, c) => s + c.points, 0);
-  const allSelected = filtered.length > 0 && filtered.every((c) => selected.has(c.id));
+  const sorted = useMemo(() =>
+    [...customers].sort((a, b) =>
+      (`${a.lastName} ${a.firstName}`).toLowerCase().localeCompare((`${b.lastName} ${b.firstName}`).toLowerCase())
+    ), [customers]);
 
-  const toggleSort = (k: SortKey) => {
-    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(k); setSortDir("asc"); }
+  const phoneMatches = useMemo(() =>
+    digits.length >= 2 ? customers.filter((c) => digitsOnly(c.phone).includes(digits)) : [], [customers, digits]);
+
+  const nameMatches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return sorted.filter((c) => (`${c.firstName} ${c.lastName}`).toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q));
+  }, [sorted, search]);
+
+  const recent = useMemo(() => {
+    const withVisit = customers.filter((c) => c.lastVisitAt).sort((a, b) => (b.lastVisitAt! > a.lastVisitAt! ? 1 : -1));
+    const base = withVisit.length ? withVisit : [...customers].sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+    return base.slice(0, 4);
+  }, [customers]);
+
+  const toggleSel = (id: string) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const openDetail = async (c: Customer) => {
+    setDetail(c);
+    const r = await fetch(`/api/customers/${c.id}`);
+    if (r.ok) setDetail(await r.json());
   };
-  const SortIcon = ({ k }: { k: SortKey }) =>
-    sortKey !== k ? <ArrowUpDown className="h-3 w-3 opacity-40" /> :
-    sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
-
-  const toggleOne = (id: string) =>
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleAll = () =>
-    setSelected(allSelected ? new Set() : new Set(filtered.map((c) => c.id)));
-  const clearSel = () => setSelected(new Set());
 
   const handleCreate = async () => {
-    if (!form.firstName || !form.lastName) { setFormError("First and last name required"); return; }
+    if (!form.firstName.trim()) { setFormError("First name is required"); return; }
     setSaving(true); setFormError("");
-    const res = await fetch("/api/customers", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
-    });
+    const res = await fetch("/api/customers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, lastName: form.lastName || "" }) });
     const data = await res.json();
     if (!res.ok) { setFormError(data.error || "Failed"); setSaving(false); return; }
-    setCreateOpen(false); setForm({ firstName: "", lastName: "", email: "", phone: "" }); setSaving(false); load();
-  };
-
-  const saveEdit = async () => {
-    if (!editing) return;
-    setSaving(true);
-    await fetch(`/api/customers/${editing.id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName: editing.firstName, lastName: editing.lastName, email: editing.email, phone: editing.phone, points: editing.points }),
-    });
-    setSaving(false); setEditing(null); load();
-  };
-  const deleteOne = async (id: string) => {
-    if (!confirm("Delete this customer?")) return;
-    await fetch(`/api/customers/${id}`, { method: "DELETE" });
-    setEditing(null); load();
+    setCreateOpen(false); setForm({ firstName: "", lastName: "", phone: "", email: "" }); setSaving(false); load();
   };
 
   const bulk = async (action: string, value?: string) => {
-    const res = await fetch("/api/customers/bulk", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, ids: [...selected], value }),
-    });
-    if (res.ok) { clearSel(); load(); }
+    const res = await fetch("/api/customers/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids: [...selected], value }) });
+    if (res.ok) { setSelected(new Set()); setSelectMode(false); load(); }
     return res.ok;
   };
-  const bulkDelete = async () => {
-    if (!confirm(`Delete ${selected.size} selected customers?`)) return;
-    await bulk("delete");
-  };
 
-  const Checkbox = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
-    <button
-      onClick={(e) => { e.stopPropagation(); onChange(); }}
-      className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${checked ? "bg-indigo-600 border-indigo-600" : "border-gray-300 bg-white"}`}
-    >
-      {checked && <Check className="h-3 w-3 text-white" />}
-    </button>
-  );
+  const mode: "phone" | "search" | "browse" = digits.length >= 2 ? "phone" : search.trim() ? "search" : "browse";
 
   return (
-    <div className="p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-sm text-gray-500">{customers.length} members · {totalPoints.toLocaleString()} points issued</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View switch */}
-          <div className="flex rounded-lg border border-gray-200 p-0.5 bg-white">
-            {([["list", List], ["cards", LayoutGrid], ["compact", Rows3]] as const).map(([v, Icon]) => (
-              <button key={v} onClick={() => setView(v)}
-                className={`p-1.5 rounded-md ${view === v ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-100"}`}
-                title={v}>
-                <Icon className="h-4 w-4" />
-              </button>
-            ))}
+    <div className="px-11 pt-9 max-[767px]:px-5 max-[767px]:pt-6">
+      <div className="flex gap-10">
+        {/* LEFT */}
+        <div className="flex-1 min-w-0">
+          <PageHeader
+            title="Customers"
+            action={<Button onClick={() => setCreateOpen(true)} className="h-14 px-6 gap-2"><Plus className="h-5 w-5" /> New customer</Button>}
+          />
+
+          {/* Search + select */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-[22px] w-[22px] text-[var(--muted)]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or email"
+                className="w-full h-[68px] rounded-full border-[1.5px] border-line bg-surface pl-14 pr-32 text-[20px] text-ink placeholder:text-[var(--placeholder)] focus:outline-none focus:border-accent"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {search && <button onClick={() => setSearch("")} className="p-1"><X className="h-5 w-5 text-[var(--muted)]" /></button>}
+                <span className="inline-flex items-center h-11 px-3.5 rounded-full bg-chip text-[var(--chip-ink)] text-[15px] font-semibold">{customers.length} people</span>
+              </span>
+            </div>
+            <button onClick={() => setPhoneSheet(true)} className="md:hidden h-[68px] px-5 rounded-full border-[1.5px] border-line bg-surface text-ink font-semibold inline-flex items-center gap-2"><Hash className="h-5 w-5" /></button>
+            <Button variant={selectMode ? "dark" : "outline"} className="h-[68px] px-6" onClick={() => { setSelectMode((s) => !s); setSelected(new Set()); }}>Select</Button>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="gap-2"><Plus className="h-4 w-4" /> Add</Button>
-        </div>
-      </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, phone..." className="pl-10" />
-      </div>
-
-      {/* Bulk action bar */}
-      {selected.size > 0 && (
-        <div className="flex items-center gap-3 bg-indigo-600 text-white rounded-xl px-4 py-2.5 sticky top-2 z-10 shadow-lg">
-          <span className="text-sm font-medium">{selected.size} selected</span>
-          <div className="flex-1" />
-          <button onClick={() => setBulkPointsOpen(true)} className="text-sm font-medium bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-            <Star className="h-3.5 w-3.5" /> Add points
-          </button>
-          <button onClick={bulkDelete} className="text-sm font-medium bg-white/20 hover:bg-red-500 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-            <Trash2 className="h-3.5 w-3.5" /> Delete
-          </button>
-          <button onClick={clearSel} className="hover:bg-white/20 rounded-md p-1"><X className="h-4 w-4" /></button>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="p-12 text-center text-gray-500">Loading...</div>
-      ) : filtered.length === 0 ? (
-        <div className="p-12 text-center bg-white rounded-xl border border-gray-200">
-          <Users className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">{search ? "No customers match your search" : "No customers yet"}</p>
-        </div>
-      ) : view === "list" ? (
-        /* ---- LIST (table) ---- */
-        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="p-3 w-10"><Checkbox checked={allSelected} onChange={toggleAll} /></th>
-                {([["name", "Name"], ["email", "Email"], ["phone", "Phone"], ["points", "Points"], ["createdAt", "Added"]] as [SortKey, string][]).map(([k, label]) => (
-                  <th key={k} className="text-left p-3 font-medium text-gray-600">
-                    <button onClick={() => toggleSort(k)} className="inline-flex items-center gap-1 hover:text-gray-900">{label} <SortIcon k={k} /></button>
-                  </th>
-                ))}
-                <th className="p-3 w-10" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((c) => (
-                <tr key={c.id} className={`hover:bg-gray-50 cursor-pointer ${selected.has(c.id) ? "bg-indigo-50/50" : ""}`} onClick={() => setEditing({ ...c })}>
-                  <td className="p-3" onClick={(e) => e.stopPropagation()}><Checkbox checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} /></td>
-                  <td className="p-3 font-medium text-gray-900">{c.firstName} {c.lastName}</td>
-                  <td className="p-3 text-gray-600">{c.email || <span className="text-gray-300">—</span>}</td>
-                  <td className="p-3 text-gray-600">{c.phone || <span className="text-gray-300">—</span>}</td>
-                  <td className="p-3">
-                    <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium"><Star className="h-3 w-3" />{c.points}</span>
-                  </td>
-                  <td className="p-3 text-gray-500 text-xs">{formatDate(c.createdAt)}</td>
-                  <td className="p-3"><Pencil className="h-3.5 w-3.5 text-gray-400" /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : view === "cards" ? (
-        /* ---- CARDS ---- */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((c) => (
-            <div key={c.id} className={`bg-white rounded-xl border p-4 hover:shadow-md transition-shadow cursor-pointer relative ${selected.has(c.id) ? "border-indigo-400 ring-1 ring-indigo-200" : "border-gray-200"}`} onClick={() => setEditing({ ...c })}>
-              <div className="absolute top-3 left-3" onClick={(e) => e.stopPropagation()}><Checkbox checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} /></div>
-              <div className="flex flex-col items-center text-center pt-2">
-                <div className="h-12 w-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold mb-2">
-                  {(c.firstName[0] || "") + (c.lastName[0] || "")}
+          {loading ? (
+            <p className="text-[var(--muted)] py-10">Loading…</p>
+          ) : mode === "phone" ? (
+            <PhoneMatches matches={phoneMatches} digits={digits} onOpen={openDetail} onAdd={() => { setForm((f) => ({ ...f, phone: fmtPhone(digits) })); setCreateOpen(true); }} />
+          ) : mode === "search" ? (
+            <Grid items={nameMatches} selectMode={selectMode} selected={selected} onToggle={toggleSel} onOpen={openDetail} />
+          ) : (
+            <>
+              {recent.length > 0 && (
+                <section className="mb-9">
+                  <h2 className="font-serif text-[30px] text-ink mb-4">Seen recently</h2>
+                  <div className="grid grid-cols-4 max-[1100px]:grid-cols-3 max-[767px]:grid-cols-2 gap-4">
+                    {recent.map((c) => (
+                      <button key={c.id} onClick={() => openDetail(c)} className="text-left bg-surface border-[1.5px] border-line-soft rounded-[22px] p-5 hover:border-line active:scale-[.99] transition">
+                        <Avatar id={c.id} first={c.firstName} last={c.lastName} size={56} className="mb-3" />
+                        <p className="text-[20px] font-semibold text-ink leading-tight truncate">{c.firstName} {c.lastName}</p>
+                        <p className="text-[15px] font-medium text-[var(--muted)] mt-0.5 truncate">
+                          {c.lastVisitAt ? relDate(c.lastVisitAt) : "New"}
+                          {c.lifetimeSpend && c.lifetimeSpend > 0 ? ` · ${formatCurrency(c.lifetimeSpend)}` : ""}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-serif text-[30px] text-ink">Everyone</h2>
                 </div>
-                <p className="font-semibold text-gray-900">{c.firstName} {c.lastName}</p>
-                <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium mt-1"><Star className="h-3 w-3" />{c.points} pts</span>
-              </div>
-              <div className="mt-3 space-y-1 text-xs text-gray-500">
-                <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" />{c.email || "—"}</p>
-                <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" />{c.phone || "—"}</p>
-              </div>
-            </div>
-          ))}
+                <Grid items={showMore ? sorted : sorted.slice(0, 9)} selectMode={selectMode} selected={selected} onToggle={toggleSel} onOpen={openDetail} />
+                {!showMore && sorted.length > 9 && (
+                  <div className="flex justify-center mt-6">
+                    <Button variant="outline" onClick={() => setShowMore(true)}>Show more ({sorted.length - 9})</Button>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </div>
-      ) : (
-        /* ---- COMPACT ---- */
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {filtered.map((c) => (
-            <div key={c.id} className={`flex items-center gap-3 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm ${selected.has(c.id) ? "bg-indigo-50/50" : ""}`} onClick={() => setEditing({ ...c })}>
-              <span onClick={(e) => e.stopPropagation()}><Checkbox checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} /></span>
-              <span className="font-medium text-gray-900 w-48 truncate">{c.firstName} {c.lastName}</span>
-              <span className="text-gray-500 flex-1 truncate">{c.email || "—"}</span>
-              <span className="text-gray-500 w-32 truncate hidden sm:block">{c.phone || "—"}</span>
-              <span className="text-xs text-amber-700 font-medium w-16 text-right">{c.points} pts</span>
-            </div>
-          ))}
+
+        {/* RIGHT: phone lookup panel (md+) */}
+        <aside className="hidden md:block w-[380px] lg:w-[420px] shrink-0">
+          <div className="sticky top-9">
+            <Keypad digits={digits} setDigits={setDigits} matchCount={phoneMatches.length} onNew={() => { setForm((f) => ({ ...f, phone: fmtPhone(digits) })); setCreateOpen(true); }} />
+          </div>
+        </aside>
+      </div>
+
+      {/* Mobile phone-lookup sheet */}
+      {phoneSheet && (
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setPhoneSheet(false)}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-x-0 bottom-0 p-3 pb-[max(12px,env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
+            <Keypad digits={digits} setDigits={setDigits} matchCount={phoneMatches.length} onNew={() => { setPhoneSheet(false); setForm((f) => ({ ...f, phone: fmtPhone(digits) })); setCreateOpen(true); }} onClose={() => setPhoneSheet(false)} />
+          </div>
         </div>
       )}
 
-      {/* Add modal */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Add Customer" className="max-w-md">
+      {/* Select action bar */}
+      {selectMode && selected.size > 0 && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-[112px] z-30 flex items-center gap-2 bg-ink text-[var(--panel-ink)] rounded-full px-4 py-2.5 shadow-[0_8px_24px_rgba(60,40,20,.2)] max-[767px]:bottom-[84px]">
+          <span className="text-sm font-semibold px-2">{selected.size} selected</span>
+          <button onClick={() => setBulkOpen(true)} className="text-sm font-semibold bg-white/15 hover:bg-white/25 rounded-full px-3.5 py-1.5 flex items-center gap-1.5"><Star className="h-3.5 w-3.5" /> Add points</button>
+          <button onClick={() => { if (confirm(`Delete ${selected.size} customers?`)) bulk("delete"); }} className="text-sm font-semibold bg-white/15 hover:bg-[var(--danger-ink)] rounded-full px-3.5 py-1.5 flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5" /> Delete</button>
+        </div>
+      )}
+
+      {/* Create */}
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="New customer" className="max-w-[520px]">
         <div className="space-y-4">
+          <Field label="Phone"><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="443 000 0000" inputMode="tel" /></Field>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">First Name</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
+            <Field label="First name"><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></Field>
+            <Field label="Last name"><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></Field>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Phone</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          {formError && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{formError}</p>}
-          <div className="flex gap-3"><Button onClick={handleCreate} disabled={saving} className="flex-1">{saving ? "Adding..." : "Add Customer"}</Button><Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button></div>
+          <Field label="Email"><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+          {formError && <p className="text-sm font-medium bg-[var(--danger-bg)] text-[var(--danger-ink)] rounded-xl p-3">{formError}</p>}
+          <div className="flex items-center gap-3 pt-1">
+            <Button onClick={handleCreate} disabled={saving} size="lg" className="flex-1">{saving ? "Adding…" : "Add customer"}</Button>
+            <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</Button>
+          </div>
         </div>
       </Modal>
 
-      {/* Edit modal */}
-      {editing && (
-        <Modal open={!!editing} onClose={() => setEditing(null)} title="Edit Customer" className="max-w-md">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">First Name</label><Input value={editing.firstName} onChange={(e) => setEditing({ ...editing, firstName: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label><Input value={editing.lastName} onChange={(e) => setEditing({ ...editing, lastName: e.target.value })} /></div>
-            </div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><Input type="email" value={editing.email || ""} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Phone</label><Input value={editing.phone || ""} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Loyalty Points</label><Input type="number" min={0} value={editing.points} onChange={(e) => setEditing({ ...editing, points: parseInt(e.target.value) || 0 })} /></div>
-            <div className="flex gap-3 pt-1">
-              <Button onClick={saveEdit} disabled={saving} className="flex-1">{saving ? "Saving..." : "Save Changes"}</Button>
-              <Button variant="outline" onClick={() => deleteOne(editing.id)} className="text-red-600 hover:bg-red-50 gap-1.5"><Trash2 className="h-4 w-4" /> Delete</Button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Bulk points modal */}
-      <Modal open={bulkPointsOpen} onClose={() => setBulkPointsOpen(false)} title={`Add points to ${selected.size} customers`} className="max-w-sm">
+      {/* Bulk points */}
+      <Modal open={bulkOpen} onClose={() => setBulkOpen(false)} title={`Add points to ${selected.size}`} className="max-w-[420px]">
         <div className="space-y-4">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Points to add (each)</label><Input type="number" value={bulkPoints} onChange={(e) => setBulkPoints(e.target.value)} placeholder="e.g. 100" /></div>
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={async () => { if (await bulk("addPoints", bulkPoints)) { setBulkPointsOpen(false); setBulkPoints(""); } }}>Add Points</Button>
-            <Button variant="outline" onClick={() => setBulkPointsOpen(false)}>Cancel</Button>
-          </div>
+          <Field label="Points to add (each)"><Input type="number" value={bulkPoints} onChange={(e) => setBulkPoints(e.target.value)} placeholder="100" /></Field>
+          <Button size="lg" className="w-full" onClick={async () => { if (await bulk("addPoints", bulkPoints)) { setBulkOpen(false); setBulkPoints(""); } }}>Add points</Button>
         </div>
       </Modal>
+
+      {/* Detail sheet */}
+      {detail && <DetailSheet c={detail} onClose={() => setDetail(null)} onChanged={load} onGivePoints={() => { setSelected(new Set([detail.id])); setBulkOpen(true); setDetail(null); }} />}
     </div>
   );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div><label className="block text-sm font-semibold text-ink mb-1.5">{label}</label>{children}</div>;
+}
+
+function Grid({ items, selectMode, selected, onToggle, onOpen }: { items: Customer[]; selectMode: boolean; selected: Set<string>; onToggle: (id: string) => void; onOpen: (c: Customer) => void; }) {
+  if (items.length === 0)
+    return <div className="rounded-[22px] border-[1.5px] border-dashed border-[#cdbfa8] p-8 text-center text-[var(--muted)]">No customers to show.</div>;
+  return (
+    <div className="grid grid-cols-3 max-[1100px]:grid-cols-2 max-[767px]:grid-cols-1 gap-3">
+      {items.map((c) => {
+        const secondary = c.email || c.phone;
+        const sel = selected.has(c.id);
+        return (
+          <button
+            key={c.id}
+            onClick={() => (selectMode ? onToggle(c.id) : onOpen(c))}
+            className={`flex items-center gap-3 h-[76px] px-4 rounded-[18px] border-[1.5px] bg-surface text-left active:scale-[.99] transition ${sel ? "border-accent ring-2 ring-[color-mix(in_srgb,var(--accent)_25%,transparent)]" : "border-line-soft hover:border-line"}`}
+          >
+            {selectMode && <span className={`h-5 w-5 rounded-md border-[1.5px] flex items-center justify-center shrink-0 ${sel ? "bg-accent border-accent" : "border-line"}`}>{sel && <Check className="h-3.5 w-3.5 text-white" />}</span>}
+            <Avatar id={c.id} first={c.firstName} last={c.lastName} size={46} />
+            <span className="min-w-0">
+              <span className="block text-[17px] font-semibold text-ink truncate">{c.firstName} {c.lastName}</span>
+              {secondary ? <span className="block text-[14px] font-medium text-[var(--muted)] truncate">{secondary}</span> : <Tag>No contact yet</Tag>}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PhoneMatches({ matches, digits, onOpen, onAdd }: { matches: Customer[]; digits: string; onOpen: (c: Customer) => void; onAdd: () => void; }) {
+  return (
+    <section>
+      <h2 className="font-serif text-[32px] text-ink mb-4">Phone contains {fmtPhone(digits)}</h2>
+      {matches.length === 0 ? (
+        <div className="rounded-[22px] border-[1.5px] border-dashed border-[#cdbfa8] p-7 text-center">
+          <p className="text-[17px] text-ink mb-4">No one has that number yet. Add them as a new customer?</p>
+          <Button size="lg" onClick={onAdd}><Plus className="h-5 w-5 mr-1" /> Add customer</Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {matches.map((c) => (
+            <div key={c.id} className="flex items-center gap-5 bg-surface border-[1.5px] border-line-soft rounded-[22px] p-[18px_20px]">
+              <button onClick={() => onOpen(c)} className="flex items-center gap-5 flex-1 min-w-0 text-left">
+                <Avatar id={c.id} first={c.firstName} last={c.lastName} size={64} />
+                <span className="min-w-0">
+                  <span className="block text-[24px] font-semibold text-ink leading-tight truncate">{c.firstName} {c.lastName}</span>
+                  <span className="block text-[17px] font-medium text-[var(--muted)] truncate">{c.phone}{visitsLabel(c) ? ` · ${visitsLabel(c)}` : ""}</span>
+                </span>
+              </button>
+              <Link href={`/pos?customerId=${c.id}`}><Button size="lg" className="shrink-0">Start sale</Button></Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Keypad({ digits, setDigits, matchCount, onNew, onClose }: { digits: string; setDigits: (fn: any) => void; matchCount: number; onNew: () => void; onClose?: () => void; }) {
+  const press = (d: string) => setDigits((p: string) => (p.length >= 10 ? p : p + d));
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+  return (
+    <div className="bg-panel text-[var(--panel-ink)] rounded-[28px] p-[32px] max-[767px]:p-6 flex flex-col gap-[18px]">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="font-serif text-[34px] leading-none">Phone lookup</h3>
+          <p className="text-[15px] font-medium text-[var(--panel-muted)] mt-1.5">Ask for any part of their number</p>
+        </div>
+        {onClose && <button onClick={onClose} className="p-2 -mr-1"><X className="h-6 w-6 text-[var(--panel-muted)]" /></button>}
+      </div>
+      <div className="h-20 rounded-[20px] bg-[var(--panel-key)] px-6 flex items-center justify-between">
+        <span className="text-[34px] font-semibold tracking-[.06em] text-[var(--panel-ink)]">{digits ? fmtPhone(digits) : "···"}</span>
+        <span className="text-[15px] font-medium text-[var(--panel-muted)]">{digits.length >= 2 ? `${matchCount} match${matchCount === 1 ? "" : "es"}` : ""}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {keys.map((k) => (
+          <button key={k} onClick={() => press(k)} aria-label={k} className="h-[74px] rounded-[18px] bg-[var(--panel-key)] hover:bg-[#443b30] active:scale-[.98] transition text-[28px] font-semibold">{k}</button>
+        ))}
+        <button onClick={() => setDigits("")} aria-label="Clear all digits" className="h-[74px] rounded-[18px] bg-[var(--panel-key)] hover:bg-[#443b30] active:scale-[.98] transition text-[17px] font-semibold">Clear</button>
+        <button onClick={() => press("0")} aria-label="0" className="h-[74px] rounded-[18px] bg-[var(--panel-key)] hover:bg-[#443b30] active:scale-[.98] transition text-[28px] font-semibold">0</button>
+        <button onClick={() => setDigits((p: string) => p.slice(0, -1))} aria-label="Delete last digit" className="h-[74px] rounded-[18px] bg-[var(--panel-key)] hover:bg-[#443b30] active:scale-[.98] transition flex items-center justify-center"><Delete className="h-6 w-6" /></button>
+      </div>
+      <button onClick={onNew} className="h-[60px] rounded-full border-[1.5px] border-[var(--panel-line)] text-[var(--panel-ink)] text-[17px] font-semibold hover:bg-[var(--panel-key)] active:scale-[.98] transition flex items-center justify-center gap-2"><Plus className="h-5 w-5" /> New customer</button>
+    </div>
+  );
+}
+
+function DetailSheet({ c, onClose, onChanged, onGivePoints }: { c: Detail; onClose: () => void; onChanged: () => void; onGivePoints: () => void; }) {
+  const [edit, setEdit] = useState(false);
+  const [f, setF] = useState({ firstName: c.firstName, lastName: c.lastName, email: c.email || "", phone: c.phone || "" });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [onClose]);
+
+  const save = async () => {
+    setSaving(true);
+    await fetch(`/api/customers/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
+    setSaving(false); setEdit(false); onChanged(); onClose();
+  };
+  const del = async () => { if (!confirm("Delete this customer?")) return; await fetch(`/api/customers/${c.id}`, { method: "DELETE" }); onChanged(); onClose(); };
+
+  const stats = [
+    c.visits && c.visits > 0 ? { v: String(c.visits), l: "Visits" } : null,
+    c.lifetimeSpend && c.lifetimeSpend > 0 ? { v: formatCurrency(c.lifetimeSpend), l: "Lifetime spend" } : null,
+    c.lastVisitAt ? { v: relDate(c.lastVisitAt), l: "Last visit" } : null,
+  ].filter(Boolean) as { v: string; l: string }[];
+
+  return (
+    <div className="fixed inset-0 z-50" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30 animate-in fade-in" />
+      <div onClick={(e) => e.stopPropagation()} className="absolute right-0 top-0 h-full w-[480px] max-w-full bg-surface border-l-[1.5px] border-line overflow-y-auto animate-in slide-in-from-right-4 p-7">
+        <div className="flex items-start justify-between mb-5">
+          <div className="flex items-center gap-4">
+            <Avatar id={c.id} first={c.firstName} last={c.lastName} size={72} />
+            <div>
+              <h2 className="font-serif text-[34px] leading-none text-ink">{c.firstName} {c.lastName}</h2>
+              <p className="text-[14px] font-medium text-[var(--muted)] mt-1.5">Customer since {new Date(c.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-full p-2 hover:bg-chip"><X className="h-5 w-5 text-[var(--muted)]" /></button>
+        </div>
+
+        {/* Contact */}
+        <div className="space-y-2 mb-6">
+          {edit ? (
+            <>
+              <div className="grid grid-cols-2 gap-2"><Input value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} placeholder="First" /><Input value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} placeholder="Last" /></div>
+              <Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="Add phone" />
+              <Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="Add email" />
+            </>
+          ) : (
+            <>
+              {c.phone ? <Row label="Phone" value={c.phone} /> : <DashedAdd label="phone" onClick={() => setEdit(true)} />}
+              {c.email ? <Row label="Email" value={c.email} /> : <DashedAdd label="email" onClick={() => setEdit(true)} />}
+            </>
+          )}
+        </div>
+
+        {/* Stats */}
+        {stats.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            {stats.map((s) => (
+              <div key={s.l} className="bg-paper rounded-2xl p-4 text-center">
+                <p className="text-[24px] font-semibold text-ink leading-none">{s.v}</p>
+                <p className="text-[13px] font-medium text-[var(--muted)] mt-1.5">{s.l}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[var(--muted)] mb-6">No purchases yet</p>
+        )}
+
+        {/* Points */}
+        <div className="flex items-center justify-between bg-paper rounded-2xl p-4 mb-6">
+          <p className="text-[15px] font-medium text-ink">{c.points > 0 ? <>{c.points} points · worth {formatCurrency(c.points / 100)} at checkout</> : <span className="text-[var(--muted)]">No points yet</span>}</p>
+          <Button variant="outline" size="sm" onClick={onGivePoints}>Give points</Button>
+        </div>
+
+        {/* Recent purchases */}
+        {c.recentPurchases && c.recentPurchases.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-[15px] font-semibold text-ink mb-2">Recent purchases</h3>
+            <div className="space-y-2">
+              {c.recentPurchases.map((p, i) => (
+                <div key={i} className="flex items-center justify-between text-[14px]">
+                  <span className="min-w-0"><span className="font-medium text-ink truncate block">{p.title}</span>{p.consignorName && <span className="text-[var(--muted)]">from {p.consignorName}</span>}</span>
+                  <span className="font-semibold text-ink shrink-0 ml-3">{formatCurrency(p.price)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="space-y-2.5 pt-2">
+          {edit ? (
+            <div className="flex gap-2"><Button size="lg" className="flex-1" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</Button><Button variant="ghost" onClick={() => setEdit(false)}>Cancel</Button></div>
+          ) : (
+            <>
+              <Link href={`/pos?customerId=${c.id}`}><Button size="lg" className="w-full">Start sale with {c.firstName}</Button></Link>
+              <Button variant="outline" className="w-full" onClick={() => setEdit(true)}>Edit details</Button>
+            </>
+          )}
+          <button onClick={del} className="w-full text-center text-[14px] font-semibold text-[var(--danger-ink)] py-2">Delete customer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return <div className="flex items-center justify-between bg-paper rounded-2xl px-4 h-[52px]"><span className="text-[13px] font-medium text-[var(--muted)]">{label}</span><span className="text-[15px] font-medium text-ink">{value}</span></div>;
+}
+function DashedAdd({ label, onClick }: { label: string; onClick: () => void }) {
+  return <button onClick={onClick} className="w-full flex items-center h-[52px] px-4 rounded-2xl border-[1.5px] border-dashed border-[#cdbfa8] text-[15px] font-medium text-[var(--muted)] hover:text-ink">+ Add {label}</button>;
 }

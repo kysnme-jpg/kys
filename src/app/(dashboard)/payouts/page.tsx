@@ -40,7 +40,7 @@ export default function PayoutsPage() {
   const [tab, setTab] = useState<"pending" | "history">("pending");
 
   // Payout form
-  const [payoutMethod, setPayoutMethod] = useState<"CHECK" | "CASH" | "ACH">("CHECK");
+  const [payoutMethod, setPayoutMethod] = useState<"CHECK" | "CASH" | "ACH" | "ZELLE" | "CASHAPP">("CHECK");
   const [startCheck, setStartCheck] = useState("");
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState<{ name: string; amount: number; status: "ok" | "err" }[]>([]);
@@ -69,7 +69,7 @@ export default function PayoutsPage() {
     else setSelected(new Set(consignors.map((c) => c.id)));
   };
 
-  const issueSinglePayout = async (consignorId: string, amount: number, method: "CHECK" | "CASH" | "ACH", checkNumber?: string) => {
+  const issueSinglePayout = async (consignorId: string, amount: number, method: string, checkNumber?: string) => {
     const res = await fetch("/api/payouts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ export default function PayoutsPage() {
     load();
   };
 
-  const methodIcon = { CHECK: Receipt, CASH: Banknote, ACH: Clock };
+  const methodIcon: Record<string, any> = { CHECK: Receipt, CASH: Banknote, ACH: Clock, ZELLE: Receipt, CASHAPP: Receipt };
 
   return (
     <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
@@ -345,20 +345,21 @@ export default function PayoutsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-              <div className="flex gap-2">
-                {(["CHECK", "CASH", "ACH"] as const).map((m) => (
+              <div className="grid grid-cols-3 gap-2">
+                {([["CHECK","Check"],["CASH","Cash"],["ZELLE","Zelle"],["CASHAPP","Cash App"],["ACH","ACH"]] as const).map(([m,label]) => (
                   <button
                     key={m}
                     type="button"
                     onClick={() => setPayoutMethod(m)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      payoutMethod === m ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    className={`py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                      payoutMethod === m ? "bg-accent text-[var(--accent-ink)]" : "bg-chip text-ink hover:brightness-95"
                     }`}
                   >
-                    {m}
+                    {label}
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-[var(--muted)] mt-2">Zelle, Cash App and Check use each consignor&apos;s saved payout details.</p>
             </div>
 
             {payoutMethod === "CHECK" && selectedConsignors.length > 1 && (

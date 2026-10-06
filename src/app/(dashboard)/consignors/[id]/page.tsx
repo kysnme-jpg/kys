@@ -52,7 +52,8 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
 
   // Payout form state
   const [payoutAmount, setPayoutAmount] = useState("");
-  const [payoutMethod, setPayoutMethod] = useState<"CHECK" | "CASH" | "ACH">("CHECK");
+  const [payoutMethod, setPayoutMethod] = useState<"CHECK" | "CASH" | "ACH" | "ZELLE" | "CASHAPP">("CHECK");
+  const [destination, setDestination] = useState("");
   const [checkNumber, setCheckNumber] = useState("");
   const [payoutNote, setPayoutNote] = useState("");
   const [payoutLoading, setPayoutLoading] = useState(false);
@@ -66,6 +67,16 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   };
 
   useEffect(load, [id]);
+
+  // Prefill the destination from the consignor's saved details when the method changes.
+  useEffect(() => {
+    const c: any = consignor;
+    if (!c) return;
+    if (payoutMethod === "ZELLE") setDestination(c.zelleHandle || "");
+    else if (payoutMethod === "CASHAPP") setDestination(c.cashAppHandle || "");
+    else if (payoutMethod === "CHECK") setDestination(c.address || "");
+    else setDestination("");
+  }, [payoutMethod, consignor]);
 
   const handlePayout = async () => {
     const amount = parseFloat(payoutAmount);
@@ -83,6 +94,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
         amount,
         method: payoutMethod,
         checkNumber: checkNumber || undefined,
+        destination: destination.trim() || undefined,
         note: payoutNote || undefined,
       }),
     });
@@ -358,30 +370,44 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-            <div className="flex gap-2">
-              {(["CHECK", "CASH", "ACH"] as const).map((m) => (
+            <div className="grid grid-cols-3 gap-2">
+              {([["CHECK", "Check"], ["CASH", "Cash"], ["ZELLE", "Zelle"], ["CASHAPP", "Cash App"], ["ACH", "ACH"]] as const).map(([m, label]) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setPayoutMethod(m)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    payoutMethod === m ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className={`py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                    payoutMethod === m ? "bg-accent text-[var(--accent-ink)]" : "bg-chip text-ink hover:brightness-95"
                   }`}
                 >
-                  {m}
+                  {label}
                 </button>
               ))}
             </div>
           </div>
 
           {payoutMethod === "CHECK" && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Check Number</label>
+                <Input value={checkNumber} onChange={(e) => setCheckNumber(e.target.value)} placeholder="e.g. 1042" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mailing address</label>
+                <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Address to mail the check" />
+              </div>
+            </>
+          )}
+          {payoutMethod === "ZELLE" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Check Number</label>
-              <Input
-                value={checkNumber}
-                onChange={(e) => setCheckNumber(e.target.value)}
-                placeholder="e.g. 1042"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Zelle (phone or email)</label>
+              <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. 443-000-0000 or name@email.com" />
+            </div>
+          )}
+          {payoutMethod === "CASHAPP" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cash App $Cashtag</label>
+              <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. $classicconsigns" />
             </div>
           )}
 

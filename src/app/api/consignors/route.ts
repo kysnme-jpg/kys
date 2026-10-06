@@ -16,6 +16,10 @@ const createConsignorSchema = z.object({
   splitPercent: z.number().min(0).max(100).default(50),
   notes: z.preprocess(emptyToUndef, z.string().optional()),
   portalEnabled: z.boolean().default(false),
+  payoutMethod: z.preprocess(emptyToUndef, z.enum(["CHECK", "CASH", "ACH", "ZELLE", "CASHAPP"]).optional()),
+  zelleHandle: z.preprocess(emptyToUndef, z.string().optional()),
+  cashAppHandle: z.preprocess(emptyToUndef, z.string().optional()),
+  unsoldPreference: z.preprocess(emptyToUndef, z.enum(["PICKUP", "DONATE", "CONTINUE"]).optional()),
 });
 
 export async function GET(req: NextRequest) {

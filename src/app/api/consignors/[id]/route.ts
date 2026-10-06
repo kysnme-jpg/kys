@@ -41,11 +41,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
 
   const data: Record<string, any> = {};
-  for (const k of ["firstName", "lastName", "email", "phone", "address", "notes"] as const) {
+  for (const k of ["firstName", "lastName", "email", "phone", "address", "notes", "zelleHandle", "cashAppHandle"] as const) {
     if (body[k] !== undefined) data[k] = body[k] || null;
   }
   if (body.splitPercent !== undefined) data.splitPercent = Math.max(0, Math.min(100, Number(body.splitPercent) || 0));
   if (body.portalEnabled !== undefined) data.portalEnabled = !!body.portalEnabled;
+  if (body.payoutMethod !== undefined) data.payoutMethod = body.payoutMethod || null;
+  if (body.unsoldPreference !== undefined) data.unsoldPreference = body.unsoldPreference || null;
 
   const consignor = await db.consignor.updateMany({ where: { id, storeId }, data });
 

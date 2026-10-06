@@ -113,6 +113,10 @@ The people who bring you items to sell. Open **Consignors** from the sidebar.
   access**, or open **Details** for their full items / earnings / payout history.
 - **Bulk actions:** set split %, enable/disable portal access, delete.
 - **Balance** is what you currently owe each consignor.
+- When adding or editing a consignor you can set their **preferred payout
+  method** (Check/Cash/Zelle/Cash App/ACH) with the matching details, and an
+  **"If items don't sell"** preference: **Pick-up**, **Donate**, or **Continue
+  consigning (30 days)**.
 
 ### Consignor detail page
 Shows KPI cards (balance, earned, active, sold), and tabs for **Items**,
@@ -140,8 +144,12 @@ Your loyalty members. Open **Customers** from the sidebar.
 Pay your consignors. Open **Payouts** from the sidebar.
 
 - **Pending Balances** tab lists consignors who are owed money.
-- Select who to pay, choose the method, and process — checks are numbered
-  sequentially.
+- Select who to pay, choose the **method** (Check, Cash, **Zelle**, **Cash App**,
+  or ACH), and process — checks are numbered sequentially.
+- For **Zelle / Cash App / Check**, you'll be asked for the destination (their
+  Zelle phone/email, Cash App $Cashtag, or mailing address). It's saved on the
+  consignor, so next time it's pre-filled. Batch payouts use each consignor's
+  saved details automatically.
 - **Payout History** tab shows everything you've paid.
 - Consignors with portal access can also **request a payout** themselves; those
   requests appear as pending payouts for you to process.

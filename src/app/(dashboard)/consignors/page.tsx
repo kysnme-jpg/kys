@@ -27,6 +27,11 @@ interface Consignor {
   balance: number;
   notes?: string | null;
   portalEnabled: boolean;
+  payoutMethod?: string | null;
+  zelleHandle?: string | null;
+  cashAppHandle?: string | null;
+  unsoldPreference?: string | null;
+  address?: string | null;
   createdAt: string;
   _count?: { items: number };
 }
@@ -88,7 +93,7 @@ export default function ConsignorsPage() {
     setSaving(true);
     await fetch(`/api/consignors/${editing.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName: editing.firstName, lastName: editing.lastName, email: editing.email, phone: editing.phone, splitPercent: editing.splitPercent, notes: editing.notes, portalEnabled: editing.portalEnabled }),
+      body: JSON.stringify({ firstName: editing.firstName, lastName: editing.lastName, email: editing.email, phone: editing.phone, splitPercent: editing.splitPercent, notes: editing.notes, portalEnabled: editing.portalEnabled, payoutMethod: editing.payoutMethod || null, zelleHandle: editing.zelleHandle || null, cashAppHandle: editing.cashAppHandle || null, unsoldPreference: editing.unsoldPreference || null }),
     });
     setSaving(false); setEditing(null); load();
   };
@@ -216,6 +221,18 @@ export default function ConsignorsPage() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><Input type="email" value={editing.email || ""} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Phone</label><Input value={editing.phone || ""} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Split %</label><Input type="number" min={0} max={100} value={editing.splitPercent} onChange={(e) => setEditing({ ...editing, splitPercent: parseFloat(e.target.value) || 0 })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Preferred payout method</label>
+              <select value={editing.payoutMethod || ""} onChange={(e) => setEditing({ ...editing, payoutMethod: e.target.value })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                <option value="">Choose…</option><option value="CHECK">Check — mailed to address</option><option value="CASH">Cash — in store</option><option value="ZELLE">Zelle</option><option value="CASHAPP">Cash App</option><option value="ACH">Bank transfer (ACH)</option>
+              </select>
+            </div>
+            {editing.payoutMethod === "ZELLE" && <div><label className="block text-sm font-medium text-gray-700 mb-1">Zelle (phone or email)</label><Input value={editing.zelleHandle || ""} onChange={(e) => setEditing({ ...editing, zelleHandle: e.target.value })} placeholder="443-000-0000 or name@email.com" /></div>}
+            {editing.payoutMethod === "CASHAPP" && <div><label className="block text-sm font-medium text-gray-700 mb-1">Cash App $Cashtag</label><Input value={editing.cashAppHandle || ""} onChange={(e) => setEditing({ ...editing, cashAppHandle: e.target.value })} placeholder="$classicconsigns" /></div>}
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">If items don&apos;t sell</label>
+              <select value={editing.unsoldPreference || ""} onChange={(e) => setEditing({ ...editing, unsoldPreference: e.target.value })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                <option value="">Choose…</option><option value="PICKUP">Pick-up</option><option value="DONATE">Donate</option><option value="CONTINUE">Continue consigning (30 days)</option>
+              </select>
+            </div>
             <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={editing.portalEnabled} onChange={(e) => setEditing({ ...editing, portalEnabled: e.target.checked })} className="h-4 w-4 rounded border-gray-300" /> Portal access enabled</label>
             <div className="text-xs text-gray-500">Balance: <b className="text-gray-900">{formatCurrency(editing.balance)}</b> · {editing._count?.items ?? 0} items</div>
             <div className="flex gap-2 pt-1 items-center">

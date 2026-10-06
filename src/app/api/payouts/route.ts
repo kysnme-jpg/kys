@@ -8,8 +8,9 @@ import { fireWebhook } from "@/lib/webhooks";
 const createPayoutSchema = z.object({
   consignorId: z.string(),
   amount: z.number().positive(),
-  method: z.enum(["CHECK", "CASH", "ACH"]).default("CHECK"),
+  method: z.enum(["CHECK", "CASH", "ACH", "ZELLE", "CASHAPP"]).default("CHECK"),
   checkNumber: z.string().optional(),
+  destination: z.string().optional(),
   note: z.string().optional(),
 });
 
@@ -30,6 +31,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
   }
 
+  const c: any = consignor;
+  // Destination: use what was entered, else fall back to the consignor's saved details.
+  const destination =
+    data.destination?.trim() ||
+    (data.method === "ZELLE" ? c.zelleHandle : data.method === "CASHAPP" ? c.cashAppHandle : data.method === "CHECK" ? c.address : null) ||
+    null;
+
   const payout = await db.$transaction(async (tx: any) => {
     const payout = await tx.payout.create({
       data: {
@@ -38,6 +46,7 @@ export async function POST(req: NextRequest) {
         amount: data.amount,
         method: data.method,
         checkNumber: data.checkNumber,
+        destination,
         note: data.note,
         status: data.method === "ACH" ? "PROCESSING" : "COMPLETED",
         completedAt: data.method !== "ACH" ? new Date() : undefined,
@@ -50,14 +59,18 @@ export async function POST(req: NextRequest) {
         payoutId: payout.id,
         type: "PAYOUT_DEBIT",
         amount: -data.amount,
-        note: `Payout via ${data.method}${data.checkNumber ? ` #${data.checkNumber}` : ""}`,
+        note: `Payout via ${data.method}${data.checkNumber ? ` #${data.checkNumber}` : ""}${destination ? ` → ${destination}` : ""}`,
       },
     });
 
-    await tx.consignor.update({
-      where: { id: data.consignorId },
-      data: { balance: { decrement: data.amount } },
-    });
+    // Remember the destination on the consignor for next time.
+    const remember: Record<string, any> = { balance: { decrement: data.amount } };
+    if (data.destination?.trim()) {
+      if (data.method === "ZELLE") remember.zelleHandle = data.destination.trim();
+      else if (data.method === "CASHAPP") remember.cashAppHandle = data.destination.trim();
+      else if (data.method === "CHECK") remember.address = data.destination.trim();
+    }
+    await tx.consignor.update({ where: { id: data.consignorId }, data: remember });
 
     return payout;
   });

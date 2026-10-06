@@ -20,6 +20,10 @@ export default function NewConsignorPage() {
     phone: "",
     address: "",
     splitPercent: "50",
+    payoutMethod: "",
+    zelleHandle: "",
+    cashAppHandle: "",
+    unsoldPreference: "",
     notes: "",
     portalEnabled: false,
   });
@@ -116,6 +120,38 @@ export default function NewConsignorPage() {
                 </span>
               </div>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Preferred payout method</label>
+              <select value={form.payoutMethod} onChange={(e) => set("payoutMethod", e.target.value)} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                <option value="">Choose…</option>
+                <option value="CHECK">Check — mailed to address</option>
+                <option value="CASH">Cash — in store</option>
+                <option value="ZELLE">Zelle</option>
+                <option value="CASHAPP">Cash App</option>
+                <option value="ACH">Bank transfer (ACH)</option>
+              </select>
+            </div>
+            {form.payoutMethod === "ZELLE" && (
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Zelle (phone or email)</label><Input value={form.zelleHandle} onChange={(e) => set("zelleHandle", e.target.value)} placeholder="443-000-0000 or name@email.com" /></div>
+            )}
+            {form.payoutMethod === "CASHAPP" && (
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Cash App $Cashtag</label><Input value={form.cashAppHandle} onChange={(e) => set("cashAppHandle", e.target.value)} placeholder="$classicconsigns" /></div>
+            )}
+            {form.payoutMethod === "CHECK" && (
+              <p className="text-xs text-gray-500 -mt-1">Checks are mailed to the address entered above.</p>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">If items don&apos;t sell</label>
+              <select value={form.unsoldPreference} onChange={(e) => set("unsoldPreference", e.target.value)} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                <option value="">Choose…</option>
+                <option value="PICKUP">Pick-up</option>
+                <option value="DONATE">Donate</option>
+                <option value="CONTINUE">Continue consigning (30 days)</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea

@@ -117,6 +117,10 @@ model Consignor {
   portalEnabled    Boolean   @default(false)
   bankAccountMask  String?
   achEnabled       Boolean   @default(false)
+  payoutMethod     PayoutMethod?
+  zelleHandle      String?
+  cashAppHandle    String?
+  unsoldPreference String?   // PICKUP | DONATE | CONTINUE
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -287,6 +291,8 @@ enum PayoutMethod {
   CHECK
   CASH
   ACH
+  ZELLE
+  CASHAPP
 }
 
 enum PayoutStatus {
@@ -307,6 +313,7 @@ model Payout {
   status       PayoutStatus @default(PENDING)
   checkNumber  String?
   achReference String?
+  destination  String?
   note         String?
   createdAt    DateTime     @default(now())
   completedAt  DateTime?

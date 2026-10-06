@@ -31,20 +31,31 @@ export default function NewConsignorPage() {
     setSaving(true);
     setError("");
 
-    const res = await fetch("/api/consignors", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, splitPercent: parseFloat(form.splitPercent) }),
-    });
+    try {
+      const res = await fetch("/api/consignors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          email: form.email.trim() || undefined,
+          phone: form.phone.trim() || undefined,
+          address: form.address.trim() || undefined,
+          notes: form.notes.trim() || undefined,
+          splitPercent: parseFloat(form.splitPercent) || 50,
+        }),
+      });
 
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Failed to save");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Couldn't save this consignor. Please try again.");
+        setSaving(false);
+        return;
+      }
+      router.push(`/consignors/${data.id}`);
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
       setSaving(false);
-      return;
     }
-
-    router.push(`/consignors/${data.id}`);
   };
 
   return (

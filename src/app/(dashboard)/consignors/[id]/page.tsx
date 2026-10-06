@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { PrintLabelButton } from "@/components/inventory/label-print";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
+import Link from "next/link";
 import {
-  ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail,
+  ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus,
   TrendingUp, CheckCircle, Clock, Banknote
 } from "lucide-react";
 import Link from "next/link";
@@ -209,8 +210,19 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
         {/* Items tab */}
         {activeTab === "items" && (
           <div className="space-y-2">
+            <div className="flex justify-end">
+              <Link href={`/inventory/new?consignorId=${consignor.id}`}>
+                <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Add item</Button>
+              </Link>
+            </div>
             {consignor.items.length === 0 ? (
-              <p className="text-gray-500 text-sm py-4">No items yet</p>
+              <div className="py-8 text-center">
+                <Package className="h-9 w-9 text-[var(--muted)] mx-auto mb-2" />
+                <p className="text-[var(--muted)] mb-4">No items yet</p>
+                <Link href={`/inventory/new?consignorId=${consignor.id}`}>
+                  <Button className="gap-1.5"><Plus className="h-4 w-4" /> Add their first item</Button>
+                </Link>
+              </div>
             ) : (
               consignor.items.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-4 p-3 bg-white rounded-lg border border-gray-200">

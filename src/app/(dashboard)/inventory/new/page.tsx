@@ -53,7 +53,16 @@ export default function NewItemPage() {
   });
 
   useEffect(() => {
-    fetch("/api/consignors").then((r) => r.json()).then((d) => setConsignors(d.consignors || []));
+    fetch("/api/consignors").then((r) => r.json()).then((d) => {
+      const list = d.consignors || [];
+      setConsignors(list);
+      // Pre-select a consignor when arriving from their page (/inventory/new?consignorId=…)
+      const pid = new URLSearchParams(window.location.search).get("consignorId");
+      if (pid) {
+        const c = list.find((x: any) => x.id === pid);
+        if (c) setForm((f) => ({ ...f, consignorId: pid, splitPercent: String(c.splitPercent) }));
+      }
+    });
     fetch("/api/categories").then((r) => r.json()).then((d) => setCategories(d.categories || []));
   }, []);
 

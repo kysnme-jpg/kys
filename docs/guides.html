@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ConsignPro — Guides</title>
+<style>
+:root{--ink:#1f2937;--muted:#6b7280;--brand:#4f46e5;--brand-soft:#eef2ff;--line:#e5e7eb;--code:#f3f4f6;}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);line-height:1.6;margin:0;background:#f8fafc}
+.page{max-width:820px;margin:0 auto;background:#fff;padding:56px 64px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cover{min-height:88vh;display:flex;flex-direction:column;justify-content:center;border-bottom:none}
+.cover .logo{width:64px;height:64px;border-radius:16px;background:var(--brand);display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px;margin-bottom:28px}
+.cover h1{font-size:44px;line-height:1.1;margin:0 0 10px;letter-spacing:-.02em}
+.cover .tag{color:var(--muted);font-size:18px;margin:0 0 40px}
+.cover .meta{color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:18px}
+.cover .meta b{color:var(--ink)}
+.toc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:40px}
+.toc-col h3{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--brand);margin:0 0 10px}
+.toc-col h3 a{color:var(--brand);text-decoration:none}
+ul.toc{list-style:none;padding:0;margin:0;font-size:13.5px}
+ul.toc li{margin:3px 0}
+ul.toc ul{list-style:none;padding-left:14px;color:var(--muted)}
+ul.toc a{color:var(--ink);text-decoration:none}
+ul.toc ul a{color:var(--muted)}
+.guide{padding-top:8px}
+.guide-head{border-bottom:3px solid var(--brand);padding-bottom:16px;margin-bottom:24px}
+.kicker{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);background:var(--brand-soft);padding:4px 10px;border-radius:999px}
+.guide-head h1{font-size:32px;margin:14px 0 4px;letter-spacing:-.01em}
+.guide-head .subtitle{color:var(--muted);margin:0;font-size:15px}
+h2{font-size:21px;margin:30px 0 10px;padding-top:6px;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none}
+h3{font-size:16px;margin:20px 0 8px}
+p,li{font-size:14.5px}
+a{color:var(--brand)}
+code{background:var(--code);padding:1.5px 5px;border-radius:5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-size:12.5px}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--brand-soft);font-weight:600}
+tr:nth-child(even) td{background:#fafafa}
+blockquote{margin:16px 0;padding:12px 16px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:6px;color:#78350f;font-size:13.5px}
+blockquote p{margin:4px 0}
+hr{border:none;border-top:1px solid var(--line);margin:28px 0}
+ul,ol{padding-left:22px}
+li{margin:3px 0}
+@media print{
+  body{background:#fff}
+  .page{box-shadow:none;max-width:none;padding:0}
+  .cover{min-height:auto;page-break-after:always;padding-top:40px}
+  .guide{page-break-before:always}
+  h2,h3{page-break-after:avoid}
+  table,pre,blockquote,tr{page-break-inside:avoid}
+  a{color:var(--ink);text-decoration:none}
+}
+@page{size:letter;margin:16mm 16mm}
+</style></head>
+<body><div class="page">
+  <div class="cover">
+    <div class="logo">&#128717;</div>
+    <h1>ConsignPro</h1>
+    <p class="tag">Consignment Point of Sale &amp; Store Management</p>
+    <p class="tag" style="font-size:22px;color:var(--ink);font-weight:600;margin-bottom:8px">User &amp; Admin Guides</p>
+    <div class="toc-wrap"><div class='toc-col'><h3><a href='#user'>User Guide</a></h3><ul class='toc'>
+<li><a href='#1-signing-in'>1. Signing in</a>
+</li>
+<li><a href='#2-point-of-sale-pos'>2. Point of Sale (POS)</a>
+<ul>
+<li><a href='#ringing-up-a-sale'>Ringing up a sale</a></li>
+<li><a href='#notes'>Notes</a></li>
+</ul>
+</li>
+<li><a href='#3-inventory'>3. Inventory</a>
+<ul>
+<li><a href='#views-sorting'>Views &amp; sorting</a></li>
+<li><a href='#the-scan-box'>The scan box</a></li>
+<li><a href='#adding-an-item'>Adding an item</a></li>
+<li><a href='#editing-an-item'>Editing an item</a></li>
+<li><a href='#bulk-actions'>Bulk actions</a></li>
+<li><a href='#labels'>Labels</a></li>
+<li><a href='#aging-alerts'>Aging alerts</a></li>
+</ul>
+</li>
+<li><a href='#4-consignors'>4. Consignors</a>
+<ul>
+<li><a href='#consignor-detail-page'>Consignor detail page</a></li>
+</ul>
+</li>
+<li><a href='#5-customers'>5. Customers</a>
+</li>
+<li><a href='#6-payouts'>6. Payouts</a>
+</li>
+<li><a href='#7-contracts'>7. Contracts</a>
+</li>
+<li><a href='#8-store-insights-reports'>8. Store Insights &amp; Reports</a>
+</li>
+<li><a href='#9-online-shop'>9. Online shop</a>
+</li>
+<li><a href='#10-consignor-dealer-portals'>10. Consignor &amp; Dealer portals</a>
+</li>
+<li><a href='#11-importing-existing-data'>11. Importing existing data</a>
+</li>
+<li><a href='#quick-tips'>Quick tips</a>
+</li>
+</ul></div><div class='toc-col'><h3><a href='#admin'>Admin &amp; Operations Guide</a></h3><ul class='toc'>
+<li><a href='#1-architecture-at-a-glance'>1. Architecture at a glance</a>
+</li>
+<li><a href='#2-hosting-on-railway'>2. Hosting on Railway</a>
+<ul>
+<li><a href='#deploying-changes'>Deploying changes</a></li>
+</ul>
+</li>
+<li><a href='#3-environment-variables'>3. Environment variables</a>
+</li>
+<li><a href='#4-first-run-setup-new-deployment'>4. First-run setup (new deployment)</a>
+</li>
+<li><a href='#5-accounts-roles'>5. Accounts &amp; roles</a>
+<ul>
+<li><a href='#resetting-a-password'>Resetting a password</a></li>
+</ul>
+</li>
+<li><a href='#6-store-configuration-settings'>6. Store configuration (Settings)</a>
+</li>
+<li><a href='#7-integrations'>7. Integrations</a>
+<ul>
+<li><a href='#clover-card-payments'>Clover (card payments)</a></li>
+<li><a href='#resend-email'>Resend (email)</a></li>
+<li><a href='#anthropic-claude-ai-item-entry'>Anthropic / Claude (AI item entry)</a></li>
+<li><a href='#shopify-webhooks-inbound'>Shopify (webhooks, inbound)</a></li>
+<li><a href='#outbound-webhooks-api-keys'>Outbound webhooks / API keys</a></li>
+</ul>
+</li>
+<li><a href='#8-importing-data'>8. Importing data</a>
+</li>
+<li><a href='#9-data-export-reporting'>9. Data export &amp; reporting</a>
+</li>
+<li><a href='#10-backups-data-safety'>10. Backups &amp; data safety</a>
+</li>
+<li><a href='#11-direct-database-access'>11. Direct database access</a>
+</li>
+<li><a href='#12-local-development'>12. Local development</a>
+</li>
+<li><a href='#13-troubleshooting'>13. Troubleshooting</a>
+</li>
+<li><a href='#14-security-checklist'>14. Security checklist</a>
+</li>
+</ul></div></div>
+    <div class="meta">Updated <b>October 2026</b> &nbsp;·&nbsp; Includes the Staff User Guide and the Owner/Admin Guide</div>
+  </div>
+  
+    <section class="guide" id="user">
+      <div class="guide-head">
+        <span class="kicker">ConsignPro</span>
+        <h1>User Guide</h1>
+        <p class="subtitle">For store staff</p>
+      </div>
+      <h1 id="consignpro-user-guide">ConsignPro — User Guide</h1>
+<p>A guide for store staff (owners, managers, and employees) using the ConsignPro
+consignment platform day to day.</p>
+<blockquote>
+<p><strong>Your store address:</strong> your platform lives at your own web address
+(e.g. <code>https://your-store.up.railway.app</code>). Replace "your site" below with it.</p>
+</blockquote>
+<hr />
+<h2 id="1-signing-in">1. Signing in</h2>
+<ol>
+<li>Go to <strong>your site</strong> → you'll land on the <strong>Sign in</strong> page.</li>
+<li>Enter your <strong>email</strong> and <strong>password</strong> → <strong>Sign In</strong>.</li>
+<li>You'll arrive at the <strong>Point of Sale</strong> screen.</li>
+</ol>
+<p>Forgot your password? Ask your store owner/admin — they can reset it (see the
+Admin Guide → "Resetting a password").</p>
+<p><strong>Dark / light mode:</strong> at the bottom of the left sidebar, use <strong>Dark mode /
+Light mode</strong> to switch themes. Your choice is remembered on that device.</p>
+<hr />
+<h2 id="2-point-of-sale-pos">2. Point of Sale (POS)</h2>
+<p>The POS is where you ring up sales.</p>
+<h3 id="ringing-up-a-sale">Ringing up a sale</h3>
+<ol>
+<li><strong>Find items</strong> — type a name or SKU in the search box, or <strong>scan a barcode</strong>.
+   - <strong>Scanning:</strong> just scan the item's label — it's <strong>added straight to the
+     cart</strong> and you'll see a green "Added: …" confirmation. Scan the next item,
+     and so on.
+   - <strong>Typing a name:</strong> results appear below; click one to add it to the cart.</li>
+<li><strong>Review the cart</strong> on the right — remove a line with the trash icon.</li>
+<li><strong>Discount (optional):</strong> type a dollar amount in the Discount box.</li>
+<li><strong>Loyalty points (optional):</strong>
+   - In the <strong>Loyalty Points</strong> box, type the customer's <strong>email</strong> → <strong>Find</strong>.
+   - Their available points show. Enter how many points to <strong>redeem</strong>
+     (100 points = $1). The discount is applied automatically.</li>
+<li><strong>Choose payment:</strong> <strong>Card</strong> (Clover) or <strong>Cash</strong>.</li>
+<li>Click <strong>Charge $X.XX</strong>.</li>
+<li>A <strong>receipt</strong> pops up — <strong>Print Receipt</strong> or Close. Points are awarded to the
+   customer automatically (1 point per $1 spent) when a customer is attached.</li>
+</ol>
+<h3 id="notes">Notes</h3>
+<ul>
+<li>Only <strong>Active</strong> items can be sold. Sold/returned items won't scan into a sale.</li>
+<li>Card payments create an order in your Clover account; the actual card charge
+  happens on your Clover device/terminal.</li>
+</ul>
+<hr />
+<h2 id="3-inventory">3. Inventory</h2>
+<p>Manage every item in the store. Open <strong>Inventory</strong> from the sidebar.</p>
+<h3 id="views-sorting">Views &amp; sorting</h3>
+<ul>
+<li>Top-right, switch between <strong>List</strong>, <strong>Cards</strong>, and <strong>Compact</strong> views.</li>
+<li>In <strong>List</strong> view, click any column header (Item, Brand, Consignor, Price,
+  Added) to sort; click again to reverse.</li>
+<li><strong>Status tabs</strong> (Active / Sold / Returned / Expired) filter what you see.</li>
+<li><strong>Search</strong> by title, brand, SKU, or consignor name.</li>
+</ul>
+<h3 id="the-scan-box">The scan box</h3>
+<p>At the top there's a <strong>Scan</strong> box. Scan a barcode or SKU (or type it and press
+Enter) and that item <strong>opens for editing</strong> immediately — handy for quick price
+checks or edits at the counter.</p>
+<h3 id="adding-an-item">Adding an item</h3>
+<ol>
+<li><strong>Inventory → Add Item</strong>.</li>
+<li>Fill in the details: title, brand, size, condition, price, consignor, category.</li>
+<li><strong>AI Item Entry (optional):</strong> drop a photo and the assistant fills in the
+   title, brand, category, condition, size, color, description, and a suggested
+   price for you to review.</li>
+<li><strong>Photos:</strong> drag-and-drop photos; the first is the main image.</li>
+<li><strong>Custom SKU (optional):</strong> type your own SKU (e.g. <code>CC-DRESS-001</code>) or leave
+   it blank to auto-generate.</li>
+<li><strong>Barcode:</strong> scan a barcode into this field (or leave blank to use the SKU).</li>
+<li><strong>List on public online shop:</strong> toggle on to show the item at your <code>/shop</code>.</li>
+<li><strong>Save</strong> → you'll get the SKU and a <strong>Print Label</strong> button.</li>
+</ol>
+<h3 id="editing-an-item">Editing an item</h3>
+<p>Click any item (row or card) to open the <strong>Edit</strong> window. You can change the
+title, SKU, barcode, brand, size, condition, price, status, and online listing,
+<strong>Print Label</strong>, or <strong>Delete</strong> (deletion is blocked for items with sales).</p>
+<h3 id="bulk-actions">Bulk actions</h3>
+<p>Select items with the checkboxes (or "select all"), then use the blue bar:
+- <strong>Print labels</strong> — prints a scannable label for every selected item.
+- <strong>Markdown %</strong> — reduce the price of all selected items by a percentage.
+- <strong>List online / Unlist</strong> — show/hide on the public shop in bulk.
+- <strong>Mark Returned</strong> — change status in bulk.
+- <strong>Delete</strong> — remove selected items (sold items can't be deleted).</p>
+<h3 id="labels">Labels</h3>
+<p>Printed labels are <strong>2" × 1"</strong> and carry a <strong>scannable Code128 barcode</strong> (the
+item's barcode, or its SKU), the code, and the price. Print from the Add-Item
+screen, the Edit window, or the bulk <strong>Print labels</strong> action.</p>
+<h3 id="aging-alerts">Aging alerts</h3>
+<p>On the Active tab, items expiring within 14 days are flagged at the top so you
+can mark them down or return them.</p>
+<hr />
+<h2 id="4-consignors">4. Consignors</h2>
+<p>The people who bring you items to sell. Open <strong>Consignors</strong> from the sidebar.</p>
+<ul>
+<li><strong>Views / sorting / search / multi-select</strong> work the same as Inventory.</li>
+<li><strong>Add</strong> a consignor with the <strong>Add</strong> button (name, contact, split %).</li>
+<li><strong>Click a consignor</strong> to edit their name, contact, <strong>split %</strong>, and <strong>portal
+  access</strong>, or open <strong>Details</strong> for their full items / earnings / payout history.</li>
+<li><strong>Bulk actions:</strong> set split %, enable/disable portal access, delete.</li>
+<li><strong>Balance</strong> is what you currently owe each consignor.</li>
+</ul>
+<h3 id="consignor-detail-page">Consignor detail page</h3>
+<p>Shows KPI cards (balance, earned, active, sold), and tabs for <strong>Items</strong>,
+<strong>Ledger</strong> (every credit/debit), and <strong>Payouts</strong>. You can <strong>issue a payout</strong>
+here (Check / Cash / ACH).</p>
+<hr />
+<h2 id="5-customers">5. Customers</h2>
+<p>Your loyalty members. Open <strong>Customers</strong> from the sidebar.</p>
+<ul>
+<li><strong>Views / sorting / search / multi-select</strong> as above.</li>
+<li><strong>Add</strong> a customer (name, email, phone).</li>
+<li><strong>Click a customer</strong> to edit name, email, phone, and <strong>loyalty points</strong>, or
+  delete them.</li>
+<li><strong>Bulk actions:</strong> add points to many at once, or delete.</li>
+<li>Customers earn <strong>1 point per $1</strong> spent (when attached to a sale) and redeem
+  <strong>100 points = $1</strong> at the POS.</li>
+</ul>
+<hr />
+<h2 id="6-payouts">6. Payouts</h2>
+<p>Pay your consignors. Open <strong>Payouts</strong> from the sidebar.</p>
+<ul>
+<li><strong>Pending Balances</strong> tab lists consignors who are owed money.</li>
+<li>Select who to pay, choose the method, and process — checks are numbered
+  sequentially.</li>
+<li><strong>Payout History</strong> tab shows everything you've paid.</li>
+<li>Consignors with portal access can also <strong>request a payout</strong> themselves; those
+  requests appear as pending payouts for you to process.</li>
+</ul>
+<hr />
+<h2 id="7-contracts">7. Contracts</h2>
+<p>Consignment agreements with e-signature. Open <strong>Contracts</strong> from the sidebar.</p>
+<ol>
+<li><strong>New Contract</strong> → pick a consignor → optionally <strong>send the signing link by
+   email</strong>.</li>
+<li>The consignor opens the link, reads the agreement, <strong>signs on screen</strong>, and
+   submits. Their signature, IP, and timestamp are recorded.</li>
+<li>The contract's status moves <strong>Draft → Sent → Signed</strong>.</li>
+<li>Click the eye icon to view a contract (and its signature).</li>
+</ol>
+<p>The agreement text is your store's standard template; the owner can edit it in
+<strong>Settings → Contract Template</strong>.</p>
+<hr />
+<h2 id="8-store-insights-reports">8. Store Insights &amp; Reports</h2>
+<ul>
+<li><strong>Store Insights</strong> — charts for 30-day revenue, top categories, and inventory
+  status.</li>
+<li><strong>Reports</strong> — key numbers plus <strong>CSV export</strong> for Sales, Inventory,
+  Consignors, and Ledger (with optional date range). Great for bookkeeping.</li>
+</ul>
+<hr />
+<h2 id="9-online-shop">9. Online shop</h2>
+<p>Your public storefront is at <strong>your site <code>/shop</code></strong> — no login needed; this is
+what customers see. Any item marked <strong>"List on public online shop"</strong> appears
+there automatically. Share that link on social media or your website.</p>
+<hr />
+<h2 id="10-consignor-dealer-portals">10. Consignor &amp; Dealer portals</h2>
+<ul>
+<li><strong>Consignor portal</strong> (<code>/portal</code>) — consignors with portal access sign in to
+  see their items, earnings, and balance, and to <strong>request a payout</strong>.</li>
+<li><strong>Dealer entry</strong> (<code>/dealer</code>) — lets approved dealers submit multiple items at
+  once for your review.</li>
+</ul>
+<hr />
+<h2 id="11-importing-existing-data">11. Importing existing data</h2>
+<p>Owners/managers can bulk-load data at <strong>your site <code>/import</code></strong> by uploading a
+prepared file:
+- A <strong>consignors + inventory</strong> file, or
+- A <strong>customers</strong> file.</p>
+<p>The page shows a preview (counts) before you confirm. Records are matched by
+email so nothing is duplicated. (Preparing these files from spreadsheets is
+done with help from your admin.)</p>
+<hr />
+<h2 id="quick-tips">Quick tips</h2>
+<ul>
+<li><strong>Scanning works anywhere there's a field</strong> — the scanner just "types" the
+  code and presses Enter.</li>
+<li><strong>Switch views</strong> (List / Cards / Compact) to suit the task — Compact is great
+  for scanning long lists; Cards are nice for browsing with photos.</li>
+<li><strong>Multi-select + bulk actions</strong> save a lot of time (markdowns, labels, points).</li>
+<li>Use <strong>Dark mode</strong> for low-light counters.</li>
+</ul>
+<p><em>Questions about setup, accounts, payments, or integrations? See the Admin
+Guide.</em></p>
+    </section>
+    <section class="guide" id="admin">
+      <div class="guide-head">
+        <span class="kicker">ConsignPro</span>
+        <h1>Admin &amp; Operations Guide</h1>
+        <p class="subtitle">For the owner / administrator</p>
+      </div>
+      <h1 id="consignpro-admin-operations-guide">ConsignPro — Admin &amp; Operations Guide</h1>
+<p>For the store owner / administrator. Covers hosting, configuration, accounts,
+security, integrations, data import/export, backups, and troubleshooting.</p>
+<hr />
+<h2 id="1-architecture-at-a-glance">1. Architecture at a glance</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App</td>
+<td>Next.js 16 (App Router, TypeScript), React 19</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>PostgreSQL via Prisma 7 (pg driver adapter)</td>
+</tr>
+<tr>
+<td>Auth (staff)</td>
+<td>NextAuth v5 (JWT sessions, credentials)</td>
+</tr>
+<tr>
+<td>Auth (consignor/dealer portal)</td>
+<td>separate JWT (<code>jose</code>)</td>
+</tr>
+<tr>
+<td>Hosting</td>
+<td>Railway (app + Postgres + a Volume for photos)</td>
+</tr>
+<tr>
+<td>Photo storage</td>
+<td>Railway Volume (served via <code>/api/photos</code>)</td>
+</tr>
+<tr>
+<td>Payments</td>
+<td>Clover REST API</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>Resend</td>
+</tr>
+<tr>
+<td>AI item entry</td>
+<td>Anthropic Claude (<code>claude-haiku-4-5</code>) vision</td>
+</tr>
+<tr>
+<td>Barcodes</td>
+<td>Code128 labels via JsBarcode</td>
+</tr>
+</tbody>
+</table>
+<p>The code lives in the GitHub repo and <strong>auto-deploys to Railway</strong> on every push
+to the connected branch.</p>
+<hr />
+<h2 id="2-hosting-on-railway">2. Hosting on Railway</h2>
+<p>The project (e.g. "patient-dream") contains two services:
+1. <strong>App service</strong> — deployed from the GitHub repo. Has a <strong>Volume</strong> mounted
+   (e.g. at <code>/data</code>) for item photos.
+2. <strong>Postgres</strong> — the database.</p>
+<p><strong>Build/run config</strong> lives in <code>railway.json</code>:
+- Build: Nixpacks, <code>npm run build</code>.
+- Start: <code>npx prisma db push --accept-data-loss &amp;&amp; npm run start</code>
+  (syncs the database schema, then starts the server).
+- Healthcheck path: <code>/login</code>.</p>
+<blockquote>
+<p>The app binds to Railway's <code>$PORT</code> automatically. The Prisma client is created
+lazily, so the <strong>build</strong> does not require a database connection, but the
+<strong>running app</strong> and the start command do (via <code>DATABASE_URL</code>).</p>
+</blockquote>
+<h3 id="deploying-changes">Deploying changes</h3>
+<p>Push to the connected branch → Railway rebuilds and redeploys automatically.
+Watch the <strong>Deployments</strong> tab; a healthy deploy ends <strong>Active / green</strong>.</p>
+<hr />
+<h2 id="3-environment-variables">3. Environment variables</h2>
+<p>Set these on the <strong>app service → Variables</strong> tab. Required unless noted.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DATABASE_URL</code></td>
+<td>Postgres connection. Use the reference <code>${{Postgres.DATABASE_URL}}</code>. <strong>Must be set before the first deploy.</strong></td>
+</tr>
+<tr>
+<td><code>NEXTAUTH_URL</code></td>
+<td>The app's public URL, e.g. <code>https://your-store.up.railway.app</code>.</td>
+</tr>
+<tr>
+<td><code>NEXTAUTH_SECRET</code></td>
+<td>Random secret for staff auth. Generate: <code>openssl rand -base64 32</code> (or <code>node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"</code>).</td>
+</tr>
+<tr>
+<td><code>PORTAL_JWT_SECRET</code></td>
+<td>Random secret for consignor/dealer portal tokens.</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td><em>Optional.</em> Enables AI item entry. From console.anthropic.com.</td>
+</tr>
+<tr>
+<td><code>CLOVER_API_KEY</code> / <code>CLOVER_MERCHANT_ID</code></td>
+<td><em>Optional.</em> Enables Clover card orders.</td>
+</tr>
+<tr>
+<td><code>CLOVER_API_BASE</code></td>
+<td><em>Optional.</em> <code>https://sandbox.dev.clover.com</code> for sandbox testing; omit for production.</td>
+</tr>
+<tr>
+<td><code>RESEND_API_KEY</code> / <code>EMAIL_FROM</code></td>
+<td><em>Optional.</em> Enables outbound email (contracts, payouts).</td>
+</tr>
+<tr>
+<td><code>SHOPIFY_WEBHOOK_SECRET</code></td>
+<td><em>Optional.</em> Verifies Shopify webhooks.</td>
+</tr>
+<tr>
+<td><code>RESET_TOKEN</code></td>
+<td><em>Optional/temporary.</em> Enables the <code>/reset</code> password-reset page while set. Remove when not in use.</td>
+</tr>
+</tbody>
+</table>
+<p>A volume at a mount path (Railway sets <code>RAILWAY_VOLUME_MOUNT_PATH</code>) stores
+photos under <code>&lt;mount&gt;/uploads</code>. <code>UPLOAD_DIR</code> can override the location.</p>
+<hr />
+<h2 id="4-first-run-setup-new-deployment">4. First-run setup (new deployment)</h2>
+<ol>
+<li>Set <strong>all required</strong> env vars (above), especially <code>DATABASE_URL</code>,
+   <code>NEXTAUTH_URL</code>, <code>NEXTAUTH_SECRET</code>, <code>PORTAL_JWT_SECRET</code>.</li>
+<li>Attach a <strong>Volume</strong> to the app service (e.g. mount <code>/data</code>).</li>
+<li>Deploy; wait for <strong>Active</strong>.</li>
+<li>Open <strong>your site <code>/api/setup</code></strong> — it should return <code>{"needsSetup":true}</code>.</li>
+<li>Open <strong>your site <code>/setup</code></strong> → enter store name, your email, a password →
+   <strong>Create my account</strong>. This creates the owner account and some starter
+   categories, then <strong>locks itself</strong>.</li>
+<li>Sign in at <code>/login</code>.</li>
+</ol>
+<hr />
+<h2 id="5-accounts-roles">5. Accounts &amp; roles</h2>
+<p>Roles: <strong>OWNER</strong>, <strong>MANAGER</strong>, <strong>EMPLOYEE</strong> (set on the <code>User</code> record).</p>
+<ul>
+<li><strong>Owner/Manager</strong> can change store settings, manage API keys &amp; webhooks,
+  import data, and edit store/Clover settings.</li>
+<li>The first owner is created via <code>/setup</code>.</li>
+<li>There is no staff-invite UI yet. To add staff, create a <code>User</code> row in the
+  database (see "Direct database access") with the store's <code>storeId</code>, a
+  bcrypt-hashed password, and the desired role.</li>
+</ul>
+<h3 id="resetting-a-password">Resetting a password</h3>
+<ol>
+<li>Add a temporary env var <code>RESET_TOKEN</code> = any random string.</li>
+<li>Wait for redeploy, then open <strong>your site <code>/reset</code></strong>.</li>
+<li>Enter the token, the account email, and a new password → <strong>Update password</strong>.</li>
+<li><strong>Remove the <code>RESET_TOKEN</code> variable</strong> afterward to disable the page.</li>
+</ol>
+<hr />
+<h2 id="6-store-configuration-settings">6. Store configuration (Settings)</h2>
+<p><strong>Settings</strong> (sidebar) covers:
+- <strong>Store Information</strong> — name, email, phone, <strong>tax rate</strong> (entered as %),
+  currency. Used across the app (e.g. POS tax).
+- <strong>Clover</strong> — merchant ID + API key (stored in the database; env vars also
+  work as a fallback).
+- <strong>Online Shop</strong> — your public <code>/shop</code> URL.
+- <strong>Categories</strong> — add/manage item categories.
+- <strong>API Keys</strong> — generate keys for external integrations (shown once).
+- <strong>Webhooks</strong> — register endpoints to receive events (sale.created, item.sold,
+  contract.signed, etc.), HMAC-signed.
+- <strong>Discount Rules</strong> — percentage or fixed-amount rules, optional promo codes.
+- <strong>Contract Template</strong> — edit the consignment agreement. Placeholders:
+  <code>{{storeName}}</code>, <code>{{consignorName}}</code>, <code>{{splitPercent}}</code>.</p>
+<hr />
+<h2 id="7-integrations">7. Integrations</h2>
+<h3 id="clover-card-payments">Clover (card payments)</h3>
+<p>Set <code>CLOVER_API_KEY</code> + <code>CLOVER_MERCHANT_ID</code> (env or Settings). Use
+<code>CLOVER_API_BASE=https://sandbox.dev.clover.com</code> for sandbox testing.
+<strong>Note:</strong> the app creates Clover <strong>orders</strong>; the actual card capture happens on
+a Clover <strong>device/terminal</strong> tied to the merchant — full in-app card capture is
+not yet implemented.</p>
+<h3 id="resend-email">Resend (email)</h3>
+<p>Set <code>RESEND_API_KEY</code> and <code>EMAIL_FROM</code> (verified domain recommended). Powers
+contract links, payout notifications, and welcome emails.</p>
+<h3 id="anthropic-claude-ai-item-entry">Anthropic / Claude (AI item entry)</h3>
+<p>Set <code>ANTHROPIC_API_KEY</code>. The add-item photo analysis uses <code>claude-haiku-4-5</code>.
+Cost is well under a cent per item. If unset, AI entry simply returns a 503 and
+everything else works.</p>
+<h3 id="shopify-webhooks-inbound">Shopify (webhooks, inbound)</h3>
+<p>Set <code>SHOPIFY_WEBHOOK_SECRET</code>; point Shopify order webhooks at
+<code>/api/webhooks/shopify</code>. Incoming orders mark matched items sold and credit the
+consignor.</p>
+<h3 id="outbound-webhooks-api-keys">Outbound webhooks / API keys</h3>
+<p>Configure in <strong>Settings</strong>. API requests authenticate with a <code>Bearer cp_live_…</code>
+key; only a SHA-256 hash is stored.</p>
+<hr />
+<h2 id="8-importing-data">8. Importing data</h2>
+<p>Owners/managers upload prepared JSON at <strong>your site <code>/import</code></strong>:
+- <code>{ consignors: [...] }</code> — creates consignors (matched by email) and their
+  items (Active, priced from the sheet, default 50% split).
+- <code>{ customers: [...] }</code> — creates customers (matched by email).</p>
+<p>Both are idempotent (safe to re-run; existing records are skipped). Preparing
+these files from spreadsheets is typically done by cleaning the sheet into the
+expected JSON shape; ask the maintainer to generate the import file from a
+new spreadsheet.</p>
+<hr />
+<h2 id="9-data-export-reporting">9. Data export &amp; reporting</h2>
+<p><strong>Reports → Export</strong> produces CSVs for Sales, Inventory, Consignors, and Ledger
+(optional date range) for bookkeeping and accounting.</p>
+<hr />
+<h2 id="10-backups-data-safety">10. Backups &amp; data safety</h2>
+<ul>
+<li><strong>Database:</strong> enable Railway's Postgres <strong>backups/snapshots</strong>. The database
+  holds all consignors, customers, items, sales, ledger, payouts, and contracts.</li>
+<li><strong>Photos:</strong> the Railway <strong>Volume</strong> holds item photos — enable volume
+  snapshots. Photos are <strong>not</strong> in git or the database.</li>
+<li><strong>Deletions are protected:</strong> consignors/items with sales history can't be
+  deleted.</li>
+</ul>
+<blockquote>
+<p>The start command uses <code>prisma db push --accept-data-loss</code>. The current schema
+is additive, so this is a no-op in practice. Before making a <strong>destructive</strong>
+schema change against live data, take a database backup first, and consider
+switching to committed Prisma migrations (<code>prisma migrate</code>).</p>
+</blockquote>
+<hr />
+<h2 id="11-direct-database-access">11. Direct database access</h2>
+<ul>
+<li>Browse/edit data with Prisma Studio locally:
+  <code>DATABASE_URL="…" npx prisma studio</code>.</li>
+<li>Railway also provides a <strong>Console</strong> and a database connection string for the
+  Postgres service.</li>
+</ul>
+<hr />
+<h2 id="12-local-development">12. Local development</h2>
+<p>See <code>LOCAL_DEV.md</code> for the full local setup (clone, <code>.env</code>, <code>docker compose up</code>
+for a local Postgres, <code>npm run db:push</code>, <code>npm run db:seed</code>, <code>npm run dev</code>).</p>
+<hr />
+<h2 id="13-troubleshooting">13. Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause / fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Build fails with <code>P2038 … driver adapter</code></td>
+<td>A DB route evaluated at build time without <code>DATABASE_URL</code>. The client is lazy now; ensure you're on current code.</td>
+</tr>
+<tr>
+<td>"Application failed to respond" after deploy</td>
+<td>The start command failed — check <strong>Deploy Logs</strong>. Often the DB migration step or a bad start command.</td>
+</tr>
+<tr>
+<td>Every page 500s</td>
+<td>Missing <code>NEXTAUTH_SECRET</code>, or NextAuth can't trust the host — <code>trustHost</code> is enabled; make sure the secret is set.</td>
+</tr>
+<tr>
+<td>Login says "invalid email or password" with a correct password</td>
+<td>Check the account exists (<code>/api/setup</code> → <code>needsSetup:false</code>). If needed, reset via <code>/reset</code>.</td>
+</tr>
+<tr>
+<td>Login succeeds then bounces to <code>/login</code></td>
+<td>Session cookie not seen on navigation — the app uses a hard navigation after login to prevent this; ensure current code.</td>
+</tr>
+<tr>
+<td><code>/api/setup</code> returns 500</td>
+<td>Database has no tables / can't connect. The start command runs <code>prisma db push</code>; verify <code>DATABASE_URL</code>.</td>
+</tr>
+<tr>
+<td>AI item entry returns 503</td>
+<td><code>ANTHROPIC_API_KEY</code> not set (optional feature).</td>
+</tr>
+<tr>
+<td>Photos don't upload/show</td>
+<td>Volume not attached, or <code>/api/photos</code> blocked. Ensure a Volume is mounted.</td>
+</tr>
+<tr>
+<td>Card payments don't charge</td>
+<td>Expected — Clover orders are created, but card capture needs a Clover device.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reading logs:</strong> Railway → app service → latest deployment → <strong>View logs</strong> →
+<strong>Deploy Logs</strong>. Use the filter box to find specific text.</p>
+<hr />
+<h2 id="14-security-checklist">14. Security checklist</h2>
+<ul>
+<li>&#9744; <code>NEXTAUTH_SECRET</code> and <code>PORTAL_JWT_SECRET</code> are strong, unique random values.</li>
+<li>&#9744; <code>RESET_TOKEN</code> is <strong>removed</strong> when not actively resetting a password.</li>
+<li>&#9744; Database and Volume backups are enabled.</li>
+<li>&#9744; The owner password was changed from any initial value.</li>
+<li>&#9744; Secrets are only in Railway Variables (never committed to git).</li>
+<li>&#9744; API keys are rotated if exposed.</li>
+</ul>
+<hr />
+<p><em>See <code>USER_GUIDE.md</code> for day-to-day staff instructions.</em></p>
+    </section>
+</div></body></html>

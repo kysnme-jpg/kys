@@ -4,29 +4,34 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center rounded-full font-semibold transition-[background-color,transform,color] active:scale-[.98] focus-visible:outline-none focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45 disabled:active:scale-100 select-none",
   {
     variants: {
       variant: {
-        default: "bg-indigo-600 text-white hover:bg-indigo-700",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
-        outline: "border border-gray-300 bg-white hover:bg-gray-50 text-gray-700",
-        secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-        ghost: "hover:bg-gray-100 text-gray-700",
-        link: "text-indigo-600 underline-offset-4 hover:underline",
-        success: "bg-green-600 text-white hover:bg-green-700",
+        // accent primary
+        default: "bg-accent text-[var(--accent-ink)] hover:brightness-95",
+        primary: "bg-accent text-[var(--accent-ink)] hover:brightness-95 font-bold",
+        // light-surface secondary
+        outline: "bg-surface border-[1.5px] border-line text-ink hover:bg-chip",
+        secondary: "bg-chip text-ink hover:brightness-95",
+        ghost: "text-ink hover:bg-chip",
+        link: "text-accent underline-offset-4 hover:underline",
+        // dark on light
+        dark: "bg-ink text-[var(--panel-ink)] hover:brightness-110",
+        onDark: "bg-transparent border-[1.5px] border-[var(--panel-line)] text-[var(--panel-ink)] hover:bg-[var(--panel-key)]",
+        // states
+        success: "bg-[var(--ok-bg)] text-[var(--ok-ink)] hover:brightness-95",
+        destructive: "bg-[var(--danger-bg)] text-[var(--danger-ink)] hover:brightness-95",
+        danger: "bg-[var(--danger-bg)] text-[var(--danger-ink)] hover:brightness-95",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-12 rounded-md px-8 text-base",
-        icon: "h-10 w-10",
+        default: "h-11 px-5 text-[15px]",
+        sm: "h-9 px-4 text-sm",
+        lg: "h-[60px] px-8 text-[17px]",
+        icon: "h-11 w-11",
       },
     },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
+    defaultVariants: { variant: "default", size: "default" },
   }
 );
 
@@ -39,9 +44,7 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
-    );
+    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
   }
 );
 Button.displayName = "Button";

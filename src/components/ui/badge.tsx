@@ -6,17 +6,17 @@ interface BadgeProps {
   className?: string;
 }
 
-const variantClasses = {
-  default: "bg-gray-100 text-gray-700",
-  success: "bg-green-100 text-green-800",
-  warning: "bg-yellow-100 text-yellow-800",
-  danger: "bg-red-100 text-red-800",
-  info: "bg-indigo-100 text-indigo-800",
+const variantClasses: Record<string, string> = {
+  default: "bg-chip text-[var(--chip-ink)]",
+  success: "bg-[var(--ok-bg)] text-[var(--ok-ink)]",
+  warning: "bg-[var(--warn-bg)] text-[var(--warn-ink)]",
+  danger: "bg-[var(--danger-bg)] text-[var(--danger-ink)]",
+  info: "bg-chip text-accent",
 };
 
 export function Badge({ children, variant = "default", className }: BadgeProps) {
   return (
-    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", variantClasses[variant], className)}>
+    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold", variantClasses[variant], className)}>
       {children}
     </span>
   );

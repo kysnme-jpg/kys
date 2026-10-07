@@ -19,6 +19,7 @@ const createItemSchema = z.object({
   splitPercent: z.number().min(0).max(100).optional(),
   sku: z.string().trim().optional(),
   barcode: z.string().optional(),
+  location: z.string().optional(),
   photoUrls: z.array(z.string()).optional(),
   listedOnline: z.boolean().default(false),
   expiresAt: z.string().optional(),

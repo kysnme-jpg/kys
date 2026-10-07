@@ -28,6 +28,8 @@ interface Item {
   color?: string | null;
   condition?: string | null;
   price: number;
+  costPrice?: number | null;
+  location?: string | null;
   status: string;
   splitPercent?: number | null;
   listedOnline: boolean;
@@ -104,7 +106,7 @@ export default function InventoryPage() {
     setSaving(true);
     const res = await fetch(`/api/items/${editing.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editing.title, sku: editing.sku, barcode: editing.barcode, brand: editing.brand, size: editing.size, color: editing.color, condition: editing.condition, price: editing.price, status: editing.status, listedOnline: editing.listedOnline }),
+      body: JSON.stringify({ title: editing.title, sku: editing.sku, barcode: editing.barcode, brand: editing.brand, size: editing.size, color: editing.color, condition: editing.condition, price: editing.price, costPrice: editing.costPrice ?? null, location: editing.location ?? null, status: editing.status, listedOnline: editing.listedOnline }),
     });
     const d = await res.json();
     setSaving(false);
@@ -292,9 +294,17 @@ export default function InventoryPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Price</label><Input type="number" min={0} step="0.01" value={editing.price} onChange={(e) => setEditing({ ...editing, price: parseFloat(e.target.value) || 0 })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost</label><Input type="number" min={0} step="0.01" value={editing.costPrice ?? ""} onChange={(e) => setEditing({ ...editing, costPrice: e.target.value === "" ? null : parseFloat(e.target.value) })} placeholder="Optional" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select value={editing.status} onChange={(e) => setEditing({ ...editing, status: e.target.value })} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <select value={editing.status} onChange={(e) => setEditing({ ...editing, status: e.target.value })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
                   {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <select value={editing.location || ""} onChange={(e) => setEditing({ ...editing, location: e.target.value || null })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                  <option value="">—</option><option value="IN_STORE">In-store</option><option value="STORAGE">Storage</option>
                 </select>
               </div>
             </div>

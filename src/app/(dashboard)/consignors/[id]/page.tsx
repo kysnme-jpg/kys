@@ -10,7 +10,7 @@ import { PrintLabelButton } from "@/components/inventory/label-print";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import Link from "next/link";
 import {
-  ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus,
+  ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus, Pencil,
   TrendingUp, CheckCircle, Clock, Banknote
 } from "lucide-react";
 
@@ -54,6 +54,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutMethod, setPayoutMethod] = useState<"CHECK" | "CASH" | "ACH" | "ZELLE" | "CASHAPP">("CHECK");
   const [destination, setDestination] = useState("");
+  const [editItem, setEditItem] = useState<any>(null);
+  const [editItemSaving, setEditItemSaving] = useState(false);
+  const [editPayout, setEditPayout] = useState<any>(null);
+  const [editPayoutSaving, setEditPayoutSaving] = useState(false);
   const [checkNumber, setCheckNumber] = useState("");
   const [payoutNote, setPayoutNote] = useState("");
   const [payoutLoading, setPayoutLoading] = useState(false);
@@ -112,6 +116,29 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
     setPayoutNote("");
     setPayoutLoading(false);
     load(); // Refresh
+  };
+
+  const saveItem = async () => {
+    if (!editItem) return;
+    setEditItemSaving(true);
+    await fetch(`/api/items/${editItem.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: editItem.title, brand: editItem.brand, size: editItem.size, price: parseFloat(editItem.price) || 0, costPrice: editItem.costPrice === "" ? null : editItem.costPrice, status: editItem.status, location: editItem.location }),
+    });
+    setEditItemSaving(false); setEditItem(null); load();
+  };
+
+  const savePayout = async () => {
+    if (!editPayout) return;
+    setEditPayoutSaving(true);
+    const res = await fetch(`/api/payouts/${editPayout.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: parseFloat(editPayout.amount) || 0, method: editPayout.method, checkNumber: editPayout.checkNumber, destination: editPayout.destination, status: editPayout.status, note: editPayout.note }),
+    });
+    const d = await res.json();
+    setEditPayoutSaving(false);
+    if (!res.ok) { alert(d.error || "Couldn't save payout"); return; }
+    setEditPayout(null); load();
   };
 
   if (loading || !consignor) {
@@ -244,13 +271,17 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 text-sm">{item.title}</p>
-                    <p className="text-xs text-gray-500">{item.brand} · SKU: {item.sku}</p>
+                    <p className="text-xs text-gray-500">
+                      {[item.brand, `SKU: ${item.sku}`, item.location ? (item.location === "STORAGE" ? "Storage" : "In-store") : null].filter(Boolean).join(" · ")}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">{formatCurrency(item.price)}</p>
+                    {item.costPrice != null && <p className="text-xs text-gray-500">Cost {formatCurrency(item.costPrice)}</p>}
                     <p className="text-xs text-gray-500">{calcConsignorCredit(item.price, item.splitPercent ?? consignor.splitPercent).toFixed(2)} to consignor</p>
                   </div>
                   <Badge variant={itemStatusColors[item.status]}>{item.status}</Badge>
+                  <Button size="sm" variant="outline" onClick={() => setEditItem({ ...item, costPrice: item.costPrice ?? "" })}><Pencil className="h-3.5 w-3.5" /></Button>
                   {item.status === "ACTIVE" && (
                     <PrintLabelButton item={item} size="sm" />
                   )}
@@ -310,6 +341,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                     <th className="text-left p-4 font-medium text-gray-600">Status</th>
                     <th className="text-left p-4 font-medium text-gray-600">Date</th>
                     <th className="text-left p-4 font-medium text-gray-600">Note</th>
+                    <th className="p-4" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -330,7 +362,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                         </Badge>
                       </td>
                       <td className="p-4 text-gray-500 text-xs">{formatDate(payout.createdAt)}</td>
-                      <td className="p-4 text-gray-500 text-xs">{payout.note || "—"}</td>
+                      <td className="p-4 text-gray-500 text-xs">{payout.destination || payout.note || ""}</td>
+                      <td className="p-4 text-right">
+                        <Button size="sm" variant="outline" onClick={() => setEditPayout({ ...payout, amount: String(payout.amount) })}><Pencil className="h-3.5 w-3.5" /></Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -436,6 +471,61 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
       </Modal>
+
+      {/* Edit item modal */}
+      {editItem && (
+        <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Item" className="max-w-lg">
+          <div className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Title</label><Input value={editItem.title} onChange={(e) => setEditItem({ ...editItem, title: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Brand</label><Input value={editItem.brand || ""} onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Size</label><Input value={editItem.size || ""} onChange={(e) => setEditItem({ ...editItem, size: e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Price</label><Input type="number" min={0} step="0.01" value={editItem.price} onChange={(e) => setEditItem({ ...editItem, price: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost</label><Input type="number" min={0} step="0.01" value={editItem.costPrice} onChange={(e) => setEditItem({ ...editItem, costPrice: e.target.value })} placeholder="Optional" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select value={editItem.status} onChange={(e) => setEditItem({ ...editItem, status: e.target.value })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                  {["ACTIVE", "SOLD", "RETURNED", "EXPIRED"].map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <select value={editItem.location || ""} onChange={(e) => setEditItem({ ...editItem, location: e.target.value })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                  <option value="">—</option><option value="IN_STORE">In-store</option><option value="STORAGE">Storage</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1"><Button onClick={saveItem} disabled={editItemSaving} className="flex-1">{editItemSaving ? "Saving…" : "Save item"}</Button><Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button></div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Edit payout modal */}
+      {editPayout && (
+        <Modal open={!!editPayout} onClose={() => setEditPayout(null)} title="Edit Payout" className="max-w-md">
+          <div className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Amount</label><Input type="number" min={0} step="0.01" value={editPayout.amount} onChange={(e) => setEditPayout({ ...editPayout, amount: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Method</label>
+              <div className="grid grid-cols-3 gap-2">
+                {([["CHECK", "Check"], ["CASH", "Cash"], ["ZELLE", "Zelle"], ["CASHAPP", "Cash App"], ["ACH", "ACH"]] as const).map(([m, label]) => (
+                  <button key={m} type="button" onClick={() => setEditPayout({ ...editPayout, method: m })} className={`py-2.5 rounded-lg text-sm font-semibold ${editPayout.method === m ? "bg-accent text-[var(--accent-ink)]" : "bg-chip text-ink"}`}>{label}</button>
+                ))}
+              </div>
+            </div>
+            {editPayout.method === "CHECK" && <div><label className="block text-sm font-medium text-gray-700 mb-1">Check number</label><Input value={editPayout.checkNumber || ""} onChange={(e) => setEditPayout({ ...editPayout, checkNumber: e.target.value })} /></div>}
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Destination</label><Input value={editPayout.destination || ""} onChange={(e) => setEditPayout({ ...editPayout, destination: e.target.value })} placeholder="Zelle / $Cashtag / address" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select value={editPayout.status} onChange={(e) => setEditPayout({ ...editPayout, status: e.target.value })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                {["PENDING", "PROCESSING", "COMPLETED", "FAILED"].map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Note</label><Input value={editPayout.note || ""} onChange={(e) => setEditPayout({ ...editPayout, note: e.target.value })} /></div>
+            <div className="flex gap-2 pt-1"><Button onClick={savePayout} disabled={editPayoutSaving} className="flex-1">{editPayoutSaving ? "Saving…" : "Save payout"}</Button><Button variant="outline" onClick={() => setEditPayout(null)}>Cancel</Button></div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

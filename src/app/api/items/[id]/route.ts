@@ -35,6 +35,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (body.sku !== undefined && String(body.sku).trim()) data.sku = String(body.sku).trim();
   if (body.price !== undefined) data.price = Math.max(0, Number(body.price) || 0);
+  if (body.costPrice !== undefined) data.costPrice = body.costPrice === "" || body.costPrice === null ? null : Math.max(0, Number(body.costPrice) || 0);
+  if (body.location !== undefined) data.location = body.location || null;
   if (body.splitPercent !== undefined) data.splitPercent = Math.max(0, Math.min(100, Number(body.splitPercent) || 0));
   if (body.status !== undefined) data.status = body.status;
   if (body.consignorId !== undefined) data.consignorId = body.consignorId || null;

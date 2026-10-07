@@ -81,8 +81,10 @@ checks or edits at the counter.
 
 ### Editing an item
 Click any item (row or card) to open the **Edit** window. You can change the
-title, SKU, barcode, brand, size, condition, price, status, and online listing,
-**Print Label**, or **Delete** (deletion is blocked for items with sales).
+title, SKU, barcode, brand, size, condition, **price**, **cost** (what it cost
+you), **location** (In-store / Storage), status, and online listing, **Print
+Label**, or **Delete** (deletion is blocked for items with sales). Items can
+also be edited from a consignor's **Items** tab (Edit pencil on each row).
 
 ### Bulk actions
 Select items with the checkboxes (or "select all"), then use the blue bar:
@@ -151,6 +153,9 @@ Pay your consignors. Open **Payouts** from the sidebar.
   consignor, so next time it's pre-filled. Batch payouts use each consignor's
   saved details automatically.
 - **Payout History** tab shows everything you've paid.
+- You can **edit a past payout** (amount, method, destination, status, note) from
+  the **Payouts** tab on a consignor's page — changing the amount automatically
+  re-adjusts their balance and ledger.
 - Consignors with portal access can also **request a payout** themselves; those
   requests appear as pending payouts for you to process.
 

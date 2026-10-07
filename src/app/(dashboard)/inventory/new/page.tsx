@@ -47,6 +47,8 @@ export default function NewItemPage() {
     categoryId: "",
     sku: "",
     barcode: "",
+    costPrice: "",
+    location: "",
     listedOnline: false,
     expiresAt: "",
     photoUrls: [] as string[],
@@ -89,6 +91,8 @@ export default function NewItemPage() {
       categoryId: form.categoryId || undefined,
       sku: form.sku.trim() || undefined,
       barcode: form.barcode || undefined,
+      costPrice: form.costPrice ? parseFloat(form.costPrice) : undefined,
+      location: form.location || undefined,
       expiresAt: form.expiresAt || undefined,
     };
 
@@ -218,6 +222,18 @@ export default function NewItemPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Barcode (scan or type)</label>
                     <Input value={form.barcode} onChange={(e) => set("barcode", e.target.value)} placeholder="Scan barcode here" className="font-mono" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cost (optional)</label>
+                    <Input type="number" min="0" step="0.01" value={form.costPrice} onChange={(e) => set("costPrice", e.target.value)} placeholder="What it cost you" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <select value={form.location} onChange={(e) => set("location", e.target.value)} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 text-[17px] text-ink focus:outline-none focus:border-accent">
+                      <option value="">—</option><option value="IN_STORE">In-store</option><option value="STORAGE">Storage</option>
+                    </select>
                   </div>
                 </div>
                 <div>

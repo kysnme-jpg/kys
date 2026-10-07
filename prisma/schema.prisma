@@ -183,6 +183,7 @@ model Item {
 
   price          Float
   costPrice      Float?
+  location       String?    // IN_STORE | STORAGE
   splitPercent   Float?
 
   photoUrls      String[]

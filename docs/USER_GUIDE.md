@@ -156,6 +156,11 @@ Pay your consignors. Open **Payouts** from the sidebar.
   Zelle phone/email, Cash App $Cashtag, or mailing address). It's saved on the
   consignor, so next time it's pre-filled. Batch payouts use each consignor's
   saved details automatically.
+- **Sync sold items** (top-right of the Payouts page) credits consignors for any
+  items already marked **SOLD** that aren't yet showing a balance — for example,
+  sales brought in through a data import. Normally selling an item (via the POS
+  or by marking it SOLD) credits the consignor automatically; use this button
+  once after an import, or any time a sold item isn't reflected on a balance.
 - **Payout History** tab shows everything you've paid.
 - You can **edit a past payout** (amount, method, destination, status, note) from
   the **Payouts** tab on a consignor's page — changing the amount automatically

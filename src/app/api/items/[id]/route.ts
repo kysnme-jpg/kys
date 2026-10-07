@@ -84,7 +84,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (err?.code === "P2002") {
       return NextResponse.json({ error: "That SKU is already in use. Choose a different one." }, { status: 409 });
     }
-    throw err;
+    return NextResponse.json({ error: err?.message || "Couldn't update the item" }, { status: 500 });
   }
 }
 

@@ -45,6 +45,18 @@ export default function PayoutsPage() {
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState<{ name: string; amount: number; status: "ok" | "err" }[]>([]);
 
+  const [reconciling, setReconciling] = useState(false);
+  const reconcile = async () => {
+    setReconciling(true);
+    const res = await fetch("/api/consignors/reconcile", { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    setReconciling(false);
+    if (!res.ok) { alert(d.error || "Couldn't sync sold items"); return; }
+    if (d.credited > 0) alert(`Synced ${d.credited} sold item${d.credited === 1 ? "" : "s"} — $${d.totalAmount.toFixed(2)} credited to consignors.`);
+    else alert("Everything's already in sync — no uncredited sold items found.");
+    load();
+  };
+
   const load = async () => {
     setLoading(true);
     const [cRes, pRes] = await Promise.all([
@@ -161,18 +173,28 @@ export default function PayoutsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
-        {(["pending", "history"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-              tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t === "pending" ? "Pending Balances" : "Payout History"}
-          </button>
-        ))}
+      <div className="flex items-center justify-between border-b border-gray-200">
+        <div className="flex gap-1">
+          {(["pending", "history"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+                tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {t === "pending" ? "Pending Balances" : "Payout History"}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={reconcile}
+          disabled={reconciling}
+          className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 px-3 py-1.5"
+          title="Credit consignors for any sold items that aren't showing a balance yet (e.g. imported sales)."
+        >
+          {reconciling ? "Syncing…" : "Sync sold items"}
+        </button>
       </div>
 
       {tab === "pending" && (

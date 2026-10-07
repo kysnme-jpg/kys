@@ -121,10 +121,16 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   const saveItem = async () => {
     if (!editItem) return;
     setEditItemSaving(true);
-    await fetch(`/api/items/${editItem.id}`, {
+    const res = await fetch(`/api/items/${editItem.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: editItem.title, brand: editItem.brand, size: editItem.size, price: parseFloat(editItem.price) || 0, costPrice: editItem.costPrice === "" ? null : editItem.costPrice, status: editItem.status, location: editItem.location }),
     });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert(d.error || "Couldn't save item");
+      setEditItemSaving(false);
+      return;
+    }
     setEditItemSaving(false); setEditItem(null); load();
   };
 

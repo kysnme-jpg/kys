@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { calcConsignorCredit } from "@/lib/utils";
 
 // Bulk actions on items: setStatus, listOnline, unlistOnline, delete, markdownPercent.
 export async function POST(req: NextRequest) {
@@ -18,6 +19,31 @@ export async function POST(req: NextRequest) {
     if (action === "setStatus") {
       const r = await db.item.updateMany({ where, data: { status: value } });
       return NextResponse.json({ affected: r.count });
+    }
+    if (action === "markSold") {
+      // Mark each item sold AND credit its consignor (same rules as a single
+      // sale: skip POS-sold or already-credited items to avoid double-counting).
+      const items = await db.item.findMany({ where, include: { consignor: true } });
+      let affected = 0;
+      for (const it of items) {
+        await db.$transaction(async (tx: any) => {
+          await tx.item.update({ where: { id: it.id }, data: { status: "SOLD", soldAt: it.soldAt ?? new Date() } });
+          if (it.type === "CONSIGNED" && it.consignorId) {
+            const hasPos = await tx.saleItem.findFirst({ where: { itemId: it.id } });
+            const manual = await tx.ledgerEntry.findFirst({ where: { itemId: it.id, type: "SALE_CREDIT" } });
+            if (!hasPos && !manual) {
+              const split = (it.splitPercent ?? it.consignor?.splitPercent ?? 50) as number;
+              const credit = calcConsignorCredit(it.price, split);
+              if (credit > 0) {
+                await tx.ledgerEntry.create({ data: { consignorId: it.consignorId, itemId: it.id, type: "SALE_CREDIT", amount: credit, note: `Sold: "${it.title}" — ${split}% split` } });
+                await tx.consignor.update({ where: { id: it.consignorId }, data: { balance: { increment: credit } } });
+              }
+            }
+          }
+        });
+        affected++;
+      }
+      return NextResponse.json({ affected });
     }
     if (action === "listOnline" || action === "unlistOnline") {
       const r = await db.item.updateMany({ where, data: { listedOnline: action === "listOnline" } });

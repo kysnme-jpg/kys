@@ -200,6 +200,7 @@ export default function InventoryPage() {
           <button onClick={() => setBulkMdOpen(true)} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> Markdown %</button>
           <button onClick={() => bulk("listOnline")} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> List online</button>
           <button onClick={() => bulk("unlistOnline")} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5">Unlist</button>
+          <button onClick={() => { if (confirm(`Mark ${selected.size} items as sold and credit their consignors?`)) bulk("markSold"); }} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Mark sold</button>
           <button onClick={() => bulk("setStatus", "RETURNED")} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5">Mark Returned</button>
           <button onClick={() => { if (confirm(`Delete ${selected.size} items?`)) bulk("delete"); }} className="text-sm bg-white/20 hover:bg-red-500 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5" /> Delete</button>
           <button onClick={clearSel} className="hover:bg-white/20 rounded-md p-1"><X className="h-4 w-4" /></button>

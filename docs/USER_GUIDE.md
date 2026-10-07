@@ -114,7 +114,11 @@ The people who bring you items to sell. Open **Consignors** from the sidebar.
 - **Click a consignor** to edit their name, contact, **split %**, and **portal
   access**, or open **Details** for their full items / earnings / payout history.
 - **Bulk actions:** set split %, enable/disable portal access, delete.
-- **Balance** is what you currently owe each consignor.
+- **Balance** is what you currently owe each consignor. It goes up whenever one
+  of their items **sells** — either through the POS or by **marking an item
+  SOLD** from the Edit window. Once a consignor's balance is above $0 they appear
+  on the **Payouts** page. (Changing a sold item back to Active reverses the
+  credit.)
 - When adding or editing a consignor you can set their **preferred payout
   method** (Check/Cash/Zelle/Cash App/ACH) with the matching details, and an
   **"If items don't sell"** preference: **Pick-up**, **Donate**, or **Continue

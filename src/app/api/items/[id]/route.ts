@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { calcConsignorCredit } from "@/lib/utils";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -45,8 +46,39 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.featuredOnline !== undefined) data.featuredOnline = !!body.featuredOnline;
 
   try {
-    const item = await db.item.updateMany({ where: { id, storeId }, data });
-    if (item.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const existing = await db.item.findFirst({ where: { id, storeId }, include: { consignor: true } });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const resultingStatus = (data.status ?? existing.status) as string;
+    const price = (data.price ?? existing.price) as number;
+    const split = (data.splitPercent ?? existing.splitPercent ?? existing.consignor?.splitPercent ?? 50) as number;
+    const credit = calcConsignorCredit(price, split);
+
+    await db.$transaction(async (tx: any) => {
+      const soldAtPatch: any = {};
+      if (resultingStatus === "SOLD" && existing.status !== "SOLD") soldAtPatch.soldAt = new Date();
+      if (resultingStatus !== "SOLD" && existing.status === "SOLD") soldAtPatch.soldAt = null;
+
+      await tx.item.update({ where: { id }, data: { ...data, ...soldAtPatch } });
+
+      // Keep the consignor's balance in sync when an item is marked sold / un-sold
+      // outside of a POS sale. POS sales already credit (they have a SaleItem).
+      if (existing.type === "CONSIGNED" && existing.consignorId) {
+        const hasPosSale = await tx.saleItem.findFirst({ where: { itemId: id } });
+        const manualCredit = await tx.ledgerEntry.findFirst({ where: { itemId: id, type: "SALE_CREDIT" } });
+
+        if (resultingStatus === "SOLD" && !hasPosSale && !manualCredit && credit > 0) {
+          await tx.ledgerEntry.create({
+            data: { consignorId: existing.consignorId, itemId: id, type: "SALE_CREDIT", amount: credit, note: `Sold: "${existing.title}" — ${split}% split` },
+          });
+          await tx.consignor.update({ where: { id: existing.consignorId }, data: { balance: { increment: credit } } });
+        } else if (resultingStatus !== "SOLD" && manualCredit) {
+          await tx.ledgerEntry.delete({ where: { id: manualCredit.id } });
+          await tx.consignor.update({ where: { id: existing.consignorId }, data: { balance: { decrement: manualCredit.amount } } });
+        }
+      }
+    });
+
     return NextResponse.json({ updated: true });
   } catch (err: any) {
     if (err?.code === "P2002") {

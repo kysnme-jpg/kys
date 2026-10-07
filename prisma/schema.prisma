@@ -280,6 +280,7 @@ model LedgerEntry {
   sale        Sale?      @relation(fields: [saleId], references: [id])
   payoutId    String?
   payout      Payout?    @relation(fields: [payoutId], references: [id])
+  itemId      String?
   type        LedgerType
   amount      Float
   note        String?

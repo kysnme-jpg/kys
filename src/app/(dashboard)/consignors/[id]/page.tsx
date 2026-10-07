@@ -23,6 +23,7 @@ interface ConsignorDetail {
   address?: string;
   splitPercent: number;
   balance: number;
+  notes?: string;
   createdAt: string;
   items: any[];
   ledgerEntries: any[];
@@ -62,6 +63,9 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   const [payoutNote, setPayoutNote] = useState("");
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [payoutError, setPayoutError] = useState("");
+  const [notesDraft, setNotesDraft] = useState("");
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -71,6 +75,22 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   };
 
   useEffect(load, [id]);
+
+  // Keep the notes editor in sync with the loaded consignor.
+  useEffect(() => { setNotesDraft(consignor?.notes || ""); }, [consignor?.id]);
+
+  const saveNotes = async () => {
+    setNotesSaving(true);
+    const res = await fetch(`/api/consignors/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: notesDraft }),
+    });
+    setNotesSaving(false);
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || "Couldn't save notes"); return; }
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000);
+    load();
+  };
 
   // Prefill the destination from the consignor's saved details when the method changes.
   useEffect(() => {
@@ -123,7 +143,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
     setEditItemSaving(true);
     const res = await fetch(`/api/items/${editItem.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editItem.title, brand: editItem.brand, size: editItem.size, price: parseFloat(editItem.price) || 0, costPrice: editItem.costPrice === "" ? null : editItem.costPrice, status: editItem.status, location: editItem.location }),
+      body: JSON.stringify({ title: editItem.title, brand: editItem.brand, size: editItem.size, price: parseFloat(editItem.price) || 0, costPrice: editItem.costPrice === "" ? null : editItem.costPrice, status: editItem.status, location: editItem.location, description: editItem.description ?? "" }),
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
@@ -228,6 +248,32 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                 {consignor.address}
               </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Notes</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 pt-0 space-y-3">
+          <textarea
+            value={notesDraft}
+            onChange={(e) => setNotesDraft(e.target.value)}
+            placeholder="Write anything you want to remember about this consignor — preferences, reminders, special arrangements…"
+            rows={4}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-y"
+          />
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={saveNotes}
+              disabled={notesSaving || notesDraft === (consignor.notes || "")}
+              size="sm"
+            >
+              {notesSaving ? "Saving…" : "Save notes"}
+            </Button>
+            {notesSaved && <span className="text-sm text-green-600">Saved ✓</span>}
           </div>
         </CardContent>
       </Card>
@@ -502,6 +548,9 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                   <option value="">—</option><option value="IN_STORE">In-store</option><option value="STORAGE">Storage</option>
                 </select>
               </div>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <textarea value={editItem.description || ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} rows={3} placeholder="Anything to remember about this item…" className="w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink placeholder:text-gray-400 focus:outline-none focus:border-accent resize-y" />
             </div>
             <div className="flex gap-2 pt-1"><Button onClick={saveItem} disabled={editItemSaving} className="flex-1">{editItemSaving ? "Saving…" : "Save item"}</Button><Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button></div>
           </div>

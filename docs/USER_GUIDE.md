@@ -129,6 +129,12 @@ Shows KPI cards (balance, earned, active, sold), and tabs for **Items**,
 **Ledger** (every credit/debit), and **Payouts**. You can **issue a payout**
 here (Check / Cash / ACH).
 
+- **Notes:** there's a **Notes** box on each consignor's page — type anything
+  you want to remember (preferences, reminders, special arrangements) and
+  **Save notes**. It's kept with the consignor.
+- **Item notes:** open an item's **Edit** window (pencil on the Items tab) and
+  use the **Note** field to jot anything specific to that item. Saved with the item.
+
 ---
 
 ## 5. Customers

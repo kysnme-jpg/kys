@@ -134,6 +134,11 @@ here (Check / Cash / ACH).
   **Save notes**. It's kept with the consignor.
 - **Item notes:** open an item's **Edit** window (pencil on the Items tab) and
   use the **Note** field to jot anything specific to that item. Saved with the item.
+- **Consignor payout preview:** the Edit window shows the **consignor's payout**
+  (price × their split %) live as you change the price. If you edit the price of
+  an item that's already **SOLD**, saving automatically re-adjusts the
+  consignor's credit and balance to match. (The **Sync sold items** button on the
+  Payouts page also corrects any sold items whose price changed earlier.)
 
 ---
 

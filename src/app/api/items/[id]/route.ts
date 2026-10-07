@@ -68,10 +68,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const manualCredit = await tx.ledgerEntry.findFirst({ where: { itemId: id, type: "SALE_CREDIT" } });
 
         if (resultingStatus === "SOLD" && !hasPosSale && !manualCredit && credit > 0) {
+          // Newly marked sold (outside the POS) — create the credit.
           await tx.ledgerEntry.create({
             data: { consignorId: existing.consignorId, itemId: id, type: "SALE_CREDIT", amount: credit, note: `Sold: "${existing.title}" — ${split}% split` },
           });
           await tx.consignor.update({ where: { id: existing.consignorId }, data: { balance: { increment: credit } } });
+        } else if (resultingStatus === "SOLD" && !hasPosSale && manualCredit && credit !== manualCredit.amount) {
+          // Still sold, but the price/split changed — re-adjust the existing
+          // credit and the consignor's balance by the difference.
+          const diff = credit - manualCredit.amount;
+          await tx.ledgerEntry.update({
+            where: { id: manualCredit.id },
+            data: { amount: credit, note: `Sold: "${existing.title}" — ${split}% split` },
+          });
+          await tx.consignor.update({ where: { id: existing.consignorId }, data: { balance: { increment: diff } } });
         } else if (resultingStatus !== "SOLD" && manualCredit) {
           await tx.ledgerEntry.delete({ where: { id: manualCredit.id } });
           await tx.consignor.update({ where: { id: existing.consignorId }, data: { balance: { decrement: manualCredit.amount } } });

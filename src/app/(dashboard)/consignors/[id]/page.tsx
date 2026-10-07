@@ -549,6 +549,20 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                 </select>
               </div>
             </div>
+            {(() => {
+              const split = editItem.splitPercent ?? consignor.splitPercent ?? 50;
+              const price = parseFloat(editItem.price) || 0;
+              const payout = calcConsignorCredit(price, split);
+              return (
+                <div className="flex items-center justify-between rounded-[14px] bg-accent/10 border border-accent/20 px-4 py-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Consignor payout · {split}% split</p>
+                    <p className="text-xs text-gray-500 mt-0.5">of {formatCurrency(price)} sale price{editItem.status === "SOLD" ? "" : " when sold"}</p>
+                  </div>
+                  <p className="text-xl font-bold text-accent">{formatCurrency(payout)}</p>
+                </div>
+              );
+            })()}
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
               <textarea value={editItem.description || ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} rows={3} placeholder="Anything to remember about this item…" className="w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink placeholder:text-gray-400 focus:outline-none focus:border-accent resize-y" />
             </div>

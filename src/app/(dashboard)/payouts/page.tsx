@@ -52,8 +52,11 @@ export default function PayoutsPage() {
     const d = await res.json().catch(() => ({}));
     setReconciling(false);
     if (!res.ok) { alert(d.error || "Couldn't sync sold items"); return; }
-    if (d.credited > 0) alert(`Synced ${d.credited} sold item${d.credited === 1 ? "" : "s"} — $${d.totalAmount.toFixed(2)} credited to consignors.`);
-    else alert("Everything's already in sync — no uncredited sold items found.");
+    const parts: string[] = [];
+    if (d.credited > 0) parts.push(`credited ${d.credited} sold item${d.credited === 1 ? "" : "s"} ($${d.totalAmount.toFixed(2)})`);
+    if (d.adjusted > 0) parts.push(`corrected ${d.adjusted} item${d.adjusted === 1 ? "" : "s"} whose price had changed`);
+    if (parts.length) alert(`Synced: ${parts.join(" and ")}.`);
+    else alert("Everything's already in sync — nothing to update.");
     load();
   };
 

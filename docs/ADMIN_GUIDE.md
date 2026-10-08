@@ -161,6 +161,23 @@ confirmations** (sent when a consignor books at `/book` or staff add a booking
 with an email). If `RESEND_API_KEY` is unset, bookings still work — no email is
 sent.
 
+**Test your email setup** with the included script — it sends a sample
+appointment confirmation so you can confirm the key/domain work before going
+live:
+
+```bash
+# locally
+RESEND_API_KEY=re_xxx EMAIL_FROM="Classic Consigns by KYS <kimberly@classicconsigns.com>" \
+  node scripts/send-test-email.mjs you@example.com
+
+# on Railway (RESEND_API_KEY / EMAIL_FROM already set) — from the service shell:
+node scripts/send-test-email.mjs you@example.com
+```
+
+If Resend returns a domain error, the sender domain isn't verified yet — verify
+it under Resend → Domains (add the SPF/DKIM DNS records), or point `EMAIL_FROM`
+at an already-verified address.
+
 ### Anthropic / Claude (AI item entry)
 Set `ANTHROPIC_API_KEY`. The add-item photo analysis uses `claude-haiku-4-5`.
 Cost is well under a cent per item. If unset, AI entry simply returns a 503 and

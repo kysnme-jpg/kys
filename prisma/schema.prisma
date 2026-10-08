@@ -74,6 +74,8 @@ model Store {
   webhookEndpoints WebhookEndpoint[]
   contracts        Contract[]
   workLogs         WorkLog[]
+  consignAppts     ConsignAppointment[]
+  consignBlocks    ConsignBlockedDate[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -395,6 +397,34 @@ model WorkLog {
   note         String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ─── CONSIGNMENT APPOINTMENTS (new-consignor booking) ────────────────────────
+
+model ConsignAppointment {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  date      DateTime // the Saturday (date-only, UTC midnight)
+  slot      Int      // 0-based slot index (see lib/appointments SLOT_TIMES)
+  name      String
+  email     String?
+  phone     String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, date, slot])
+}
+
+model ConsignBlockedDate {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  date      DateTime // the Saturday being blocked (date-only, UTC midnight)
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, date])
 }
 
 // ─── CONSIGNMENT CONTRACTS ────────────────────────────────────────────────────

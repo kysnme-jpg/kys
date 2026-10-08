@@ -130,6 +130,21 @@ processor — it's a record you keep for your own bookkeeping.
 
 ---
 
+### Consignment appointments (`/book` public page)
+
+Prospective consignors book drop-off appointments at the **public** page
+**`/book`** (no login). Staff manage them under **People → Appointments**
+(`/appointments`).
+
+- Scheduling rules live in `src/lib/appointments.ts` — `SLOT_TIMES` (the four
+  40-minute Saturday slots), `SLOT_MINUTES`, and `upcomingSaturdays()`. Edit
+  `SLOT_TIMES` there to change times or the number of slots per day.
+- Data: `ConsignAppointment` (one row per booked slot; unique per
+  store+date+slot prevents double-booking) and `ConsignBlockedDate` (a blocked
+  Saturday). Both are created by `prisma db push` on deploy.
+- `/book` and `/api/book` are in the middleware `PUBLIC_PATHS` allow-list so
+  they're reachable without a login.
+
 ## 7. Integrations
 
 ### Clover (card payments)

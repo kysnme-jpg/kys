@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/utils";
 const PEOPLE_TABS = [
   { label: "Customers", href: "/customers" },
   { label: "Consignors", href: "/consignors" },
+  { label: "Appointments", href: "/appointments" },
 ];
 import { Search, X, Delete, Plus, Check, Star, Trash2, ChevronRight, Hash } from "lucide-react";
 

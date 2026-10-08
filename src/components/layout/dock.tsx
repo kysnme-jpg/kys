@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { key: "stock", label: "Stock", icon: Package, href: "/inventory", match: ["/inventory", "/contracts", "/admin"] },
-  { key: "people", label: "People", icon: Users, href: "/customers", match: ["/customers", "/consignors"] },
+  { key: "people", label: "People", icon: Users, href: "/customers", match: ["/customers", "/consignors", "/appointments"] },
   { key: "payouts", label: "Payouts", icon: DollarSign, href: "/payouts", match: ["/payouts"] },
   { key: "insights", label: "Insights", icon: TrendingUp, href: "/insights", match: ["/insights", "/reports"] },
 ];

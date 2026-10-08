@@ -124,6 +124,23 @@ The people who bring you items to sell. Open **Consignors** from the sidebar.
   **"If items don't sell"** preference: **Pick-up**, **Donate**, or **Continue
   consigning (30 days)**.
 
+### Appointments (new-consignor booking)
+
+Next to **Customers** and **Consignors** there's an **Appointments** tab for
+booking **new/prospective consignors** into drop-off slots.
+
+- **Schedule:** Saturdays only, **12:00–3:00 PM**, in four 40-minute slots
+  (12:00, 12:40, 1:20, 2:00) — up to **4 appointments per day**.
+- **Public booking page:** share **your site `/book`** (use **Copy booking
+  link**). Prospective consignors pick an open Saturday slot and enter their
+  name, email, and phone — no login needed. Taken slots show as unavailable.
+  The page lists your rules (10-item first-visit limit; shoes & jewelry not
+  counted).
+- **Staff view:** the Appointments tab shows each upcoming Saturday with its four
+  slots and who's booked. You can **Add** a booking manually, **cancel** one
+  (trash icon), or **Block day** / **Unblock day** to close a Saturday (e.g. a
+  holiday) so no new appointments can be booked.
+
 ### Consignor detail page
 Shows KPI cards (balance, earned, active, sold), and tabs for **Items**,
 **Ledger** (every credit/debit), and **Payouts**. You can **issue a payout**

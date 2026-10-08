@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Plus, Pencil, Users, Clock, DollarSign, Trash2 } from "lucide-react";
+import { Plus, Pencil, Users, Clock, DollarSign, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 const ADMIN_TABS = [
   { label: "Items", href: "/inventory" },
@@ -44,6 +44,8 @@ export default function AdminPage() {
   const [form, setForm] = useState<any>(null); // null = modal closed
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Calendar: first day of the month currently shown
+  const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
 
   const load = async () => {
     const res = await fetch("/api/worklogs");
@@ -54,7 +56,7 @@ export default function AdminPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openAdd = () => { setError(""); setForm(blankForm()); };
+  const openAdd = (dateStr?: string) => { setError(""); setForm({ ...blankForm(), ...(dateStr ? { date: dateStr } : {}) }); };
   const openEdit = (l: WorkLog) => {
     setError("");
     setForm({ id: l.id, employeeName: l.employeeName, phone: l.phone || "", date: toDateInput(l.date), hours: String(l.hours), payout: String(l.payout), note: l.note || "" });
@@ -95,6 +97,25 @@ export default function AdminPage() {
   const totalPayout = logs.reduce((s, l) => s + l.payout, 0);
   const employees = new Set(logs.map((l) => l.employeeName.trim().toLowerCase())).size;
 
+  // Build the month grid and tally hours/entries per day.
+  const todayKey = toDateInput(new Date());
+  const perDay: Record<string, { hours: number; count: number }> = {};
+  for (const l of logs) {
+    const k = toDateInput(l.date);
+    if (!perDay[k]) perDay[k] = { hours: 0, count: 0 };
+    perDay[k].hours += l.hours;
+    perDay[k].count += 1;
+  }
+  const firstWeekday = month.getDay(); // 0 = Sun
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells: ({ day: number; key: string } | null)[] = [];
+  for (let i = 0; i < firstWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    cells.push({ day: d, key });
+  }
+  const monthLabel = month.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
   return (
     <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
       <SegmentedTabs tabs={ADMIN_TABS} />
@@ -105,7 +126,7 @@ export default function AdminPage() {
             Employee work hours &amp; payouts
           </p>
         </div>
-        <Button onClick={openAdd} className="gap-2">
+        <Button onClick={() => openAdd()} className="gap-2">
           <Plus className="h-4 w-4" />
           Add
         </Button>
@@ -146,6 +167,52 @@ export default function AdminPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Calendar — click a day (incl. future) to log hours for that date */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-serif text-xl text-ink">{monthLabel}</h2>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600" aria-label="Previous month">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button onClick={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)); }} className="px-3 h-8 rounded-full hover:bg-gray-100 text-sm font-medium text-gray-600">
+              Today
+            </button>
+            <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600" aria-label="Next month">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-1.5">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+            <div key={d} className="text-center text-xs font-medium text-gray-400 uppercase pb-1">{d}</div>
+          ))}
+          {cells.map((cell, i) => {
+            if (!cell) return <div key={`b${i}`} />;
+            const info = perDay[cell.key];
+            const isToday = cell.key === todayKey;
+            return (
+              <button
+                key={cell.key}
+                onClick={() => openAdd(cell.key)}
+                className={`min-h-[64px] rounded-xl border p-1.5 text-left transition-colors flex flex-col ${
+                  isToday ? "border-accent bg-accent/5" : "border-gray-200 hover:border-accent/50 hover:bg-gray-50"
+                }`}
+                title={`Add hours for ${cell.key}`}
+              >
+                <span className={`text-sm font-medium ${isToday ? "text-accent" : "text-gray-700"}`}>{cell.day}</span>
+                {info && (
+                  <span className="mt-auto rounded-md bg-indigo-100 text-indigo-700 text-[11px] font-semibold px-1.5 py-0.5 self-start">
+                    {info.hours.toFixed(info.hours % 1 === 0 ? 0 : 2)}h
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-gray-400 mt-3">Tap any day — including future dates — to log or schedule work hours.</p>
       </div>
 
       {/* Table */}

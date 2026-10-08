@@ -16,6 +16,7 @@ import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 const STOCK_TABS = [
   { label: "Items", href: "/inventory" },
   { label: "Contracts", href: "/contracts" },
+  { label: "Admin", href: "/admin" },
 ];
 
 interface Item {

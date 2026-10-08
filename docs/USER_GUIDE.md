@@ -197,6 +197,21 @@ The agreement text is your store's standard template; the owner can edit it in
 
 ---
 
+## 7a. Admin — employee hours & payouts
+
+Next to **Items** and **Contracts** there's an **Admin** tab (also reachable at
+**your site `/admin`**). It's a simple log for tracking staff work and pay.
+
+- Each row records a **Date**, **Employee name**, **Phone number**, **Work
+  hours**, and **Payout** (plus an optional note).
+- **Add** — click **Add** (top-right) to log a new entry. Fill in the name,
+  date, hours, payout, and optional phone/note, then **Add entry**.
+- **Edit** — click the pencil on any row to change it, or **Delete** it.
+- The cards at the top total the number of **employees**, **hours**, and
+  **payout** across all entries.
+
+---
+
 ## 8. Store Insights & Reports
 
 - **Store Insights** — charts for 30-day revenue, top categories, and inventory

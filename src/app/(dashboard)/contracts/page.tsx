@@ -87,7 +87,7 @@ export default function ContractsPage() {
 
   return (
     <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
-      <SegmentedTabs tabs={[{ label: "Items", href: "/inventory" }, { label: "Contracts", href: "/contracts" }]} />
+      <SegmentedTabs tabs={[{ label: "Items", href: "/inventory" }, { label: "Contracts", href: "/contracts" }, { label: "Admin", href: "/admin" }]} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Contracts</h1>

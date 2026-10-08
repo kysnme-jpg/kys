@@ -73,6 +73,7 @@ model Store {
   apiKeys          ApiKey[]
   webhookEndpoints WebhookEndpoint[]
   contracts        Contract[]
+  workLogs         WorkLog[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -378,6 +379,22 @@ model WebhookDelivery {
   responseCode Int?
   success      Boolean         @default(false)
   attemptedAt  DateTime        @default(now())
+}
+
+// ─── EMPLOYEE WORK LOG (ADMIN) ────────────────────────────────────────────────
+
+model WorkLog {
+  id           String   @id @default(cuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id])
+  employeeName String
+  phone        String?
+  date         DateTime @default(now())
+  hours        Float    @default(0)
+  payout       Float    @default(0)
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // ─── CONSIGNMENT CONTRACTS ────────────────────────────────────────────────────

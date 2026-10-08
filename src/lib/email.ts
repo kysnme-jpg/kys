@@ -174,6 +174,55 @@ export async function sendWelcomeEmail(opts: {
   });
 }
 
+export async function sendAppointmentEmail(opts: {
+  to: string;
+  name: string;
+  storeName: string;
+  dateLabel: string;
+  timeLabel: string;
+  address?: string | null;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.name},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">
+      Your consignment appointment with ${opts.storeName} is confirmed. We look forward to seeing you!
+    </p>
+    <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:20px 0;border-collapse:collapse">
+      <tr>
+        <td style="padding:6px 0;color:#6b7280;font-size:14px">Date</td>
+        <td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${opts.dateLabel}</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;color:#6b7280;font-size:14px">Time</td>
+        <td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${opts.timeLabel}</td>
+      </tr>
+      ${opts.address ? `
+      <tr>
+        <td style="padding:6px 0;color:#6b7280;font-size:14px">Location</td>
+        <td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${opts.address}</td>
+      </tr>` : ""}
+    </table>
+    <p style="color:#374151;font-size:14px;line-height:1.6">
+      <strong>A few reminders for your visit:</strong>
+    </p>
+    <ul style="color:#374151;font-size:14px;line-height:1.6;padding-left:20px;margin:8px 0">
+      <li>First-time consigning: please bring <strong>no more than 10 items</strong>.</li>
+      <li>Shoes &amp; jewelry are not counted in the 10 (please don’t bring tons of jewelry).</li>
+      <li>Each appointment is up to 40 minutes.</li>
+    </ul>
+    <p style="color:#374151;font-size:14px">If you need to change or cancel, just give us a call or reply to this email.</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `📅 Appointment confirmed — ${opts.dateLabel}, ${opts.storeName}`,
+    html: baseHtml("Your Appointment is Confirmed", body, opts.storeName),
+  });
+}
+
 export async function sendContractEmail(opts: {
   to: string;
   consignorName: string;

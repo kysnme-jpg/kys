@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { upcomingSaturdays, dateKey, SLOT_TIMES, MAX_APPTS_PER_DAY } from "@/lib/appointments";
+import { upcomingSaturdays, dateKey, slotLabel, prettyDate, SLOT_TIMES, MAX_APPTS_PER_DAY } from "@/lib/appointments";
+import { sendAppointmentEmail } from "@/lib/email";
 
 const BOOK_WEEKS = 10;
 const parseKey = (key: string) => new Date(`${key}T00:00:00.000Z`);
@@ -48,7 +49,7 @@ const bookSchema = z.object({
 
 // Public: book an appointment.
 export async function POST(req: NextRequest) {
-  const store = await db.store.findFirst({ select: { id: true } });
+  const store = await db.store.findFirst({ select: { id: true, name: true, address: true } });
   if (!store) return NextResponse.json({ error: "Store not configured" }, { status: 503 });
 
   const parsed = bookSchema.safeParse(await req.json());
@@ -71,6 +72,20 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     if (err?.code === "P2002") return NextResponse.json({ error: "Sorry, that time was just booked. Please pick another." }, { status: 409 });
     return NextResponse.json({ error: "Couldn't book the appointment. Please try again." }, { status: 500 });
+  }
+
+  // Send a confirmation email (best-effort; booking already succeeded).
+  if (email) {
+    try {
+      await sendAppointmentEmail({
+        to: email,
+        name: name.trim(),
+        storeName: store.name,
+        dateLabel: prettyDate(date),
+        timeLabel: slotLabel(slot),
+        address: store.address,
+      });
+    } catch { /* don't fail the booking if email fails */ }
   }
 
   return NextResponse.json({ booked: true });

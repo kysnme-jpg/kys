@@ -140,6 +140,14 @@ booking **new/prospective consignors** into drop-off slots.
   slots and who's booked. You can **Add** a booking manually, **cancel** one
   (trash icon), or **Block day** / **Unblock day** to close a Saturday (e.g. a
   holiday) so no new appointments can be booked.
+- **Email confirmations:** when someone books with an email address, they
+  automatically get a confirmation email with the date, time, location, and the
+  item/jewelry reminders. (Requires email to be set up — see the Admin Guide.)
+- **Turn an appointment into a consignor:** once someone shows up and you're
+  ready to set them up, click **Add as consignor** on their appointment. It
+  creates a consignor record from their name/email/phone (50% split), removes the
+  appointment, and opens the new consignor's page. If a consignor with that email
+  already exists, it opens that one instead of making a duplicate.
 
 ### Consignor detail page
 Shows KPI cards (balance, earned, active, sold), and tabs for **Items**,

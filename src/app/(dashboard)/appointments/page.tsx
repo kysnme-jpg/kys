@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { slotLabel, prettyDate, SLOT_TIMES } from "@/lib/appointments";
-import { Plus, Trash2, Ban, Undo2, Link2, Clock, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Trash2, Ban, Undo2, Link2, Clock, Check, UserPlus } from "lucide-react";
 
 const PEOPLE_TABS = [
   { label: "Customers", href: "/customers" },
@@ -18,7 +19,9 @@ interface Appt { id: string; slot: number; name: string; email?: string; phone?:
 interface Saturday { date: string; blocked: boolean; blockedReason: string | null; appointments: Appt[] }
 
 export default function AppointmentsPage() {
+  const router = useRouter();
   const [saturdays, setSaturdays] = useState<Saturday[]>([]);
+  const [converting, setConverting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [addFor, setAddFor] = useState<{ date: string; slot: number } | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", note: "" });
@@ -54,6 +57,17 @@ export default function AppointmentsPage() {
     if (!confirm("Cancel this appointment?")) return;
     await fetch(`/api/appointments/${id}`, { method: "DELETE" });
     load();
+  };
+
+  const convert = async (appt: Appt) => {
+    if (!confirm(`Create a consignor record for “${appt.name}” and remove this appointment?`)) return;
+    setConverting(appt.id);
+    const res = await fetch(`/api/appointments/${appt.id}/convert`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    setConverting(null);
+    if (!res.ok) { alert(data.error || "Couldn't convert"); return; }
+    // Jump straight to the new (or matched) consignor's page.
+    router.push(`/consignors/${data.consignorId}`);
   };
 
   const toggleBlock = async (sat: Saturday) => {
@@ -123,11 +137,17 @@ export default function AppointmentsPage() {
                           <div className="flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <p className="font-medium text-gray-900 text-sm">{appt.name}</p>
-                              <button onClick={() => cancelAppt(appt.id)} className="text-gray-300 hover:text-red-500" title="Cancel"><Trash2 className="h-3.5 w-3.5" /></button>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button onClick={() => convert(appt)} disabled={converting === appt.id} className="text-gray-300 hover:text-accent disabled:opacity-50" title="Convert to consignor"><UserPlus className="h-3.5 w-3.5" /></button>
+                                <button onClick={() => cancelAppt(appt.id)} className="text-gray-300 hover:text-red-500" title="Cancel"><Trash2 className="h-3.5 w-3.5" /></button>
+                              </div>
                             </div>
                             {appt.phone && <p className="text-xs text-gray-500">{appt.phone}</p>}
                             {appt.email && <p className="text-xs text-gray-500 truncate">{appt.email}</p>}
                             {appt.note && <p className="text-xs text-gray-400 mt-0.5">{appt.note}</p>}
+                            <button onClick={() => convert(appt)} disabled={converting === appt.id} className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-accent hover:underline disabled:opacity-50">
+                              <UserPlus className="h-3 w-3" /> {converting === appt.id ? "Converting…" : "Add as consignor"}
+                            </button>
                           </div>
                         ) : sat.blocked ? (
                           <p className="text-xs text-gray-300 mt-auto">—</p>

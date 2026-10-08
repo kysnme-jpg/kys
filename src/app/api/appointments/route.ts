@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { upcomingSaturdays, dateKey, MAX_APPTS_PER_DAY } from "@/lib/appointments";
+import { upcomingSaturdays, dateKey, slotLabel, prettyDate, MAX_APPTS_PER_DAY } from "@/lib/appointments";
+import { sendAppointmentEmail } from "@/lib/email";
 
 const parseKey = (key: string) => new Date(`${key}T00:00:00.000Z`);
 
@@ -60,5 +61,15 @@ export async function POST(req: NextRequest) {
     if (err?.code === "P2002") return NextResponse.json({ error: "That slot is already booked." }, { status: 409 });
     return NextResponse.json({ error: "Couldn't save the appointment." }, { status: 500 });
   }
+
+  if (email) {
+    try {
+      const store = await db.store.findUnique({ where: { id: storeId }, select: { name: true, address: true } });
+      if (store) {
+        await sendAppointmentEmail({ to: email, name: name.trim(), storeName: store.name, dateLabel: prettyDate(date), timeLabel: slotLabel(slot), address: store.address });
+      }
+    } catch { /* best-effort */ }
+  }
+
   return NextResponse.json({ created: true }, { status: 201 });
 }

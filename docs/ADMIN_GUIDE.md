@@ -156,7 +156,10 @@ not yet implemented.
 
 ### Resend (email)
 Set `RESEND_API_KEY` and `EMAIL_FROM` (verified domain recommended). Powers
-contract links, payout notifications, and welcome emails.
+contract links, payout notifications, welcome emails, and **appointment
+confirmations** (sent when a consignor books at `/book` or staff add a booking
+with an email). If `RESEND_API_KEY` is unset, bookings still work — no email is
+sent.
 
 ### Anthropic / Claude (AI item entry)
 Set `ANTHROPIC_API_KEY`. The add-item photo analysis uses `claude-haiku-4-5`.

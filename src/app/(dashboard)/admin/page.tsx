@@ -33,10 +33,30 @@ const blankForm = () => ({
   employeeName: "",
   phone: "",
   date: toDateInput(new Date()),
+  dates: null as string[] | null, // set when logging across several selected days
   hours: "",
   payout: "",
   note: "",
 });
+
+// Stable per-employee colors (full literal class names so Tailwind keeps them).
+const EMP_COLORS = [
+  { chip: "bg-rose-100 text-rose-700", dot: "bg-rose-500" },
+  { chip: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },
+  { chip: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
+  { chip: "bg-sky-100 text-sky-700", dot: "bg-sky-500" },
+  { chip: "bg-violet-100 text-violet-700", dot: "bg-violet-500" },
+  { chip: "bg-orange-100 text-orange-700", dot: "bg-orange-500" },
+  { chip: "bg-teal-100 text-teal-700", dot: "bg-teal-500" },
+  { chip: "bg-fuchsia-100 text-fuchsia-700", dot: "bg-fuchsia-500" },
+];
+const colorFor = (name: string) => {
+  let h = 0;
+  const n = name.trim().toLowerCase();
+  for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+  return EMP_COLORS[h % EMP_COLORS.length];
+};
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
 export default function AdminPage() {
   const [logs, setLogs] = useState<WorkLog[]>([]);
@@ -46,6 +66,10 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   // Calendar: first day of the month currently shown
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  // Multi-day selection
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
+  const [lastClicked, setLastClicked] = useState<string | null>(null);
 
   const load = async () => {
     const res = await fetch("/api/worklogs");
@@ -65,21 +89,31 @@ export default function AdminPage() {
   const save = async () => {
     if (!form.employeeName.trim()) { setError("Employee name is required"); return; }
     setSaving(true); setError("");
-    const payload = {
+    const base = {
       employeeName: form.employeeName,
       phone: form.phone,
-      date: form.date,
       hours: form.hours,
       payout: form.payout,
       note: form.note,
     };
-    const res = form.id
-      ? await fetch(`/api/worklogs/${form.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
-      : await fetch("/api/worklogs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const data = await res.json().catch(() => ({}));
-    setSaving(false);
-    if (!res.ok) { setError(data.error || "Couldn't save"); return; }
+
+    if (form.id) {
+      // Editing a single entry
+      const res = await fetch(`/api/worklogs/${form.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...base, date: form.date }) });
+      const data = await res.json().catch(() => ({}));
+      setSaving(false);
+      if (!res.ok) { setError(data.error || "Couldn't save"); return; }
+    } else {
+      // Creating — one entry per selected date (or the single date field)
+      const dates: string[] = form.dates && form.dates.length ? form.dates : [form.date];
+      for (const d of dates) {
+        await fetch("/api/worklogs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...base, date: d }) });
+      }
+      setSaving(false);
+    }
     setForm(null);
+    setSelectMode(false);
+    setSelectedDays(new Set());
     load();
   };
 
@@ -97,15 +131,16 @@ export default function AdminPage() {
   const totalPayout = logs.reduce((s, l) => s + l.payout, 0);
   const employees = new Set(logs.map((l) => l.employeeName.trim().toLowerCase())).size;
 
-  // Build the month grid and tally hours/entries per day.
+  // Build the month grid and tally entries per day, grouped by employee.
   const todayKey = toDateInput(new Date());
-  const perDay: Record<string, { hours: number; count: number }> = {};
+  const perDay: Record<string, Record<string, number>> = {}; // key -> { employeeName -> hours }
   for (const l of logs) {
     const k = toDateInput(l.date);
-    if (!perDay[k]) perDay[k] = { hours: 0, count: 0 };
-    perDay[k].hours += l.hours;
-    perDay[k].count += 1;
+    if (!perDay[k]) perDay[k] = {};
+    perDay[k][l.employeeName] = (perDay[k][l.employeeName] || 0) + l.hours;
   }
+  // Distinct employees (for the legend)
+  const empNames = Array.from(new Set(logs.map((l) => l.employeeName.trim()))).filter(Boolean).sort();
   const firstWeekday = month.getDay(); // 0 = Sun
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const cells: ({ day: number; key: string } | null)[] = [];
@@ -115,6 +150,40 @@ export default function AdminPage() {
     cells.push({ day: d, key });
   }
   const monthLabel = month.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  const orderedKeys = cells.filter(Boolean).map((c) => (c as any).key) as string[];
+  const handleDayClick = (key: string, shift: boolean) => {
+    if (!selectMode) { openAdd(key); return; }
+    setSelectedDays((prev) => {
+      const next = new Set(prev);
+      if (shift && lastClicked) {
+        // Select the inclusive range between lastClicked and this day.
+        const a = orderedKeys.indexOf(lastClicked);
+        const b = orderedKeys.indexOf(key);
+        if (a !== -1 && b !== -1) {
+          const [lo, hi] = a < b ? [a, b] : [b, a];
+          for (let i = lo; i <= hi; i++) next.add(orderedKeys[i]);
+        }
+      } else if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+    setLastClicked(key);
+  };
+  const toggleSelectMode = () => {
+    setSelectMode((m) => !m);
+    setSelectedDays(new Set());
+    setLastClicked(null);
+  };
+  const addToSelected = () => {
+    const dates = Array.from(selectedDays).sort();
+    if (!dates.length) return;
+    setError("");
+    setForm({ ...blankForm(), dates, date: dates[0] });
+  };
 
   return (
     <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
@@ -169,22 +238,50 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      {/* Calendar — click a day (incl. future) to log hours for that date */}
+      {/* Calendar — click a day (incl. future) to log hours; or select many at once */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <h2 className="font-serif text-xl text-ink">{monthLabel}</h2>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600" aria-label="Previous month">
-              <ChevronLeft className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSelectMode}
+              className={`px-3 h-8 rounded-full text-sm font-medium border transition-colors ${
+                selectMode ? "bg-accent text-white border-accent" : "border-gray-300 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {selectMode ? "Done selecting" : "Select days"}
             </button>
-            <button onClick={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)); }} className="px-3 h-8 rounded-full hover:bg-gray-100 text-sm font-medium text-gray-600">
-              Today
-            </button>
-            <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600" aria-label="Next month">
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600" aria-label="Previous month">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button onClick={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)); }} className="px-3 h-8 rounded-full hover:bg-gray-100 text-sm font-medium text-gray-600">
+                Today
+              </button>
+              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600" aria-label="Next month">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Selection action bar */}
+        {selectMode && (
+          <div className="flex items-center justify-between gap-3 mb-3 rounded-xl bg-accent/10 border border-accent/20 px-4 py-2.5 flex-wrap">
+            <p className="text-sm font-medium text-ink">
+              {selectedDays.size === 0 ? "Click days to select them (hold Shift to pick a range)." : `${selectedDays.size} day${selectedDays.size === 1 ? "" : "s"} selected`}
+            </p>
+            <div className="flex items-center gap-2">
+              {selectedDays.size > 0 && (
+                <button onClick={() => setSelectedDays(new Set())} className="text-sm font-medium text-gray-500 hover:text-gray-700">Clear</button>
+              )}
+              <Button size="sm" onClick={addToSelected} disabled={selectedDays.size === 0}>
+                Log hours for {selectedDays.size || ""} day{selectedDays.size === 1 ? "" : "s"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-7 gap-1.5">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
             <div key={d} className="text-center text-xs font-medium text-gray-400 uppercase pb-1">{d}</div>
@@ -192,27 +289,53 @@ export default function AdminPage() {
           {cells.map((cell, i) => {
             if (!cell) return <div key={`b${i}`} />;
             const info = perDay[cell.key];
+            const names = info ? Object.keys(info) : [];
             const isToday = cell.key === todayKey;
+            const isSelected = selectedDays.has(cell.key);
             return (
               <button
                 key={cell.key}
-                onClick={() => openAdd(cell.key)}
-                className={`min-h-[64px] rounded-xl border p-1.5 text-left transition-colors flex flex-col ${
-                  isToday ? "border-accent bg-accent/5" : "border-gray-200 hover:border-accent/50 hover:bg-gray-50"
+                onClick={(e) => handleDayClick(cell.key, e.shiftKey)}
+                className={`min-h-[72px] rounded-xl border p-1.5 text-left transition-colors flex flex-col gap-1 ${
+                  isSelected ? "border-accent bg-accent/15 ring-1 ring-accent"
+                  : isToday ? "border-accent bg-accent/5"
+                  : "border-gray-200 hover:border-accent/50 hover:bg-gray-50"
                 }`}
-                title={`Add hours for ${cell.key}`}
+                title={selectMode ? `Select ${cell.key}` : `Add hours for ${cell.key}`}
               >
                 <span className={`text-sm font-medium ${isToday ? "text-accent" : "text-gray-700"}`}>{cell.day}</span>
-                {info && (
-                  <span className="mt-auto rounded-md bg-indigo-100 text-indigo-700 text-[11px] font-semibold px-1.5 py-0.5 self-start">
-                    {info.hours.toFixed(info.hours % 1 === 0 ? 0 : 2)}h
-                  </span>
-                )}
+                <span className="mt-auto flex flex-col gap-0.5">
+                  {names.slice(0, 2).map((n) => (
+                    <span key={n} className={`rounded-md text-[11px] font-semibold px-1.5 py-0.5 truncate ${colorFor(n).chip}`}>
+                      {firstName(n)}
+                    </span>
+                  ))}
+                  {names.length > 2 && (
+                    <span className="text-[10px] text-gray-400 font-medium pl-0.5">+{names.length - 2} more</span>
+                  )}
+                </span>
               </button>
             );
           })}
         </div>
-        <p className="text-xs text-gray-400 mt-3">Tap any day — including future dates — to log or schedule work hours.</p>
+
+        {/* Legend */}
+        {empNames.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-4 pt-3 border-t border-gray-100">
+            {empNames.map((n) => (
+              <span key={n} className="flex items-center gap-1.5 text-xs text-gray-600">
+                <span className={`h-2.5 w-2.5 rounded-full ${colorFor(n).dot}`} />
+                {n}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <p className="text-xs text-gray-400 mt-3">
+          {selectMode
+            ? "Pick several days, then “Log hours” to apply one entry to all of them."
+            : "Tap any day — including future dates — to log work hours, or use “Select days” to cover many at once."}
+        </p>
       </div>
 
       {/* Table */}
@@ -264,13 +387,22 @@ export default function AdminPage() {
 
       {/* Add / edit modal */}
       {form && (
-        <Modal open={!!form} onClose={() => setForm(null)} title={form.id ? "Edit Entry" : "Add Entry"} className="max-w-md">
+        <Modal open={!!form} onClose={() => setForm(null)} title={form.id ? "Edit Entry" : form.dates && form.dates.length > 1 ? `Add Entry · ${form.dates.length} days` : "Add Entry"} className="max-w-md">
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            {form.dates && form.dates.length > 1 ? (
+              <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
+                <p className="text-sm font-medium text-ink">Applying to {form.dates.length} selected days</p>
+                <p className="text-xs text-gray-500 mt-0.5">{form.dates.map((d: string) => formatDate(d)).join(" · ")}</p>
+                <p className="text-xs text-gray-500 mt-1">One entry (with the hours below) will be created for each day.</p>
               </div>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              {!(form.dates && form.dates.length > 1) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Optional" />
@@ -298,7 +430,7 @@ export default function AdminPage() {
             {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{error}</p>}
 
             <div className="flex gap-2 pt-1">
-              <Button onClick={save} disabled={saving} className="flex-1">{saving ? "Saving…" : form.id ? "Save changes" : "Add entry"}</Button>
+              <Button onClick={save} disabled={saving} className="flex-1">{saving ? "Saving…" : form.id ? "Save changes" : form.dates && form.dates.length > 1 ? `Add to ${form.dates.length} days` : "Add entry"}</Button>
               {form.id && (
                 <Button variant="outline" onClick={remove} disabled={saving} className="gap-1.5 text-red-600 hover:text-red-700">
                   <Trash2 className="h-4 w-4" /> Delete

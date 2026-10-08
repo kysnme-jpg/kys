@@ -206,10 +206,16 @@ Next to **Items** and **Contracts** there's an **Admin** tab (also reachable at
   hours**, and **Payout** (plus an optional note).
 - **Add** — click **Add** (top-right) to log a new entry. Fill in the name,
   date, hours, payout, and optional phone/note, then **Add entry**.
-- **Calendar** — a monthly calendar sits above the table. **Tap any day**
-  (including future dates) to open the Add form with that date pre-filled, so you
-  can schedule upcoming shifts. Days that already have entries show the total
-  hours logged. Use the arrows (or **Today**) to move between months.
+- **Calendar** — a monthly calendar sits above the table.
+  - **Tap any day** (including future dates) to open the Add form with that date
+    pre-filled, so you can schedule upcoming shifts.
+  - Each day shows the **employee names** working that day, color-coded. A
+    **color legend** of all employees appears under the calendar.
+  - **Select many days at once:** click **Select days**, then click the days you
+    want (hold **Shift** and click to pick a whole range). Click **Log hours for
+    N days** and the hours/employee you enter are applied to *every* selected
+    day in one go — great for scheduling a recurring week or a vacation block.
+  - Use the arrows (or **Today**) to move between months.
 - **Edit** — click the pencil on any row to change it, or **Delete** it.
 - The cards at the top total the number of **employees**, **hours**, and
   **payout** across all entries.

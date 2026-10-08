@@ -8,7 +8,7 @@ function getResend() {
   return resend;
 }
 
-const FROM = process.env.EMAIL_FROM || "ConsignPro <noreply@consignpro.app>";
+const FROM = process.env.EMAIL_FROM || "Classic Consigns by KYS <kimberly@classicconsigns.com>";
 
 // ─── Email templates ──────────────────────────────────────────────────────────
 

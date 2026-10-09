@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Plus, Pencil, Users, Clock, DollarSign, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 const ADMIN_TABS = [
@@ -25,14 +25,21 @@ interface WorkLog {
   note?: string;
 }
 
-// yyyy-mm-dd for <input type="date">
+// yyyy-mm-dd for <input type="date"> (UTC — work-log dates are stored at UTC
+// midnight as plain calendar dates, so read them back in UTC too).
 const toDateInput = (d: string | Date) => new Date(d).toISOString().slice(0, 10);
+// Today's local calendar date as yyyy-mm-dd (no timezone shift).
+const pad = (n: number) => String(n).padStart(2, "0");
+const localDayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Display a stored (UTC-midnight) calendar date without shifting the day.
+const fmtDay = (d: string | Date) =>
+  new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
 const blankForm = () => ({
   id: "",
   employeeName: "",
   phone: "",
-  date: toDateInput(new Date()),
+  date: localDayKey(new Date()),
   dates: null as string[] | null, // set when logging across several selected days
   hours: "",
   payout: "",
@@ -132,7 +139,7 @@ export default function AdminPage() {
   const employees = new Set(logs.map((l) => l.employeeName.trim().toLowerCase())).size;
 
   // Build the month grid and tally entries per day, grouped by employee.
-  const todayKey = toDateInput(new Date());
+  const todayKey = localDayKey(new Date());
   const perDay: Record<string, Record<string, number>> = {}; // key -> { employeeName -> hours }
   for (const l of logs) {
     const k = toDateInput(l.date);
@@ -363,7 +370,7 @@ export default function AdminPage() {
             <tbody className="divide-y divide-gray-100">
               {logs.map((l) => (
                 <tr key={l.id} className="hover:bg-gray-50">
-                  <td className="p-4 text-gray-700">{formatDate(l.date)}</td>
+                  <td className="p-4 text-gray-700">{fmtDay(l.date)}</td>
                   <td className="p-4">
                     <p className="font-medium text-gray-900">{l.employeeName}</p>
                     {l.note && <p className="text-xs text-gray-500">{l.note}</p>}
@@ -392,7 +399,7 @@ export default function AdminPage() {
             {form.dates && form.dates.length > 1 ? (
               <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3">
                 <p className="text-sm font-medium text-ink">Applying to {form.dates.length} selected days</p>
-                <p className="text-xs text-gray-500 mt-0.5">{form.dates.map((d: string) => formatDate(d)).join(" · ")}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{form.dates.map((d: string) => fmtDay(d)).join(" · ")}</p>
                 <p className="text-xs text-gray-500 mt-1">One entry (with the hours below) will be created for each day.</p>
               </div>
             ) : null}

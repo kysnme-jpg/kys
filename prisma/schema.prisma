@@ -78,6 +78,7 @@ model Store {
   consignBlocks    ConsignBlockedDate[]
   layaways         Layaway[]
   borrowedGarments BorrowedGarment[]
+  sipShopEvents    SipShopEvent[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -449,6 +450,24 @@ model BorrowedGarment {
   returnReminderAt DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+}
+
+// ─── SIP & SHOP EVENTS ───────────────────────────────────────────────────────
+
+model SipShopEvent {
+  id             String    @id @default(cuid())
+  storeId        String
+  store          Store     @relation(fields: [storeId], references: [id])
+  hostName       String
+  phone          String?
+  email          String?
+  guests         Int       @default(0)
+  eventDate      DateTime  // date-only, UTC midnight
+  notes          String?
+  status         String    @default("SCHEDULED") // SCHEDULED | COMPLETED | CANCELLED
+  reminderSentAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 // ─── CONSIGNMENT APPOINTMENTS (new-consignor booking) ────────────────────────

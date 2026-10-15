@@ -12,7 +12,7 @@ const SESSION_COOKIES = [
   "__Secure-next-auth.session-token",
 ];
 
-const PUBLIC_PATHS = ["/api/auth", "/login", "/setup", "/api/setup", "/reset", "/api/reset-password", "/shop", "/api/shop", "/api/photos", "/book", "/api/book", "/api/cron"];
+const PUBLIC_PATHS = ["/api/auth", "/login", "/setup", "/api/setup", "/reset", "/api/reset-password", "/shop", "/api/shop", "/api/photos", "/book", "/api/book", "/api/cron", "/sip-and-shop", "/api/sip-and-shop"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

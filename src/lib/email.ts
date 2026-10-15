@@ -218,6 +218,121 @@ export async function sendBorrowedReturnReminderEmail(opts: {
   });
 }
 
+// ─── Sip & Shop ──────────────────────────────────────────────────────────────
+
+const SIP_TIME = "7:00 PM – 10:00 PM";
+
+function sipPerksBlock() {
+  return `
+    <div style="background:#1a1a1a;border-radius:10px;padding:18px 20px;margin:18px 0;color:#fff">
+      <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#e9a0b4">Your Sip &amp; Shop includes</p>
+      <ul style="margin:0;padding-left:18px;color:#f3f3f3;font-size:14px;line-height:1.8">
+        <li>Two types of wine 🍷</li>
+        <li>A delicious charcuterie board 🧀</li>
+        <li>You + up to 15 guests — a fun, fashionable experience made just for you</li>
+        <li>Earn <strong>15% of your sales in store credit</strong></li>
+      </ul>
+    </div>`;
+}
+
+export async function sendSipShopConfirmationEmail(opts: {
+  to: string;
+  hostName: string;
+  storeName: string;
+  dateLabel: string;
+  guests: number;
+  address?: string | null;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.hostName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">You're all set to host a <strong>Sip &amp; Shop</strong> at ${opts.storeName}! Shop. Sip. Sustain. Repeat. 💕</p>
+    <table width="100%" style="background:#f6eef0;border-radius:8px;padding:16px;margin:16px 0;border-collapse:collapse">
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Date</td><td style="padding:6px 0;color:#111827;font-weight:700;font-size:15px;text-align:right">${opts.dateLabel}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Time</td><td style="padding:6px 0;color:#111827;font-weight:700;font-size:15px;text-align:right">${SIP_TIME}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Guests</td><td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${opts.guests} ${opts.guests === 1 ? "guest" : "guests"}</td></tr>
+      ${opts.address ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Location</td><td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${opts.address}</td></tr>` : ""}
+    </table>
+    ${sipPerksBlock()}
+    <p style="color:#374151;font-size:14px;line-height:1.6">We can't wait to host you and your guests. If you need to change your date or guest count, just reply to this email or give us a call.</p>
+    <p style="color:#b4532a;font-size:14px;font-weight:600">Be fabulous. Be sustainable. Be you. 🤍</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `🍷 Your Sip & Shop is booked — ${opts.dateLabel}`,
+    html: baseHtml("Your Sip & Shop is Confirmed", body, opts.storeName),
+  });
+}
+
+export async function sendSipShopReminderEmail(opts: {
+  to: string;
+  hostName: string;
+  storeName: string;
+  dateLabel: string;
+  guests: number;
+  address?: string | null;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.hostName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Your <strong>Sip &amp; Shop</strong> at ${opts.storeName} is coming up soon — we can't wait! 🥂</p>
+    <table width="100%" style="background:#f6eef0;border-radius:8px;padding:16px;margin:16px 0;border-collapse:collapse">
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Date</td><td style="padding:6px 0;color:#111827;font-weight:700;font-size:15px;text-align:right">${opts.dateLabel}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Time</td><td style="padding:6px 0;color:#111827;font-weight:700;font-size:15px;text-align:right">${SIP_TIME}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Guests</td><td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${opts.guests} ${opts.guests === 1 ? "guest" : "guests"}</td></tr>
+      ${opts.address ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Location</td><td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${opts.address}</td></tr>` : ""}
+    </table>
+    <p style="color:#374151;font-size:14px;line-height:1.6">Bring your favorite people and get ready to shop sustainably. Remember, you'll earn <strong>15% of your sales in store credit</strong>!</p>
+    <p style="color:#b4532a;font-size:14px;font-weight:600">See you soon! 🤍</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `🥂 Reminder: your Sip & Shop is ${opts.dateLabel}`,
+    html: baseHtml("Your Sip & Shop is Coming Up", body, opts.storeName),
+  });
+}
+
+export async function sendSipShopStoreNotification(opts: {
+  to: string;
+  storeName: string;
+  hostName: string;
+  dateLabel: string;
+  guests: number;
+  email?: string | null;
+  phone?: string | null;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:6px 0;color:#6b7280;font-size:14px">${label}</td><td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${value}</td></tr>`;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">A customer just requested a Sip &amp; Shop:</p>
+    <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:20px 0;border-collapse:collapse">
+      ${row("Date", opts.dateLabel)}
+      ${row("Time", "7:00 PM – 10:00 PM")}
+      ${row("Host", opts.hostName)}
+      ${row("Guests", String(opts.guests))}
+      ${opts.phone ? row("Phone", opts.phone) : ""}
+      ${opts.email ? row("Email", opts.email) : ""}
+    </table>
+    <p style="color:#374151;font-size:13px">View and manage it under People → Sip &amp; Shop.</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `🍷 New Sip & Shop request — ${opts.hostName}, ${opts.dateLabel}`,
+    html: baseHtml("New Sip & Shop Request", body, opts.storeName),
+  });
+}
+
 // ─── Diagnostics ───────────────────────────────────────────────────────────────
 
 // Sends a test email and RETURNS the outcome (does not swallow errors), so the

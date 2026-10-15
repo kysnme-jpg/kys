@@ -184,6 +184,24 @@ The **Borrowed** tab tracks items lent out (e.g. for events).
   reminder email when the item is due back.
 - Mark an agreement **Returned** (pencil → Status) when the items come back.
 
+### Sip & Shop
+
+The **Sip & Shop** tab is a **calendar** for scheduling private Sip & Shop
+events (they run **7:00–10:00 PM**).
+
+- **Schedule an event:** tap any day on the calendar (or **New Event**) and enter
+  the **host's name, phone, email**, and **how many guests** are joining. Events
+  show on the calendar as a pink name chip; tap a name to edit.
+- **Host confirmation email:** if you add the host's email, they're automatically
+  emailed a confirmation with the **date, the 7–10 PM time, their guest count**,
+  and the perks (two wines, charcuterie, up to 15 guests, 15% store credit).
+- **Reminder:** the host gets a reminder email a couple of days before the event.
+- **Customers can book themselves:** share **your site `/sip-and-shop`** (use
+  **Copy booking link**). Customers pick their own date, enter their info and
+  guest count, and submit — it drops straight onto your calendar, emails them a
+  confirmation, and emails you a "New Sip & Shop request" alert.
+- Edit an event to change the date/guests or set it **Completed** / **Cancelled**.
+
 ### Consignor detail page
 Shows KPI cards (balance, earned, active, sold), and tabs for **Items**,
 **Ledger** (every credit/debit), and **Payouts**. You can **issue a payout**

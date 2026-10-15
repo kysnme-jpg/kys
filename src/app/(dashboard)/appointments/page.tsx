@@ -15,6 +15,7 @@ const PEOPLE_TABS = [
   { label: "Appointments", href: "/appointments" },
   { label: "Layaway", href: "/layaway" },
   { label: "Borrowed", href: "/borrowed" },
+  { label: "Sip & Shop", href: "/sip-shop" },
 ];
 
 interface Appt { id: string; slot: number; name: string; email?: string; phone?: string; note?: string }

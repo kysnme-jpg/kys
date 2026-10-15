@@ -174,6 +174,19 @@ Two more People tabs: **Layaway** (`/layaway`) and **Borrowed** (`/borrowed`).
      env var (send `Authorization: Bearer <CRON_SECRET>` or `?secret=`). If
      `CRON_SECRET` is unset the endpoint is disabled (503).
 
+### Sip & Shop events
+
+People tab **Sip & Shop** (`/sip-shop`, staff) plus a **public** request page at
+`/sip-and-shop` (no login). Model: `SipShopEvent`. Events run 7–10 PM.
+
+- Staff schedule events on a calendar; the host gets a confirmation email (date,
+  7–10 PM, guests, perks) when an email is provided, and a reminder email
+  ~2 days before (see `SIP_REMINDER_DAYS_BEFORE` in `src/lib/reminders.ts`).
+- The public page lets customers request their own date; it creates a
+  `SipShopEvent`, emails the customer a confirmation, and notifies the store
+  (`BOOKING_NOTIFY_EMAIL` → store email → kimberly@classicconsigns.com).
+- `/sip-and-shop` and `/api/sip-and-shop` are in the middleware public allow-list.
+
 **To enable the daily runner (recommended):**
 1. Set a `CRON_SECRET` env var in Railway (any long random string).
 2. In GitHub → repo **Settings → Secrets and variables → Actions**, add two

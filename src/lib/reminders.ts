@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
-import { sendLayawayReminderEmail, sendBorrowedReturnReminderEmail } from "@/lib/email";
+import { sendLayawayReminderEmail, sendBorrowedReturnReminderEmail, sendSipShopReminderEmail } from "@/lib/email";
+
+const SIP_REMINDER_DAYS_BEFORE = 2;
 
 const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 24 * 60 * 60 * 1000);
 
@@ -7,10 +9,11 @@ const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 24 * 60 * 60 
 // return reminders that are now due and haven't been sent. Idempotent: each
 // reminder is marked once sent, so this is safe to run repeatedly (from the
 // daily cron and opportunistically when staff open the pages).
-export async function processDueReminders(storeId?: string): Promise<{ layaway: number; borrowed: number }> {
+export async function processDueReminders(storeId?: string): Promise<{ layaway: number; borrowed: number; sipshop: number }> {
   const now = new Date();
   let layawaySent = 0;
   let borrowedSent = 0;
+  let sipSent = 0;
 
   // ── Layaway payment reminders ──
   const layaways = await db.layaway.findMany({
@@ -70,5 +73,30 @@ export async function processDueReminders(storeId?: string): Promise<{ layaway: 
     } catch { /* retry next run */ }
   }
 
-  return { layaway: layawaySent, borrowed: borrowedSent };
+  // ── Sip & Shop event reminders (a couple of days before) ──
+  const events = await db.sipShopEvent.findMany({
+    where: { status: "SCHEDULED", email: { not: null }, reminderSentAt: null, ...(storeId ? { storeId } : {}) },
+    include: { store: { select: { name: true, address: true } } },
+  });
+
+  for (const ev of events) {
+    if (!ev.email) continue;
+    const remindAt = addDays(ev.eventDate, -SIP_REMINDER_DAYS_BEFORE);
+    if (now < remindAt) continue;                 // too early
+    if (now > addDays(ev.eventDate, 1)) continue;  // event already passed — skip stale reminder
+    try {
+      await sendSipShopReminderEmail({
+        to: ev.email,
+        hostName: ev.hostName,
+        storeName: ev.store?.name || "Classic Consigns by KYS",
+        dateLabel: ev.eventDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }),
+        guests: ev.guests,
+        address: ev.store?.address,
+      });
+      await db.sipShopEvent.update({ where: { id: ev.id }, data: { reminderSentAt: now } });
+      sipSent++;
+    } catch { /* retry next run */ }
+  }
+
+  return { layaway: layawaySent, borrowed: borrowedSent, sipshop: sipSent };
 }

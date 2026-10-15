@@ -66,6 +66,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   const [notesDraft, setNotesDraft] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  const [tagBlankPrice, setTagBlankPrice] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -193,6 +194,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer select-none" title="Leave the price blank on tags so you can write it in by hand">
+            <input type="checkbox" checked={tagBlankPrice} onChange={(e) => setTagBlankPrice(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+            Blank price
+          </label>
           <Button
             variant="outline"
             onClick={() => {
@@ -200,7 +205,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                 .filter((i: any) => i.status === "ACTIVE")
                 .map((i: any) => ({ title: i.title, sku: i.sku, barcode: i.barcode, price: i.price, size: i.size || undefined, brand: i.brand || undefined, condition: i.condition || undefined, consignor: `${consignor.firstName} ${consignor.lastName}` }));
               if (!tagItems.length) { alert("No active items to print tags for."); return; }
-              printKysTags(tagItems);
+              printKysTags(tagItems, { blankPrice: tagBlankPrice });
             }}
             className="gap-2"
           >
@@ -351,7 +356,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                   <Badge variant={itemStatusColors[item.status]}>{item.status}</Badge>
                   <Button size="sm" variant="outline" onClick={() => setEditItem({ ...item, costPrice: item.costPrice ?? "" })}><Pencil className="h-3.5 w-3.5" /></Button>
                   {item.status === "ACTIVE" && (
-                    <PrintKysTagButton item={{ ...item, consignor: `${consignor.firstName} ${consignor.lastName}` }} size="sm" />
+                    <PrintKysTagButton item={{ ...item, consignor: `${consignor.firstName} ${consignor.lastName}` }} size="sm" blankPrice={tagBlankPrice} />
                   )}
                 </div>
               ))

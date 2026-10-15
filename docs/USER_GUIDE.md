@@ -104,6 +104,10 @@ or its SKU):
   the inventory bulk bar (**Print KYS tags**), or a consignor's page (**Print all
   tags** prints a sheet of tags for all their active items). Bulk printing lays
   the tags out in a grid with faint cut guides.
+  - **Blank price option:** tick **"Blank price"** (on a consignor's page) or
+    **"Blank $"** (in the inventory bulk bar) before printing to leave the price
+    as a **write-in line** (`$______`) instead of printing the value — handy for
+    hand-writing or marking down prices. Size and Consignor still print.
 - **Label** — the compact **2" × 1"** thermal label (title, brand/size, price,
   barcode). Print from the Edit window ("Label") — handy for a thermal label
   printer.

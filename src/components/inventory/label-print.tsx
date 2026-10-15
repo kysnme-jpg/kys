@@ -144,21 +144,28 @@ const KYS_TAG_CSS = `
   .kt-price { font-weight: bold; font-size: 12pt; white-space: nowrap; }
   .kt-cons { font-size: 8pt; text-align: right; overflow: hidden; text-overflow: ellipsis; }
   .kt-v { border-bottom: 1px solid #000; padding: 0 3pt; min-width: 0.55in; display: inline-block; text-align: center; }
+  .kt-priceline { min-width: 0.7in; }
   .kt-barcode { text-align: center; flex: 0 0 auto; }
   .kt-barcode svg { width: 92%; height: 0.34in; }
   .kt-code { text-align: center; font-family: monospace; font-size: 6pt; letter-spacing: 1px; }
 `;
 
-function kysTagInner(item: LabelData): string {
+interface KysTagOptions { blankPrice?: boolean }
+
+function kysTagInner(item: LabelData, opts: KysTagOptions = {}): string {
   const code = (item.barcode && item.barcode.trim()) || item.sku;
   const svg = barcodeSvg(code);
   const priceNum = (item.price || 0).toFixed(2);
+  // blankPrice → a write-in line (for hand-written prices / markdowns)
+  const priceHtml = opts.blankPrice
+    ? `$<span class="kt-v kt-priceline">&nbsp;</span>`
+    : `$${priceNum}`;
   return `
     <div class="kt-logo"><img src="${KYS_LOGO_DATA_URI}" alt="" /></div>
     <div class="kt-fields">
       <div class="kt-sz">Sz <span class="kt-v">${item.size || ""}</span></div>
       <div class="kt-pc">
-        <span class="kt-price">$${priceNum}</span>
+        <span class="kt-price">${priceHtml}</span>
         <span class="kt-cons">${item.consignor ? `Consignor: ${item.consignor}` : ""}</span>
       </div>
     </div>
@@ -167,7 +174,7 @@ function kysTagInner(item: LabelData): string {
 }
 
 // Print a single KYS tag (2" x 2").
-export function printKysTag(item: LabelData) {
+export function printKysTag(item: LabelData, opts: KysTagOptions = {}) {
   const win = window.open("", "_blank", "width=360,height=360");
   if (!win) return;
   win.document.write(`
@@ -177,7 +184,7 @@ export function printKysTag(item: LabelData) {
       body { font-family: Georgia, serif; }
       ${KYS_TAG_CSS}
     </style></head><body>
-      <div class="kys-tag">${kysTagInner(item)}</div>
+      <div class="kys-tag">${kysTagInner(item, opts)}</div>
       <script>window.onload=function(){setTimeout(function(){window.print();window.close();},200);};</script>
     </body></html>`);
   win.document.close();
@@ -185,9 +192,9 @@ export function printKysTag(item: LabelData) {
 
 // Print many KYS tags laid out as a grid on letter-size cardstock (with faint
 // cut guides). Great for printing a whole consignor's items on your own printer.
-export function printKysTags(items: LabelData[]) {
+export function printKysTags(items: LabelData[], opts: KysTagOptions = {}) {
   if (!items.length) return;
-  const tags = items.map((item) => `<div class="kys-tag">${kysTagInner(item)}</div>`).join("");
+  const tags = items.map((item) => `<div class="kys-tag">${kysTagInner(item, opts)}</div>`).join("");
   const win = window.open("", "_blank", "width=800,height=900");
   if (!win) return;
   win.document.write(`
@@ -205,11 +212,11 @@ export function printKysTags(items: LabelData[]) {
   win.document.close();
 }
 
-export function PrintKysTagButton({ item, variant = "outline", size = "sm" }: PrintLabelButtonProps) {
+export function PrintKysTagButton({ item, variant = "outline", size = "sm", blankPrice = false, label = "Print KYS Tag" }: PrintLabelButtonProps & { blankPrice?: boolean; label?: string }) {
   return (
-    <Button variant={variant} size={size} onClick={() => printKysTag(item)} type="button">
+    <Button variant={variant} size={size} onClick={() => printKysTag(item, { blankPrice })} type="button">
       <Tag className="h-3.5 w-3.5 mr-1.5" />
-      Print KYS Tag
+      {label}
     </Button>
   );
 }

@@ -74,6 +74,150 @@ export async function sendBookingNotification(opts: {
   });
 }
 
+// ─── Layaway ─────────────────────────────────────────────────────────────────
+
+const fmtMoney = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+
+export async function sendLayawayAgreementEmail(opts: {
+  to: string;
+  buyerName: string;
+  storeName: string;
+  items: string;
+  totalPrice: number;
+  serviceFee: number;
+  deposit: number;
+  payment2: number;
+  payment3: number;
+  finalPayment: number;
+  dueDates: { p2: string; p3: string; final: string };
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const scheduleRow = (label: string, amount: number, due: string) =>
+    `<tr><td style="padding:7px 0;color:#374151;font-size:14px">${label}</td><td style="padding:7px 0;color:#6b7280;font-size:13px;text-align:center">${due}</td><td style="padding:7px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${fmtMoney(amount)}</td></tr>`;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.buyerName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Thank you! Here are the details of your layaway with ${opts.storeName}.</p>
+    <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:16px 0;border-collapse:collapse">
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Item(s)</td><td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${opts.items.replace(/\n/g, "<br>")}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Total Price</td><td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${fmtMoney(opts.totalPrice)}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Layaway Fee (non-refundable)</td><td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${fmtMoney(opts.serviceFee)}</td></tr>
+    </table>
+    <p style="color:#111827;font-size:15px;font-weight:700;margin:16px 0 6px">Payment Schedule</p>
+    <table width="100%" style="border-collapse:collapse;margin-bottom:16px">
+      <tr style="border-bottom:1px solid #e5e7eb"><td style="padding:4px 0;color:#9ca3af;font-size:12px">Payment</td><td style="padding:4px 0;color:#9ca3af;font-size:12px;text-align:center">Due</td><td style="padding:4px 0;color:#9ca3af;font-size:12px;text-align:right">Amount</td></tr>
+      ${scheduleRow("Deposit (today)", opts.deposit, "Today")}
+      ${scheduleRow("Payment 2", opts.payment2, opts.dueDates.p2)}
+      ${scheduleRow("Payment 3", opts.payment3, opts.dueDates.p3)}
+      ${scheduleRow("Final Payment", opts.finalPayment, opts.dueDates.final)}
+    </table>
+    <p style="color:#374151;font-size:13px;line-height:1.6">Layaway period is 45 days. Items must be picked up within the 45-day period after full payment. Questions? Just reply to this email or call us.</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `Your layaway details — ${opts.storeName}`,
+    html: baseHtml("Your Layaway Agreement", body, opts.storeName),
+  });
+}
+
+export async function sendLayawayReminderEmail(opts: {
+  to: string;
+  buyerName: string;
+  storeName: string;
+  which: string; // "Payment 2 (due in 15 days)" etc.
+  amountDue: number;
+  balanceRemaining: number;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.buyerName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">This is a friendly reminder about your layaway with ${opts.storeName}.</p>
+    <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:16px 0;border-collapse:collapse">
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Now due</td><td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${opts.which}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Amount</td><td style="padding:6px 0;color:#b4532a;font-weight:700;font-size:18px;text-align:right">${fmtMoney(opts.amountDue)}</td></tr>
+      <tr style="border-top:1px solid #d1d5db"><td style="padding:10px 0 0;color:#6b7280;font-size:14px">Balance remaining</td><td style="padding:10px 0 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${fmtMoney(opts.balanceRemaining)}</td></tr>
+    </table>
+    <p style="color:#374151;font-size:13px;line-height:1.6">Please stop by or call to make your payment. Thank you!</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `Layaway payment reminder — ${opts.storeName}`,
+    html: baseHtml("Layaway Payment Reminder", body, opts.storeName),
+  });
+}
+
+// ─── Borrowed garment ────────────────────────────────────────────────────────
+
+export async function sendBorrowedAgreementEmail(opts: {
+  to: string;
+  borrowerName: string;
+  storeName: string;
+  items: string;
+  dateBorrowed: string;
+  returnDate?: string | null;
+  dryCleaning?: string | null;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const dryMap: Record<string, string> = {
+    BORROWER: "Borrower IS responsible for dry cleaning costs.",
+    NOT_BORROWER: "Borrower is NOT responsible for dry cleaning costs.",
+    UPON_RETURN: "Dry cleaning will be determined upon return inspection.",
+  };
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.borrowerName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Thank you for borrowing from ${opts.storeName}. Here are the item(s) and terms.</p>
+    <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:16px 0;border-collapse:collapse">
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Date Borrowed</td><td style="padding:6px 0;color:#111827;font-size:14px;text-align:right">${opts.dateBorrowed}</td></tr>
+      ${opts.returnDate ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Return Date</td><td style="padding:6px 0;color:#b4532a;font-weight:700;font-size:14px;text-align:right">${opts.returnDate}</td></tr>` : ""}
+    </table>
+    <p style="color:#111827;font-size:15px;font-weight:700;margin:16px 0 6px">Item(s) Borrowed</p>
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;color:#374151;font-size:14px;line-height:1.7;white-space:pre-wrap">${opts.items.replace(/\n/g, "<br>")}</div>
+    ${opts.dryCleaning && dryMap[opts.dryCleaning] ? `<p style="color:#374151;font-size:14px;margin-top:14px"><strong>Dry cleaning:</strong> ${dryMap[opts.dryCleaning]}</p>` : ""}
+    <p style="color:#374151;font-size:13px;line-height:1.6;margin-top:14px">
+      You accept full responsibility for all items while in your possession and agree to return them in the same condition. You are financially responsible for any loss, theft, stains, odors, tears, alterations, or damage, up to the full replacement value. Please return items by the return date above.
+    </p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `Your borrowed garment agreement — ${opts.storeName}`,
+    html: baseHtml("Borrowed Garment Agreement", body, opts.storeName),
+  });
+}
+
+export async function sendBorrowedReturnReminderEmail(opts: {
+  to: string;
+  borrowerName: string;
+  storeName: string;
+  items: string;
+  returnDate: string;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.borrowerName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">This is a reminder that your borrowed item(s) from ${opts.storeName} are due back on <strong>${opts.returnDate}</strong>.</p>
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;color:#374151;font-size:14px;line-height:1.7;white-space:pre-wrap;margin:14px 0">${opts.items.replace(/\n/g, "<br>")}</div>
+    <p style="color:#374151;font-size:13px;line-height:1.6">Please return them in the same condition received. Thank you!</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `Reminder: items due back ${opts.returnDate} — ${opts.storeName}`,
+    html: baseHtml("Return Reminder", body, opts.storeName),
+  });
+}
+
 // ─── Diagnostics ───────────────────────────────────────────────────────────────
 
 // Sends a test email and RETURNS the outcome (does not swallow errors), so the

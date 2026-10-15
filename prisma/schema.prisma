@@ -76,6 +76,8 @@ model Store {
   workLogs         WorkLog[]
   consignAppts     ConsignAppointment[]
   consignBlocks    ConsignBlockedDate[]
+  layaways         Layaway[]
+  borrowedGarments BorrowedGarment[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -397,6 +399,56 @@ model WorkLog {
   note         String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ─── LAYAWAY AGREEMENTS ──────────────────────────────────────────────────────
+
+model Layaway {
+  id           String    @id @default(cuid())
+  storeId      String
+  store        Store     @relation(fields: [storeId], references: [id])
+  buyerName    String
+  address      String?
+  cityStateZip String?
+  phone        String?
+  email        String?
+  items        String    @db.Text
+  totalPrice   Float
+  serviceFee   Float     @default(5)
+  deposit      Float     @default(0)
+  payment2     Float     @default(0)
+  payment3     Float     @default(0)
+  finalPayment Float     @default(0)
+  amountPaid   Float     @default(0)
+  startDate    DateTime  @default(now())
+  status       String    @default("ACTIVE") // ACTIVE | COMPLETED | CANCELLED
+  reminder15At DateTime?
+  reminder30At DateTime?
+  reminder45At DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ─── BORROWED GARMENT AGREEMENTS ─────────────────────────────────────────────
+
+model BorrowedGarment {
+  id               String    @id @default(cuid())
+  storeId          String
+  store            Store     @relation(fields: [storeId], references: [id])
+  borrowerName     String
+  phone            String?
+  email            String?
+  idNumber         String?
+  dateBorrowed     DateTime  @default(now())
+  returnDate       DateTime?
+  items            String    @db.Text
+  conditionPickup  String?
+  conditionDropoff String?
+  dryCleaning      String?   // BORROWER | NOT_BORROWER | UPON_RETURN
+  status           String    @default("OUT") // OUT | RETURNED
+  returnReminderAt DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 // ─── CONSIGNMENT APPOINTMENTS (new-consignor booking) ────────────────────────

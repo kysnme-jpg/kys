@@ -61,7 +61,9 @@ Set these on the **app service → Variables** tab. Required unless noted.
 | `ANTHROPIC_API_KEY` | _Optional._ Enables AI item entry. From console.anthropic.com. |
 | `CLOVER_API_KEY` / `CLOVER_MERCHANT_ID` | _Optional._ Enables Clover card orders. |
 | `CLOVER_API_BASE` | _Optional._ `https://sandbox.dev.clover.com` for sandbox testing; omit for production. |
-| `RESEND_API_KEY` / `EMAIL_FROM` | _Optional._ Enables outbound email (contracts, payouts). |
+| `RESEND_API_KEY` / `EMAIL_FROM` | _Optional._ Enables outbound email (contracts, payouts, appointments, layaway, borrowed). |
+| `BOOKING_NOTIFY_EMAIL` | _Optional._ Where new-appointment alerts go (falls back to store email, then kimberly@classicconsigns.com). |
+| `CRON_SECRET` | _Optional._ Secret that protects `/api/cron/reminders` for the daily layaway/return reminder runner. |
 | `SHOPIFY_WEBHOOK_SECRET` | _Optional._ Verifies Shopify webhooks. |
 | `RESET_TOKEN` | _Optional/temporary._ Enables the `/reset` password-reset page while set. Remove when not in use. |
 
@@ -152,6 +154,35 @@ Prospective consignors book drop-off appointments at the **public** page
 - **Test email:** People → Appointments has a **Send test email** button
   (`POST /api/appointments/test-email`) that returns the real Resend result for
   troubleshooting delivery.
+
+### Layaway & Borrowed agreements
+
+Two more People tabs: **Layaway** (`/layaway`) and **Borrowed** (`/borrowed`).
+
+- Data: `Layaway` and `BorrowedGarment` tables (created by `prisma db push`).
+- On creation, the customer/borrower is emailed the agreement if an email is
+  provided (layaway → agreement + payment schedule; borrowed → item list +
+  terms).
+- **Reminders:** layaway payment reminders fire at **15 / 30 / 45 days** from the
+  start date; borrowed-garment **return reminders** fire on/after the return
+  date. Logic lives in `src/lib/reminders.ts` and is idempotent (each reminder is
+  timestamped once sent).
+- Reminders run two ways:
+  1. **Opportunistically** whenever staff open the Layaway/Borrowed pages (the
+     list endpoints call the processor). Good enough if staff visit regularly.
+  2. **Daily** via `POST /api/cron/reminders`, protected by the `CRON_SECRET`
+     env var (send `Authorization: Bearer <CRON_SECRET>` or `?secret=`). If
+     `CRON_SECRET` is unset the endpoint is disabled (503).
+
+**To enable the daily runner (recommended):**
+1. Set a `CRON_SECRET` env var in Railway (any long random string).
+2. In GitHub → repo **Settings → Secrets and variables → Actions**, add two
+   repository secrets:
+   - `APP_URL` = your live site, e.g. `https://data-production-5b03.up.railway.app`
+   - `CRON_SECRET` = the same value as in Railway
+3. The workflow `.github/workflows/reminders.yml` runs daily (14:00 UTC) and can
+   be run manually from the **Actions** tab (Run workflow). It no-ops if the
+   secrets aren't set.
 
 ## 7. Integrations
 

@@ -16,6 +16,8 @@ const PEOPLE_TABS = [
   { label: "Customers", href: "/customers" },
   { label: "Consignors", href: "/consignors" },
   { label: "Appointments", href: "/appointments" },
+  { label: "Layaway", href: "/layaway" },
+  { label: "Borrowed", href: "/borrowed" },
 ];
 
 interface Consignor {

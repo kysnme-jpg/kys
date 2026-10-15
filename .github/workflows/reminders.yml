@@ -1,0 +1,27 @@
+name: Daily reminders
+
+# Sends due layaway payment reminders (15/30/45 days) and borrowed-garment
+# return reminders. Requires two repository secrets:
+#   APP_URL     - your live site, e.g. https://data-production-5b03.up.railway.app
+#   CRON_SECRET - the same value set as CRON_SECRET in Railway
+on:
+  schedule:
+    - cron: "0 14 * * *" # 14:00 UTC daily (~9-10am US Eastern)
+  workflow_dispatch: {} # allows a manual run from the Actions tab
+
+jobs:
+  run-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder endpoint
+        run: |
+          if [ -z "${{ secrets.APP_URL }}" ] || [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "APP_URL or CRON_SECRET secret is not set — skipping."
+            exit 0
+          fi
+          code=$(curl -s -o /tmp/out.txt -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/reminders")
+          echo "HTTP $code"
+          cat /tmp/out.txt
+          if [ "$code" != "200" ]; then exit 1; fi

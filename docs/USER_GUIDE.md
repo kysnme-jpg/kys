@@ -156,6 +156,34 @@ booking **new/prospective consignors** into drop-off slots.
   appointment, and opens the new consignor's page. If a consignor with that email
   already exists, it opens that one instead of making a duplicate.
 
+### Layaway
+
+The **Layaway** tab (next to Appointments) tracks layaway agreements.
+
+- **New Layaway:** enter the buyer's info, the item(s), total price, the $5
+  layaway fee, and the four payments (deposit today, then day 15, day 30, and the
+  final at day 45). If you enter the buyer's **email**, they're automatically sent
+  their **layaway agreement with the full payment schedule** when you save.
+- **Automatic reminders:** the buyer gets an email reminder at **15, 30, and 45
+  days** for the next payment due (and the balance remaining). Reminders stop once
+  the layaway is fully paid.
+- **Recording payments:** open a layaway (pencil) and use **Record a payment** to
+  add what the buyer paid; the balance updates and it marks **Completed** when
+  paid in full. You can also set the status to Cancelled.
+- The top cards show how many are active and the total outstanding balance.
+
+### Borrowed (garment agreements)
+
+The **Borrowed** tab tracks items lent out (e.g. for events).
+
+- **New Agreement:** enter the borrower's name, ID, phone, email, the dates
+  borrowed/return, the item list (one per line), condition notes, and who's
+  responsible for dry cleaning. If you enter the borrower's **email**, they're
+  automatically sent the **agreement listing the items** and the terms.
+- **Return reminder:** if a return date and email are set, the borrower gets a
+  reminder email when the item is due back.
+- Mark an agreement **Returned** (pencil → Status) when the items come back.
+
 ### Consignor detail page
 Shows KPI cards (balance, earned, active, sold), and tabs for **Items**,
 **Ledger** (every credit/debit), and **Payouts**. You can **issue a payout**

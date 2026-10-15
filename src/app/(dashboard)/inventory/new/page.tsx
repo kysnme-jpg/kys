@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhotoUpload } from "@/components/inventory/photo-upload";
-import { PrintLabelButton } from "@/components/inventory/label-print";
+import { PrintLabelButton, PrintKysTagButton } from "@/components/inventory/label-print";
 import { AIEntry } from "@/components/inventory/ai-entry";
 import { ArrowLeft, Save, Tag } from "lucide-react";
 import Link from "next/link";
@@ -140,7 +140,8 @@ export default function NewItemPage() {
             <p className="text-gray-600">{saved.title}</p>
             <p className="text-sm text-gray-500 font-mono">SKU: {saved.sku}</p>
 
-            <div className="flex gap-3 justify-center pt-2">
+            <div className="flex gap-3 justify-center pt-2 flex-wrap">
+              <PrintKysTagButton item={{ ...saved, consignor: (() => { const c = consignors.find((c) => c.id === saved.consignorId); return c ? `${c.firstName} ${c.lastName}` : undefined; })() }} size="default" />
               <PrintLabelButton item={saved} size="default" />
               <Button onClick={handleSaveAnother} variant="outline">Add Another</Button>
               <Button onClick={() => router.push("/inventory")}>View Inventory</Button>

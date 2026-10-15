@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
-import { PrintLabelButton } from "@/components/inventory/label-print";
+import { PrintKysTagButton, printKysTags } from "@/components/inventory/label-print";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus, Pencil,
-  TrendingUp, CheckCircle, Clock, Banknote
+  TrendingUp, CheckCircle, Clock, Banknote, Printer
 } from "lucide-react";
 
 interface ConsignorDetail {
@@ -192,14 +192,30 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
             <p className="text-sm text-gray-500">Member since {formatDate(consignor.createdAt)} · {consignor.splitPercent}% split</p>
           </div>
         </div>
-        <Button
-          onClick={() => { setPayoutAmount(String(consignor.balance.toFixed(2))); setPayoutOpen(true); }}
-          disabled={consignor.balance <= 0}
-          className="gap-2"
-        >
-          <DollarSign className="h-4 w-4" />
-          Issue Payout
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const tagItems = consignor.items
+                .filter((i: any) => i.status === "ACTIVE")
+                .map((i: any) => ({ title: i.title, sku: i.sku, barcode: i.barcode, price: i.price, size: i.size || undefined, brand: i.brand || undefined, condition: i.condition || undefined, consignor: `${consignor.firstName} ${consignor.lastName}` }));
+              if (!tagItems.length) { alert("No active items to print tags for."); return; }
+              printKysTags(tagItems);
+            }}
+            className="gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Print all tags
+          </Button>
+          <Button
+            onClick={() => { setPayoutAmount(String(consignor.balance.toFixed(2))); setPayoutOpen(true); }}
+            disabled={consignor.balance <= 0}
+            className="gap-2"
+          >
+            <DollarSign className="h-4 w-4" />
+            Issue Payout
+          </Button>
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -335,7 +351,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                   <Badge variant={itemStatusColors[item.status]}>{item.status}</Badge>
                   <Button size="sm" variant="outline" onClick={() => setEditItem({ ...item, costPrice: item.costPrice ?? "" })}><Pencil className="h-3.5 w-3.5" /></Button>
                   {item.status === "ACTIVE" && (
-                    <PrintLabelButton item={item} size="sm" />
+                    <PrintKysTagButton item={{ ...item, consignor: `${consignor.firstName} ${consignor.lastName}` }} size="sm" />
                   )}
                 </div>
               ))

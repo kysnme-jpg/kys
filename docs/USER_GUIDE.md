@@ -94,10 +94,19 @@ Select items with the checkboxes (or "select all"), then use the blue bar:
 - **Mark Returned** — change status in bulk.
 - **Delete** — remove selected items (sold items can't be deleted).
 
-### Labels
-Printed labels are **2" × 1"** and carry a **scannable Code128 barcode** (the
-item's barcode, or its SKU), the code, and the price. Print from the Add-Item
-screen, the Edit window, or the bulk **Print labels** action.
+### Labels & KYS tags
+Two print formats, both with a **scannable Code128 barcode** (the item's barcode,
+or its SKU):
+- **KYS Tag** — a branded **2" × 2"** hang tag with the **Classic Consigns by KYS
+  logo**, the **Size**, **Price**, **Consignor**, the SKU barcode, and SKU text.
+  Designed to print on your **own printer** (plain cardstock or tag sheets).
+  Print it from the **Add-Item** screen, an item's **Edit** window ("KYS Tag"),
+  the inventory bulk bar (**Print KYS tags**), or a consignor's page (**Print all
+  tags** prints a sheet of tags for all their active items). Bulk printing lays
+  the tags out in a grid with faint cut guides.
+- **Label** — the compact **2" × 1"** thermal label (title, brand/size, price,
+  barcode). Print from the Edit window ("Label") — handy for a thermal label
+  printer.
 
 ### Aging alerts
 On the Active tab, items expiring within 14 days are flagged at the top so you

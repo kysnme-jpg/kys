@@ -142,7 +142,14 @@ booking **new/prospective consignors** into drop-off slots.
   holiday) so no new appointments can be booked.
 - **Email confirmations:** when someone books with an email address, they
   automatically get a confirmation email with the date, time, location, and the
-  item/jewelry reminders. (Requires email to be set up — see the Admin Guide.)
+  item/jewelry reminders. (If they don't enter an email, no confirmation is sent
+  — but you'll still be notified, see below.)
+- **You get notified of every booking:** each time someone books (online or
+  added by staff online), the store receives a **"New appointment" email** with
+  the person's name, time, phone, and email. It goes to your store email (set in
+  **Settings → Store Information**), or to `kimberly@classicconsigns.com` if no
+  store email is set. The Appointments page also **auto-refreshes**, so new
+  bookings appear on their own within about 30 seconds.
 - **Turn an appointment into a consignor:** once someone shows up and you're
   ready to set them up, click **Add as consignor** on their appointment. It
   creates a consignor record from their name/email/phone (50% split), removes the

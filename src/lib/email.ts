@@ -37,6 +37,43 @@ function baseHtml(title: string, body: string, storeName: string) {
 </html>`;
 }
 
+// Notify the store that a new appointment was just booked.
+export async function sendBookingNotification(opts: {
+  to: string;
+  storeName: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  note?: string | null;
+  dateLabel: string;
+  timeLabel: string;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:6px 0;color:#6b7280;font-size:14px">${label}</td><td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${value}</td></tr>`;
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">You have a new consignment appointment booking:</p>
+    <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:20px 0;border-collapse:collapse">
+      ${row("Date", opts.dateLabel)}
+      ${row("Time", opts.timeLabel)}
+      ${row("Name", opts.name)}
+      ${opts.phone ? row("Phone", opts.phone) : ""}
+      ${opts.email ? row("Email", opts.email) : ""}
+      ${opts.note ? row("Note", opts.note) : ""}
+    </table>
+    <p style="color:#374151;font-size:13px">View and manage it under People → Appointments.</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `🗓️ New appointment — ${opts.name}, ${opts.dateLabel}`,
+    html: baseHtml("New Appointment Booked", body, opts.storeName),
+  });
+}
+
 // ─── Diagnostics ───────────────────────────────────────────────────────────────
 
 // Sends a test email and RETURNS the outcome (does not swallow errors), so the

@@ -144,6 +144,14 @@ Prospective consignors book drop-off appointments at the **public** page
   Saturday). Both are created by `prisma db push` on deploy.
 - `/book` and `/api/book` are in the middleware `PUBLIC_PATHS` allow-list so
   they're reachable without a login.
+- **Booking notifications:** every online booking emails the store. The
+  recipient is `BOOKING_NOTIFY_EMAIL` (env var) if set, otherwise the store email
+  from Settings, otherwise `kimberly@classicconsigns.com`. Set
+  `BOOKING_NOTIFY_EMAIL` to send alerts somewhere specific. The consignor also
+  gets a confirmation if they entered an email.
+- **Test email:** People → Appointments has a **Send test email** button
+  (`POST /api/appointments/test-email`) that returns the real Resend result for
+  troubleshooting delivery.
 
 ## 7. Integrations
 

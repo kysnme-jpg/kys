@@ -35,7 +35,14 @@ export default function AppointmentsPage() {
     setSaturdays(data.saturdays || []);
     setLoading(false);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Keep the list fresh so new online bookings show up without a manual reload.
+    const poll = setInterval(load, 30000);
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(poll); window.removeEventListener("focus", onFocus); };
+  }, []);
 
   const openAdd = (date: string, slot: number) => { setForm({ name: "", email: "", phone: "", note: "" }); setError(""); setAddFor({ date, slot }); };
 

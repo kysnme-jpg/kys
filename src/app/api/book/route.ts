@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { upcomingSaturdays, dateKey, slotLabel, prettyDate, SLOT_TIMES, MAX_APPTS_PER_DAY } from "@/lib/appointments";
-import { sendAppointmentEmail } from "@/lib/email";
+import { sendAppointmentEmail, sendBookingNotification } from "@/lib/email";
 
 const BOOK_WEEKS = 10;
 const parseKey = (key: string) => new Date(`${key}T00:00:00.000Z`);
@@ -49,7 +49,7 @@ const bookSchema = z.object({
 
 // Public: book an appointment.
 export async function POST(req: NextRequest) {
-  const store = await db.store.findFirst({ select: { id: true, name: true, address: true } });
+  const store = await db.store.findFirst({ select: { id: true, name: true, address: true, email: true } });
   if (!store) return NextResponse.json({ error: "Store not configured" }, { status: 503 });
 
   const parsed = bookSchema.safeParse(await req.json());
@@ -74,18 +74,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Couldn't book the appointment. Please try again." }, { status: 500 });
   }
 
-  // Send a confirmation email (best-effort; booking already succeeded).
+  // Emails are best-effort; the booking already succeeded.
+  const dateLabel = prettyDate(date);
+  const timeLabel = slotLabel(slot);
+
+  // 1) Confirmation to the consignor (only if they gave an email).
   if (email) {
     try {
-      await sendAppointmentEmail({
-        to: email,
-        name: name.trim(),
-        storeName: store.name,
-        dateLabel: prettyDate(date),
-        timeLabel: slotLabel(slot),
-        address: store.address,
-      });
-    } catch { /* don't fail the booking if email fails */ }
+      await sendAppointmentEmail({ to: email, name: name.trim(), storeName: store.name, dateLabel, timeLabel, address: store.address });
+    } catch { /* ignore */ }
+  }
+
+  // 2) Notification to the store so staff know a booking came in.
+  const notifyTo = process.env.BOOKING_NOTIFY_EMAIL || store.email || "kimberly@classicconsigns.com";
+  if (notifyTo) {
+    try {
+      await sendBookingNotification({ to: notifyTo, storeName: store.name, name: name.trim(), email, phone, note, dateLabel, timeLabel });
+    } catch { /* ignore */ }
   }
 
   return NextResponse.json({ booked: true });

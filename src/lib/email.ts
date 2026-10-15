@@ -37,6 +37,33 @@ function baseHtml(title: string, body: string, storeName: string) {
 </html>`;
 }
 
+// ─── Diagnostics ───────────────────────────────────────────────────────────────
+
+// Sends a test email and RETURNS the outcome (does not swallow errors), so the
+// owner can see exactly why email isn't working.
+export async function sendTestEmail(to: string, storeName: string): Promise<{ ok: boolean; id?: string; error?: string; from: string; hasKey: boolean }> {
+  const hasKey = !!process.env.RESEND_API_KEY;
+  if (!hasKey) return { ok: false, error: "RESEND_API_KEY is not set on the server.", from: FROM, hasKey };
+  const r = getResend();
+  if (!r) return { ok: false, error: "Resend client could not be created.", from: FROM, hasKey };
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">This is a test email from ${storeName}.</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">If you're reading this, your email setup is working. 🎉</p>`;
+  try {
+    const { data, error } = await r.emails.send({
+      from: FROM,
+      to,
+      subject: `Test email — ${storeName}`,
+      html: baseHtml("Email is working", body, storeName),
+    });
+    if (error) return { ok: false, error: `${(error as any).name || "Error"}: ${(error as any).message || JSON.stringify(error)}`, from: FROM, hasKey };
+    return { ok: true, id: data?.id, from: FROM, hasKey };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || String(err), from: FROM, hasKey };
+  }
+}
+
 // ─── Exported send functions ──────────────────────────────────────────────────
 
 export async function sendItemSoldEmail(opts: {

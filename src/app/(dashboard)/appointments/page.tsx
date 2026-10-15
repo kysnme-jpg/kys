@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { slotLabel, prettyDate, SLOT_TIMES } from "@/lib/appointments";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Ban, Undo2, Link2, Clock, Check, UserPlus } from "lucide-react";
+import { Plus, Trash2, Ban, Undo2, Link2, Clock, Check, UserPlus, Send } from "lucide-react";
 
 const PEOPLE_TABS = [
   { label: "Customers", href: "/customers" },
@@ -86,6 +86,21 @@ export default function AppointmentsPage() {
     try { await navigator.clipboard.writeText(bookingUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ }
   };
 
+  const [testing, setTesting] = useState(false);
+  const sendTest = async () => {
+    const to = prompt("Send a test email to which address?", "");
+    if (to === null) return; // cancelled
+    setTesting(true);
+    const res = await fetch("/api/appointments/test-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to }) });
+    const d = await res.json().catch(() => ({}));
+    setTesting(false);
+    if (d.ok) {
+      alert(`✅ Test email sent to ${d.to} from ${d.from}.\n\nCheck the inbox (and spam). Resend id: ${d.id || "—"}`);
+    } else {
+      alert(`❌ Email failed.\n\nFrom: ${d.from || "—"}\nAPI key present: ${d.hasKey ? "yes" : "NO"}\n\nError: ${d.error || "unknown"}`);
+    }
+  };
+
   const totalBooked = saturdays.reduce((s, d) => s + d.appointments.length, 0);
 
   return (
@@ -98,10 +113,16 @@ export default function AppointmentsPage() {
             Saturdays 12–3 PM · {totalBooked} upcoming booking{totalBooked === 1 ? "" : "s"}
           </p>
         </div>
-        <Button onClick={copyLink} variant="outline" className="gap-2">
-          {copied ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
-          {copied ? "Link copied" : "Copy booking link"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={sendTest} variant="outline" disabled={testing} className="gap-2">
+            <Send className="h-4 w-4" />
+            {testing ? "Sending…" : "Send test email"}
+          </Button>
+          <Button onClick={copyLink} variant="outline" className="gap-2">
+            {copied ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
+            {copied ? "Link copied" : "Copy booking link"}
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-line bg-surface p-4 text-sm text-[var(--muted)] flex items-center gap-2">

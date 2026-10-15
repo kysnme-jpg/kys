@@ -186,6 +186,18 @@ If Resend returns a domain error, the sender domain isn't verified yet — verif
 it under Resend → Domains (add the SPF/DKIM DNS records), or point `EMAIL_FROM`
 at an already-verified address.
 
+**DMARC (deliverability):** in addition to Resend's SPF/DKIM records, add a
+DMARC record at the domain's DNS to improve inbox placement and satisfy
+Gmail/Yahoo sender requirements:
+
+| Type | Name | Value |
+|------|------|-------|
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:kimberly@classicconsigns.com` |
+
+`p=none` is monitor-only (no effect on mail flow); it can be tightened to
+`p=quarantine` later once reports look clean. Verify at whatsmydns.net by
+looking up `_dmarc.classicconsigns.com` (TXT).
+
 ### Anthropic / Claude (AI item entry)
 Set `ANTHROPIC_API_KEY`. The add-item photo analysis uses `claude-haiku-4-5`.
 Cost is well under a cent per item. If unset, AI entry simply returns a 503 and

@@ -98,13 +98,22 @@ export default function AppointmentsPage() {
     const to = prompt("Send a test email to which address?", "");
     if (to === null) return; // cancelled
     setTesting(true);
-    const res = await fetch("/api/appointments/test-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to }) });
-    const d = await res.json().catch(() => ({}));
+    let d: any = {};
+    let status = 0;
+    try {
+      const res = await fetch("/api/appointments/test-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to }) });
+      status = res.status;
+      d = await res.json().catch(() => ({}));
+    } catch (e: any) {
+      d = { error: e?.message || "request failed" };
+    }
     setTesting(false);
     if (d.ok) {
       alert(`✅ Test email sent to ${d.to} from ${d.from}.\n\nCheck the inbox (and spam). Resend id: ${d.id || "—"}`);
+    } else if (status === 404) {
+      alert(`⚠️ The test-email feature isn't deployed yet (HTTP 404).\n\nWait for the latest Railway deploy to finish (Deployments tab → “Deployment successful”), then try again.`);
     } else {
-      alert(`❌ Email failed.\n\nFrom: ${d.from || "—"}\nAPI key present: ${d.hasKey ? "yes" : "NO"}\n\nError: ${d.error || "unknown"}`);
+      alert(`❌ Email failed (HTTP ${status || "?"}).\n\nFrom: ${d.from || "—"}\nAPI key present on server: ${d.hasKey === true ? "yes" : d.hasKey === false ? "NO" : "unknown"}\n\nError: ${d.error || "unknown"}`);
     }
   };
 

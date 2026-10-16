@@ -246,6 +246,19 @@ Your loyalty members. Open **Customers** from the sidebar.
 - Customers earn **1 point per $1** spent (when attached to a sale) and redeem
   **100 points = $1** at the POS.
 
+### Kiosk sign-in (digital guest book)
+Replace the paper guest book with a tablet. Share **your site `/welcome`** (use
+the **Kiosk link** button on the Customers page to copy it), open it on the
+tablet in full-screen, and set the tablet to **kiosk / Guided Access mode** so
+customers stay on that page.
+
+- Customers enter their **name, email, phone**, and optionally their **birthday**
+  (month/day, for birthday offers) and **how they heard about you**.
+- It creates their customer record (or updates an existing one — matched by email
+  or phone, so no duplicates), shows a friendly **thank-you** screen, and
+  **resets automatically** for the next guest.
+- No login is required and the rest of your store stays private.
+
 ---
 
 ## 6. Payouts

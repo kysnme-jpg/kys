@@ -19,7 +19,7 @@ const PEOPLE_TABS = [
   { label: "Borrowed", href: "/borrowed" },
   { label: "Sip & Shop", href: "/sip-shop" },
 ];
-import { Search, X, Delete, Plus, Check, Star, Trash2, ChevronRight, Hash } from "lucide-react";
+import { Search, X, Delete, Plus, Check, Star, Trash2, ChevronRight, Hash, Tablet } from "lucide-react";
 
 interface Customer {
   id: string; firstName: string; lastName: string;
@@ -133,7 +133,10 @@ export default function CustomersPage() {
         <div className="flex-1 min-w-0">
           <PageHeader
             title="Customers"
-            action={<Button onClick={() => setCreateOpen(true)} className="h-14 px-6 gap-2"><Plus className="h-5 w-5" /> New customer</Button>}
+            action={<div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => { const u = `${window.location.origin}/welcome`; navigator.clipboard?.writeText(u).then(() => alert(`Kiosk link copied:\n${u}\n\nOpen this on your tablet (full-screen) for customer sign-in.`)).catch(() => alert(`Kiosk link:\n${u}`)); }} className="h-14 px-5 gap-2"><Tablet className="h-5 w-5" /> Kiosk link</Button>
+              <Button onClick={() => setCreateOpen(true)} className="h-14 px-6 gap-2"><Plus className="h-5 w-5" /> New customer</Button>
+            </div>}
           />
           <SegmentedTabs tabs={PEOPLE_TABS} />
 

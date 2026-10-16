@@ -187,6 +187,15 @@ People tab **Sip & Shop** (`/sip-shop`, staff) plus a **public** request page at
   (`BOOKING_NOTIFY_EMAIL` → store email → kimberly@classicconsigns.com).
 - `/sip-and-shop` and `/api/sip-and-shop` are in the middleware public allow-list.
 
+### Kiosk customer sign-in (`/welcome`)
+
+Public kiosk page at `/welcome` (no login) for a tablet to replace the paper
+guest book. `POST /api/checkin` creates or updates a `Customer` (matched by
+email or phone to avoid duplicates). Added `Customer.birthday` ("MM-DD") and
+`Customer.source` fields. `/welcome` and `/api/checkin` are in the middleware
+public allow-list. Put the tablet in kiosk/Guided-Access mode on this page so
+customers can't reach the staff dashboard.
+
 **To enable the daily runner (recommended):**
 1. Set a `CRON_SECRET` env var in Railway (any long random string).
 2. In GitHub → repo **Settings → Secrets and variables → Actions**, add two

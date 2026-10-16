@@ -9,7 +9,6 @@ import { PhotoUpload } from "@/components/inventory/photo-upload";
 import { PrintLabelButton, PrintKysTagButton } from "@/components/inventory/label-print";
 import { AIEntry } from "@/components/inventory/ai-entry";
 import { ArrowLeft, Save, Tag } from "lucide-react";
-import Link from "next/link";
 
 interface Consignor {
   id: string;
@@ -32,6 +31,7 @@ export default function NewItemPage() {
   const [error, setError] = useState("");
   const [consignors, setConsignors] = useState<Consignor[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [from, setFrom] = useState("/inventory");
 
   const [form, setForm] = useState({
     title: "",
@@ -59,7 +59,10 @@ export default function NewItemPage() {
       const list = d.consignors || [];
       setConsignors(list);
       // Pre-select a consignor when arriving from their page (/inventory/new?consignorId=…)
-      const pid = new URLSearchParams(window.location.search).get("consignorId");
+      const qp = new URLSearchParams(window.location.search);
+      const fromParam = qp.get("from");
+      if (fromParam) setFrom(fromParam);
+      const pid = qp.get("consignorId");
       if (pid) {
         const c = list.find((x: any) => x.id === pid);
         if (c) setForm((f) => ({ ...f, consignorId: pid, splitPercent: String(c.splitPercent) }));
@@ -144,7 +147,7 @@ export default function NewItemPage() {
               <PrintKysTagButton item={{ ...saved, consignor: (() => { const c = consignors.find((c) => c.id === saved.consignorId); return c ? `${c.firstName} ${c.lastName}` : undefined; })() }} size="default" />
               <PrintLabelButton item={saved} size="default" />
               <Button onClick={handleSaveAnother} variant="outline">Add Another</Button>
-              <Button onClick={() => router.push("/inventory")}>View Inventory</Button>
+              <Button onClick={() => router.push(from)}>{from.startsWith("/consignors/") ? "Back to consignor" : "View Inventory"}</Button>
             </div>
           </CardContent>
         </Card>
@@ -155,11 +158,9 @@ export default function NewItemPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/inventory">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
+        <Button variant="ghost" size="icon" type="button" onClick={() => router.push(from)}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <h1 className="text-2xl font-bold text-gray-900">Add Item</h1>
       </div>
 
@@ -396,9 +397,7 @@ export default function NewItemPage() {
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : "Save Item"}
           </Button>
-          <Link href="/inventory">
-            <Button variant="outline" type="button">Cancel</Button>
-          </Link>
+          <Button variant="outline" type="button" onClick={() => router.push(from)}>Cancel</Button>
         </div>
       </form>
     </div>

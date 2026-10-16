@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus, Pencil,
-  TrendingUp, CheckCircle, Clock, Banknote, Printer
+  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText
 } from "lucide-react";
 
 interface ConsignorDetail {
@@ -46,6 +47,7 @@ const ledgerColors: Record<string, string> = {
 
 export default function ConsignorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [consignor, setConsignor] = useState<ConsignorDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [payoutOpen, setPayoutOpen] = useState(false);
@@ -178,6 +180,71 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
     .filter((e) => e.type === "SALE_CREDIT")
     .reduce((s: number, e: any) => s + e.amount, 0);
 
+  const printReport = () => {
+    if (!consignor) return;
+    const win = window.open("", "_blank", "width=800,height=900");
+    if (!win) return;
+    const money = (n: number) => formatCurrency(n);
+    const esc = (s: any) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] as string));
+    const itemsRows = consignor.items.map((i: any) => `
+      <tr>
+        <td>${esc(i.title)}</td>
+        <td class="mono">${esc(i.sku)}</td>
+        <td>${esc(i.brand || "")}</td>
+        <td>${esc(i.size || "")}</td>
+        <td class="r">${money(i.price)}</td>
+        <td>${esc(i.status)}</td>
+      </tr>`).join("");
+    const payoutRows = (consignor.payouts || []).map((p: any) => `
+      <tr>
+        <td>${formatDate(p.createdAt)}</td>
+        <td class="r">${money(p.amount)}</td>
+        <td>${esc(p.method)}${p.checkNumber ? ` #${esc(p.checkNumber)}` : ""}</td>
+        <td>${esc(p.status)}</td>
+      </tr>`).join("") || `<tr><td colspan="4" class="muted">No payouts yet</td></tr>`;
+    win.document.write(`
+      <!DOCTYPE html><html><head><title>${esc(consignor.firstName)} ${esc(consignor.lastName)} — Consignor Report</title><style>
+        * { box-sizing: border-box; }
+        body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; padding: 32px; max-width: 760px; margin: 0 auto; }
+        h1 { font-size: 24px; margin: 0; }
+        .sub { color: #666; font-size: 13px; margin-top: 4px; }
+        .kpis { display: flex; gap: 12px; margin: 20px 0; }
+        .kpi { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; }
+        .kpi .l { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: .5px; }
+        .kpi .v { font-size: 18px; font-weight: bold; margin-top: 2px; }
+        h2 { font-size: 15px; margin: 24px 0 8px; border-bottom: 2px solid #b4532a; padding-bottom: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: Arial, sans-serif; }
+        th { text-align: left; background: #f5f5f5; padding: 6px 8px; font-size: 10px; text-transform: uppercase; color: #666; }
+        td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+        td.r, th.r { text-align: right; }
+        .mono { font-family: monospace; font-size: 10px; color: #777; }
+        .muted { color: #999; text-align: center; }
+        .foot { margin-top: 28px; font-size: 11px; color: #999; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+        <h1>${esc(consignor.firstName)} ${esc(consignor.lastName)}</h1>
+        <div class="sub">
+          ${esc(consignor.email || "")}${consignor.email && consignor.phone ? " · " : ""}${esc(consignor.phone || "")}<br/>
+          ${consignor.splitPercent}% split · Member since ${formatDate(consignor.createdAt)}
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="l">Balance Owed</div><div class="v">${money(consignor.balance)}</div></div>
+          <div class="kpi"><div class="l">Total Earned</div><div class="v">${money(totalEarned)}</div></div>
+          <div class="kpi"><div class="l">Active Items</div><div class="v">${activeItems.length}</div></div>
+          <div class="kpi"><div class="l">Items Sold</div><div class="v">${soldItems.length}</div></div>
+        </div>
+        <h2>Items (${consignor.items.length})</h2>
+        <table><thead><tr><th>Item</th><th>SKU</th><th>Brand</th><th>Size</th><th class="r">Price</th><th>Status</th></tr></thead>
+        <tbody>${itemsRows || `<tr><td colspan="6" class="muted">No items</td></tr>`}</tbody></table>
+        <h2>Payout History</h2>
+        <table><thead><tr><th>Date</th><th class="r">Amount</th><th>Method</th><th>Status</th></tr></thead>
+        <tbody>${payoutRows}</tbody></table>
+        <div class="foot">Classic Consigns by KYS · Report generated ${new Date().toLocaleString()}</div>
+        <script>window.onload=function(){setTimeout(function(){window.print();},250);};</script>
+      </body></html>`);
+    win.document.close();
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -211,6 +278,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
           >
             <Printer className="h-4 w-4" />
             Print all tags
+          </Button>
+          <Button variant="outline" onClick={printReport} className="gap-2">
+            <FileText className="h-4 w-4" />
+            Download report
           </Button>
           <Button
             onClick={() => { setPayoutAmount(String(consignor.balance.toFixed(2))); setPayoutOpen(true); }}
@@ -322,7 +393,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
         {activeTab === "items" && (
           <div className="space-y-2">
             <div className="flex justify-end">
-              <Link href={`/inventory/new?consignorId=${consignor.id}`}>
+              <Link href={`/inventory/new?consignorId=${consignor.id}&from=${encodeURIComponent(`/consignors/${id}`)}`}>
                 <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Add item</Button>
               </Link>
             </div>
@@ -330,7 +401,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
               <div className="py-8 text-center">
                 <Package className="h-9 w-9 text-[var(--muted)] mx-auto mb-2" />
                 <p className="text-[var(--muted)] mb-4">No items yet</p>
-                <Link href={`/inventory/new?consignorId=${consignor.id}`}>
+                <Link href={`/inventory/new?consignorId=${consignor.id}&from=${encodeURIComponent(`/consignors/${id}`)}`}>
                   <Button className="gap-1.5"><Plus className="h-4 w-4" /> Add their first item</Button>
                 </Link>
               </div>
@@ -354,7 +425,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                     <p className="text-xs text-gray-500">{calcConsignorCredit(item.price, item.splitPercent ?? consignor.splitPercent).toFixed(2)} to consignor</p>
                   </div>
                   <Badge variant={itemStatusColors[item.status]}>{item.status}</Badge>
-                  <Button size="sm" variant="outline" onClick={() => setEditItem({ ...item, costPrice: item.costPrice ?? "" })}><Pencil className="h-3.5 w-3.5" /></Button>
+                  <Button size="sm" variant="outline" onClick={() => router.push(`/inventory/${item.id}/edit?from=${encodeURIComponent(`/consignors/${id}`)}`)}><Pencil className="h-3.5 w-3.5" /></Button>
                   {item.status === "ACTIVE" && (
                     <PrintKysTagButton item={{ ...item, consignor: `${consignor.firstName} ${consignor.lastName}` }} size="sm" blankPrice={tagBlankPrice} />
                   )}

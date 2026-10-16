@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
@@ -49,6 +50,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function InventoryPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<Item[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -317,6 +319,7 @@ export default function InventoryPage() {
             {editing.consignor && <p className="text-xs text-gray-500">Consignor: <b className="text-gray-900">{editing.consignor.firstName} {editing.consignor.lastName}</b></p>}
             <div className="flex gap-2 pt-1">
               <Button onClick={saveEdit} disabled={saving} className="flex-1">{saving ? "Saving..." : "Save"}</Button>
+              <Button variant="outline" onClick={() => router.push(`/inventory/${editing.id}/edit?from=/inventory`)} className="gap-1.5"><Pencil className="h-4 w-4" /> Full edit</Button>
               <Button variant="outline" onClick={() => printKysTag({ title: editing.title, sku: editing.sku, barcode: editing.barcode, price: editing.price, size: editing.size || undefined, brand: editing.brand || undefined, condition: editing.condition || undefined, consignor: editing.consignor ? `${editing.consignor.firstName} ${editing.consignor.lastName}` : undefined })} className="gap-1.5"><Tag className="h-4 w-4" /> KYS Tag</Button>
               <Button variant="outline" onClick={() => printLabel({ title: editing.title, sku: editing.sku, barcode: editing.barcode, price: editing.price, size: editing.size || undefined, brand: editing.brand || undefined, condition: editing.condition || undefined })} className="gap-1.5"><Printer className="h-4 w-4" /> Label</Button>
               <Button variant="outline" onClick={() => deleteOne(editing.id)} className="text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></Button>

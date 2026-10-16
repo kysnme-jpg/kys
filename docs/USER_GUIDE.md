@@ -80,11 +80,14 @@ checks or edits at the counter.
 8. **Save** → you'll get the SKU and a **Print Label** button.
 
 ### Editing an item
-Click any item (row or card) to open the **Edit** window. You can change the
-title, SKU, barcode, brand, size, condition, **price**, **cost** (what it cost
-you), **location** (In-store / Storage), status, and online listing, **Print
-Label**, or **Delete** (deletion is blocked for items with sales). Items can
-also be edited from a consignor's **Items** tab (Edit pencil on each row).
+Click any item (row or card) in Inventory to open the quick **Edit** window
+(title, SKU, barcode, brand, size, condition, price, cost, location, status),
+with **Print**, **KYS Tag**, and **Delete**. For the complete form — the same
+one as Add Item, with **photos, AI photo auto-fill, color, description, category,
+online listing**, etc. — click **Full edit** in that window, or edit from a
+consignor's **Items** tab (the pencil opens the full editor directly). After
+saving, you're returned to wherever you came from (e.g. back to the consignor
+you were reviewing). Deletion is blocked for sold items.
 
 ### Bulk actions
 Select items with the checkboxes (or "select all"), then use the blue bar:
@@ -220,6 +223,13 @@ events (they run **7:00–10:00 PM**).
 Shows KPI cards (balance, earned, active, sold), and tabs for **Items**,
 **Ledger** (every credit/debit), and **Payouts**. You can **issue a payout**
 here (Check / Cash / ACH).
+
+- **Download report:** the **Download report** button opens a clean, printable
+  summary of that consignor — their contact/split, the KPI totals, every item
+  (with SKU, price, status), and their payout history. Use your browser's
+  **Print** dialog to print it or **Save as PDF**.
+- Editing an item from here (or adding one) returns you right back to this
+  consignor's page when you're done.
 
 - **Notes:** there's a **Notes** box on each consignor's page — type anything
   you want to remember (preferences, reminders, special arrangements) and

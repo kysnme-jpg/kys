@@ -14,6 +14,7 @@ interface LabelData {
   brand?: string;
   barcode?: string | null;
   consignor?: string;
+  desc?: string; // short description printed on the KYS tag (defaults to title)
 }
 
 // Render a real, scannable Code128 barcode as an SVG string.
@@ -134,11 +135,14 @@ export function printLabels(items: LabelData[]) {
 
 // Shared CSS for the KYS tag.
 const KYS_TAG_CSS = `
-  .kys-tag { width: 2in; height: 2in; padding: 0.12in; display: flex; flex-direction: column;
+  .kys-tag { width: 2in; height: 2in; padding: 0.1in; display: flex; flex-direction: column;
     font-family: Georgia, 'Times New Roman', serif; overflow: hidden; }
   .kt-logo { text-align: center; flex: 0 0 auto; }
-  .kt-logo img { height: 0.72in; max-width: 1.7in; object-fit: contain; }
-  .kt-fields { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 0.07in; font-size: 9pt; padding: 0 2pt; }
+  .kt-logo img { height: 0.6in; max-width: 1.65in; object-fit: contain; }
+  .kt-desc { text-align: center; font-size: 7pt; font-style: italic; color: #333; line-height: 1.15;
+    margin-top: 1pt; max-height: 0.3in; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; }
+  .kt-fields { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 0.06in; font-size: 9pt; padding: 0 2pt; }
   .kt-sz { text-align: right; }
   .kt-pc { display: flex; justify-content: space-between; align-items: baseline; gap: 4pt; }
   .kt-price { font-weight: bold; font-size: 12pt; white-space: nowrap; }
@@ -152,6 +156,8 @@ const KYS_TAG_CSS = `
 
 interface KysTagOptions { blankPrice?: boolean }
 
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+
 function kysTagInner(item: LabelData, opts: KysTagOptions = {}): string {
   const code = (item.barcode && item.barcode.trim()) || item.sku;
   const svg = barcodeSvg(code);
@@ -160,17 +166,20 @@ function kysTagInner(item: LabelData, opts: KysTagOptions = {}): string {
   const priceHtml = opts.blankPrice
     ? `$<span class="kt-v kt-priceline">&nbsp;</span>`
     : `$${priceNum}`;
+  // Short description = the item's custom tag text, or its title.
+  const desc = (item.desc ?? item.title ?? "").trim();
   return `
     <div class="kt-logo"><img src="${KYS_LOGO_DATA_URI}" alt="" /></div>
+    ${desc ? `<div class="kt-desc">${esc(desc)}</div>` : ""}
     <div class="kt-fields">
-      <div class="kt-sz">Sz <span class="kt-v">${item.size || ""}</span></div>
+      <div class="kt-sz">Sz <span class="kt-v">${esc(item.size || "")}</span></div>
       <div class="kt-pc">
         <span class="kt-price">${priceHtml}</span>
-        <span class="kt-cons">${item.consignor ? `Consignor: ${item.consignor}` : ""}</span>
+        <span class="kt-cons">${item.consignor ? `Consignor: ${esc(item.consignor)}` : ""}</span>
       </div>
     </div>
     <div class="kt-barcode">${svg}</div>
-    <div class="kt-code">${code}</div>`;
+    <div class="kt-code">${esc(code)}</div>`;
 }
 
 // Print a single KYS tag (2" x 2").

@@ -98,7 +98,8 @@ Select items with the checkboxes (or "select all"), then use the blue bar:
 Two print formats, both with a **scannable Code128 barcode** (the item's barcode,
 or its SKU):
 - **KYS Tag** — a branded **2" × 2"** hang tag with the **Classic Consigns by KYS
-  logo**, the **Size**, **Price**, **Consignor**, the SKU barcode, and SKU text.
+  logo**, a **short description** (the item's title), the **Size**, **Price**,
+  **Consignor**, the SKU barcode, and SKU text.
   Designed to print on your **own printer** (plain cardstock or tag sheets).
   Print it from the **Add-Item** screen, an item's **Edit** window ("KYS Tag"),
   the inventory bulk bar (**Print KYS tags**), or a consignor's page (**Print all

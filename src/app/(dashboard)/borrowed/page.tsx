@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Pencil, Shirt, Clock, Trash2 } from "lucide-react";
+import { Plus, Pencil, Shirt, Clock, Trash2, ScanLine } from "lucide-react";
+import { AIEntry } from "@/components/inventory/ai-entry";
 
 const PEOPLE_TABS = [
   { label: "Customers", href: "/customers" },
@@ -38,6 +39,37 @@ export default function BorrowedPage() {
   const [form, setForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [scanCode, setScanCode] = useState("");
+  const [scanMsg, setScanMsg] = useState("");
+  const [showAi, setShowAi] = useState(false);
+
+  // Append a numbered line to the item list.
+  const appendItemLine = (line: string) => setForm((f: any) => {
+    const existing = (f.items || "").trim();
+    const n = existing ? existing.split(/\n/).filter(Boolean).length + 1 : 1;
+    return { ...f, items: (existing ? existing + "\n" : "") + `${n}. ${line}` };
+  });
+
+  // Scan (or type) a SKU/barcode → look it up in inventory and add it.
+  const addScanned = async (code: string) => {
+    const c = code.trim();
+    if (!c) return;
+    setScanMsg("Looking up…");
+    const res = await fetch(`/api/items/lookup?code=${encodeURIComponent(c)}`);
+    const d = await res.json().catch(() => ({}));
+    if (!d.found) { setScanMsg(`No item found for "${c}". Type it manually below if it's not in inventory.`); return; }
+    const it = d.item;
+    const parts = [
+      it.brand || it.title,
+      it.size ? `size ${it.size}` : null,
+      `$${(it.price || 0).toFixed(2)}`,
+      it.consignor ? `Consignor ${it.consignor}` : "Store",
+      it.brand && it.title ? it.title : null,
+    ].filter(Boolean);
+    appendItemLine(`${parts.join(" — ")}  [${it.sku}]`);
+    setScanMsg(`✓ Added: ${it.brand || it.title}`);
+    setScanCode("");
+  };
 
   const load = async () => {
     const res = await fetch("/api/borrowed");
@@ -47,8 +79,9 @@ export default function BorrowedPage() {
   };
   useEffect(() => { load(); }, []);
 
-  const openAdd = () => { setError(""); setForm(blankForm()); };
+  const openAdd = () => { setError(""); setScanMsg(""); setScanCode(""); setShowAi(false); setForm(blankForm()); };
   const openEdit = (b: Borrowed) => {
+    setScanMsg(""); setScanCode(""); setShowAi(false);
     setError("");
     setForm({
       id: b.id, borrowerName: b.borrowerName, phone: b.phone || "", email: b.email || "", idNumber: b.idNumber || "",
@@ -144,6 +177,35 @@ export default function BorrowedPage() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Return date</label><Input type="date" value={form.returnDate} onChange={(e) => setForm({ ...form, returnDate: e.target.value })} /></div>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Item(s) borrowed</label>
+              {/* Scan-to-add: pull item details straight from inventory */}
+              <div className="rounded-[14px] bg-accent/10 border border-accent/20 p-3 mb-2 space-y-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <ScanLine className="h-4 w-4 text-accent absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      value={scanCode}
+                      onChange={(e) => setScanCode(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addScanned(scanCode); } }}
+                      placeholder="Scan tag or type a SKU, then Enter"
+                      className="h-11 w-full rounded-xl border border-line bg-[var(--paper)] pl-9 pr-3 text-[15px] font-mono focus:outline-none focus:border-accent"
+                      autoFocus
+                    />
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => addScanned(scanCode)}>Add</Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500">{scanMsg || "Scan each borrowed item's KYS tag to add it automatically."}</p>
+                  <button type="button" onClick={() => setShowAi((v) => !v)} className="text-xs font-medium text-accent hover:underline">{showAi ? "Hide photo" : "Add from photo (AI)"}</button>
+                </div>
+                {showAi && (
+                  <AIEntry
+                    onResult={(r) => {
+                      const parts = [r.brand || r.title, r.size ? `size ${r.size}` : null, r.suggestedPrice ? `$${Number(r.suggestedPrice).toFixed(2)}` : null, r.brand && r.title ? r.title : null].filter(Boolean);
+                      if (parts.length) { appendItemLine(parts.join(" — ")); setScanMsg(`✓ Added from photo: ${r.brand || r.title || "item"}`); }
+                    }}
+                  />
+                )}
+              </div>
               <textarea value={form.items} onChange={(e) => setForm({ ...form, items: e.target.value })} rows={4} placeholder="One per line — Designer/Brand, Size, Initials, Condition & Tag" className="w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink focus:outline-none focus:border-accent resize-y" />
             </div>
             <div className="grid grid-cols-2 gap-3">

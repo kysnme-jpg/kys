@@ -194,9 +194,17 @@ The **Layaway** tab (next to Appointments) tracks layaway agreements.
 The **Borrowed** tab tracks items lent out (e.g. for events).
 
 - **New Agreement:** enter the borrower's name, ID, phone, email, the dates
-  borrowed/return, the item list (one per line), condition notes, and who's
-  responsible for dry cleaning. If you enter the borrower's **email**, they're
-  automatically sent the **agreement listing the items** and the terms.
+  borrowed/return, the item list, condition notes, and who's responsible for dry
+  cleaning. If you enter the borrower's **email**, they're automatically sent the
+  **agreement listing the items** and the terms.
+- **Scan to add items (easiest):** in the item list area there's a **scan box** —
+  scan each borrowed piece's **KYS tag** (or type its SKU and press Enter) and the
+  app pulls that item's **brand, size, price, and consignor** straight from
+  inventory and adds a line automatically. No more typing it all out.
+- **Add from a photo (AI):** for an item that isn't in inventory, click **Add from
+  photo (AI)**, snap/upload a picture, and it fills in a line (title, brand, size,
+  suggested price) for you to tweak.
+- You can still type or edit any line by hand in the box.
 - **Return reminder:** if a return date and email are set, the borrower gets a
   reminder email when the item is due back.
 - Mark an agreement **Returned** (pencil → Status) when the items come back.

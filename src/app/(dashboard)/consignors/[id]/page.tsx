@@ -180,6 +180,26 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
     .filter((e) => e.type === "SALE_CREDIT")
     .reduce((s: number, e: any) => s + e.amount, 0);
 
+  const emailInventory = async () => {
+    if (!consignor) return;
+    const to = prompt(
+      "Send the inventory summary & portal welcome to which email?\n\nTip: enter YOUR OWN email to test it first — a test send makes no changes to the consignor's portal access.",
+      consignor.email || ""
+    );
+    if (to === null) return;
+    if (!to.trim()) { alert("Please enter an email address."); return; }
+    const res = await fetch(`/api/consignors/${id}/send-inventory`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: to.trim() }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(d.error || "Couldn't send the email."); return; }
+    if (d.test) {
+      alert(`✅ TEST email sent to ${d.to} (${d.itemCount} item${d.itemCount === 1 ? "" : "s"}).\n\nNo changes were made to the consignor's portal. When you're happy with it, send it to the consignor's own email to go live.`);
+    } else {
+      alert(`✅ Inventory email sent to ${d.to} (${d.itemCount} item${d.itemCount === 1 ? "" : "s"}).\n\nTheir consignor portal is now enabled, and login details were included in the email.`);
+    }
+  };
+
   const printReport = () => {
     if (!consignor) return;
     const win = window.open("", "_blank", "width=800,height=900");
@@ -278,6 +298,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
           >
             <Printer className="h-4 w-4" />
             Print all tags
+          </Button>
+          <Button variant="outline" onClick={emailInventory} className="gap-2">
+            <Mail className="h-4 w-4" />
+            Email inventory
           </Button>
           <Button variant="outline" onClick={printReport} className="gap-2">
             <FileText className="h-4 w-4" />

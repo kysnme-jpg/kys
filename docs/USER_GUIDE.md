@@ -244,6 +244,15 @@ here (Check / Cash / ACH).
   summary of that consignor — their contact/split, the KPI totals, every item
   (with SKU, price, status), and their payout history. Use your browser's
   **Print** dialog to print it or **Save as PDF**.
+- **Email inventory (onboarding):** the **Email inventory** button emails the
+  consignor a welcome message with **their list of items** (title, SKU, size,
+  price) and a link to their **Consignor Portal** so they can track items going
+  forward. You'll be asked which email to send to:
+  - Enter **your own email** to **test it first** — a test send makes **no
+    changes** to the consignor's portal.
+  - Send to the **consignor's own email** to go live — this also **enables their
+    portal** and includes a temporary login password in the email so the link
+    works right away.
 - Editing an item from here (or adding one) returns you right back to this
   consignor's page when you're done.
 

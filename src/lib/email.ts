@@ -333,6 +333,70 @@ export async function sendSipShopStoreNotification(opts: {
   });
 }
 
+// ─── Consignor onboarding: inventory summary ─────────────────────────────────
+
+export async function sendConsignorInventoryEmail(opts: {
+  to: string;
+  consignorName: string;
+  storeName: string;
+  splitPercent: number;
+  items: { title: string; sku: string; size?: string | null; brand?: string | null; price: number }[];
+  portalUrl: string;
+  loginEmail?: string | null;
+  tempPassword?: string | null;
+  isTest?: boolean;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+  const totalRetail = opts.items.reduce((s, i) => s + (i.price || 0), 0);
+
+  const rows = opts.items.map((i) => `
+    <tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${(i.title || "").slice(0, 60)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:11px;color:#777;font-family:monospace">${i.sku}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${i.size || ""}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">${fmt(i.price)}</td>
+    </tr>`).join("") || `<tr><td colspan="4" style="padding:10px;text-align:center;color:#999;font-size:13px">No active items yet</td></tr>`;
+
+  const portalBlock = opts.tempPassword
+    ? `<table width="100%" style="background:#f6eef0;border-radius:8px;padding:14px;margin:10px 0;border-collapse:collapse">
+        <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Portal</td><td style="padding:4px 0;text-align:right"><a href="${opts.portalUrl}" style="color:#b4532a;font-weight:600;font-size:13px">${opts.portalUrl}</a></td></tr>
+        <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Login email</td><td style="padding:4px 0;color:#111827;font-size:13px;text-align:right">${opts.loginEmail || ""}</td></tr>
+        <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Temporary password</td><td style="padding:4px 0;color:#111827;font-family:monospace;font-size:13px;text-align:right">${opts.tempPassword}</td></tr>
+      </table>`
+    : `<p style="margin:10px 0"><a href="${opts.portalUrl}" style="background:#b4532a;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:600;font-size:14px;display:inline-block">Open Your Consignor Portal →</a></p>
+       <p style="color:#6b7280;font-size:13px">Log in with your email${opts.loginEmail ? ` (${opts.loginEmail})` : ""}. ${opts.isTest ? "A password will be included when this is sent to the consignor." : "If you need a password, just let us know."}</p>`;
+
+  const body = `
+    ${opts.isTest ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:16px;color:#9a3412;font-size:13px"><strong>TEST EMAIL</strong> — this is a preview. No changes were made to the consignor's portal access.</div>` : ""}
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.consignorName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">
+      Thank you for consigning with ${opts.storeName}! Here are the items we've received and listed for you (at a ${opts.splitPercent}% split).
+    </p>
+    <table width="100%" style="border-collapse:collapse;margin:16px 0">
+      <tr style="background:#f5f5f5"><th style="padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:#666">Item</th><th style="padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:#666">SKU</th><th style="padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;color:#666">Size</th><th style="padding:6px 8px;text-align:right;font-size:10px;text-transform:uppercase;color:#666">Price</th></tr>
+      ${rows}
+      <tr><td colspan="3" style="padding:8px;text-align:right;font-weight:600;font-size:13px">Total retail</td><td style="padding:8px;text-align:right;font-weight:700;font-size:14px;color:#b4532a">${fmt(totalRetail)}</td></tr>
+    </table>
+    <p style="color:#111827;font-size:15px;font-weight:700;margin:20px 0 6px">Track your items anytime</p>
+    <p style="color:#374151;font-size:14px;line-height:1.6">
+      Going forward, you can log into your <strong>Consignor Portal</strong> to watch your items, see what's sold, and check your balance — anytime, from any device.
+    </p>
+    ${portalBlock}
+    <p style="color:#374151;font-size:14px;line-height:1.6;margin-top:16px">
+      We'll let you know as your items sell. Thank you for trusting us with your pieces! 🤍
+    </p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `${opts.isTest ? "[TEST] " : ""}Your consignment items — ${opts.storeName}`,
+    html: baseHtml("Your Consignment Items", body, opts.storeName),
+  });
+}
+
 // ─── Diagnostics ───────────────────────────────────────────────────────────────
 
 // Sends a test email and RETURNS the outcome (does not swallow errors), so the

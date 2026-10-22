@@ -157,6 +157,14 @@ booking **new/prospective consignors** into drop-off slots.
   slots and who's booked. You can **Add** a booking manually, **cancel** one
   (trash icon), or **Block day** / **Unblock day** to close a Saturday (e.g. a
   holiday) so no new appointments can be booked.
+- **Any day / any time (weekday exceptions & 5th/6th appointments):** click
+  **New appointment** (top-right) to schedule someone on **any date and any
+  time** — e.g. a consignor who can't do Saturday and wants Friday at 4:30 PM, or
+  an extra person beyond the four Saturday slots. Pick the date and time, enter
+  their details, and they get the **same email confirmation**. These show up under
+  **"Also booked (extra times)"** on that Saturday (if it's a Saturday) or in the
+  **"Other appointments"** section for weekdays. There's also an **"Add extra
+  appointment (any time)"** link on each Saturday for quick extra bookings.
 - **Email confirmations:** when someone books with an email address, they
   automatically get a confirmation email with the date, time, location, and the
   item/jewelry reminders. (If they don't enter an email, no confirmation is sent

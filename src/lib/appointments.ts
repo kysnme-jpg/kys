@@ -11,6 +11,25 @@ export const SLOT_TIMES = [
 
 export const SLOT_MINUTES = 40;
 export const MAX_APPTS_PER_DAY = SLOT_TIMES.length;
+// Custom (any day / any time) appointments use slot numbers at/above this base,
+// so the standard Saturday slots (0-3) stay reserved and uniquely constrained.
+export const CUSTOM_SLOT_BASE = 10;
+
+// "16:30" -> "4:30 PM"
+export function formatTime(hhmm: string): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
+  if (!m) return hhmm || "";
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${min} ${ampm}`;
+}
+
+export function isSaturday(key: string): boolean {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 6;
+}
 
 export function slotLabel(slot: number): string {
   const t = SLOT_TIMES[slot];

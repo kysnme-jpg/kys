@@ -5,9 +5,9 @@ import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { slotLabel, prettyDate, SLOT_TIMES } from "@/lib/appointments";
+import { slotLabel, prettyDate, formatTime, SLOT_TIMES } from "@/lib/appointments";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Ban, Undo2, Link2, Clock, Check, UserPlus, Send } from "lucide-react";
+import { Plus, Trash2, Ban, Undo2, Link2, Clock, Check, UserPlus, Send, CalendarPlus } from "lucide-react";
 
 const PEOPLE_TABS = [
   { label: "Customers", href: "/customers" },
@@ -18,12 +18,16 @@ const PEOPLE_TABS = [
   { label: "Sip & Shop", href: "/sip-shop" },
 ];
 
-interface Appt { id: string; slot: number; name: string; email?: string; phone?: string; note?: string }
-interface Saturday { date: string; blocked: boolean; blockedReason: string | null; appointments: Appt[] }
+interface Appt { id: string; slot: number; startTime?: string; name: string; email?: string; phone?: string; note?: string }
+interface Saturday { date: string; blocked: boolean; blockedReason: string | null; appointments: Appt[]; extras: Appt[] }
+interface OtherDay { date: string; appointments: Appt[] }
+
+const todayLocal = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 
 export default function AppointmentsPage() {
   const router = useRouter();
   const [saturdays, setSaturdays] = useState<Saturday[]>([]);
+  const [otherDays, setOtherDays] = useState<OtherDay[]>([]);
   const [converting, setConverting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [addFor, setAddFor] = useState<{ date: string; slot: number } | null>(null);
@@ -31,11 +35,15 @@ export default function AppointmentsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  // Custom any-day/any-time appointment
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customForm, setCustomForm] = useState({ date: "", time: "", name: "", email: "", phone: "", note: "" });
 
   const load = async () => {
     const res = await fetch("/api/appointments");
     const data = await res.json();
     setSaturdays(data.saturdays || []);
+    setOtherDays(data.otherDays || []);
     setLoading(false);
   };
   useEffect(() => {
@@ -61,6 +69,22 @@ export default function AppointmentsPage() {
     setSaving(false);
     if (!res.ok) { setError(data.error || "Couldn't save"); return; }
     setAddFor(null); load();
+  };
+
+  const openCustom = () => { setCustomForm({ date: "", time: "", name: "", email: "", phone: "", note: "" }); setError(""); setCustomOpen(true); };
+  const saveCustom = async () => {
+    if (!customForm.date) { setError("Pick a date"); return; }
+    if (!customForm.time) { setError("Pick a time"); return; }
+    if (!customForm.name.trim()) { setError("Name is required"); return; }
+    setSaving(true); setError("");
+    const res = await fetch("/api/appointments", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: customForm.date, time: customForm.time, name: customForm.name, email: customForm.email, phone: customForm.phone, note: customForm.note }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setSaving(false);
+    if (!res.ok) { setError(data.error || "Couldn't save"); return; }
+    setCustomOpen(false); load();
   };
 
   const cancelAppt = async (id: string) => {
@@ -120,7 +144,27 @@ export default function AppointmentsPage() {
     }
   };
 
-  const totalBooked = saturdays.reduce((s, d) => s + d.appointments.length, 0);
+  const totalBooked = saturdays.reduce((s, d) => s + d.appointments.length + d.extras.length, 0)
+    + otherDays.reduce((s, d) => s + d.appointments.length, 0);
+
+  // Reusable card for a single appointment (used for extras and other-day lists).
+  const apptBlock = (appt: Appt) => (
+    <div key={appt.id} className="rounded-lg border border-gray-200 p-3 bg-white">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-xs font-medium text-accent mb-0.5">{appt.startTime ? formatTime(appt.startTime) : slotLabel(appt.slot)}</p>
+          <p className="font-medium text-gray-900 text-sm">{appt.name}</p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={() => convert(appt)} disabled={converting === appt.id} className="text-gray-300 hover:text-accent disabled:opacity-50" title="Convert to consignor"><UserPlus className="h-3.5 w-3.5" /></button>
+          <button onClick={() => cancelAppt(appt.id)} className="text-gray-300 hover:text-red-500" title="Cancel"><Trash2 className="h-3.5 w-3.5" /></button>
+        </div>
+      </div>
+      {appt.phone && <p className="text-xs text-gray-500">{appt.phone}</p>}
+      {appt.email && <p className="text-xs text-gray-500 truncate">{appt.email}</p>}
+      {appt.note && <p className="text-xs text-gray-400 mt-0.5">{appt.note}</p>}
+    </div>
+  );
 
   return (
     <div className="px-11 pt-9 pb-6 space-y-6 max-[767px]:px-5 max-[767px]:pt-6">
@@ -132,7 +176,11 @@ export default function AppointmentsPage() {
             Saturdays 12–3 PM · {totalBooked} upcoming booking{totalBooked === 1 ? "" : "s"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={openCustom} className="gap-2">
+            <CalendarPlus className="h-4 w-4" />
+            New appointment
+          </Button>
           <Button onClick={sendTest} variant="outline" disabled={testing} className="gap-2">
             <Send className="h-4 w-4" />
             {testing ? "Sending…" : "Send test email"}
@@ -200,9 +248,44 @@ export default function AppointmentsPage() {
                     );
                   })}
                 </div>
+                {sat.extras.length > 0 && (
+                  <div className="px-4 pb-4 pt-1">
+                    <p className="text-xs font-medium text-gray-400 mb-2">Also booked (extra times)</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                      {sat.extras.map((a) => apptBlock(a))}
+                    </div>
+                  </div>
+                )}
+                {!sat.blocked && (
+                  <div className="px-4 pb-3">
+                    <button onClick={() => { setCustomForm({ date: sat.date, time: "", name: "", email: "", phone: "", note: "" }); setError(""); setCustomOpen(true); }} className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
+                      <Plus className="h-3.5 w-3.5" /> Add extra appointment (any time)
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
+
+          {/* Appointments on other days (Wed/Thu/Fri, custom times) */}
+          {otherDays.length > 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/60">
+                <h3 className="font-serif text-lg text-ink">Other appointments</h3>
+                <p className="text-xs text-gray-500">Weekday &amp; custom-time appointments outside the Saturday slots</p>
+              </div>
+              <div className="p-4 space-y-4">
+                {otherDays.map((d) => (
+                  <div key={d.date}>
+                    <p className="text-sm font-medium text-gray-700 mb-2">{prettyDate(d.date)}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {d.appointments.map((a) => apptBlock(a))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -236,6 +319,48 @@ export default function AppointmentsPage() {
             <div className="flex gap-2 pt-1">
               <Button onClick={saveAppt} disabled={saving} className="flex-1">{saving ? "Saving…" : "Add appointment"}</Button>
               <Button variant="outline" onClick={() => setAddFor(null)}>Cancel</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Custom any-day / any-time appointment modal */}
+      {customOpen && (
+        <Modal open={customOpen} onClose={() => setCustomOpen(false)} title="New Appointment" className="max-w-md">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">Schedule a consignor on <strong>any day and time</strong> — e.g. a weekday exception. They'll get an email confirmation if you add their email.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <Input type="date" min={todayLocal()} value={customForm.date} onChange={(e) => setCustomForm({ ...customForm, date: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <Input type="time" value={customForm.time} onChange={(e) => setCustomForm({ ...customForm, time: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <Input value={customForm.name} onChange={(e) => setCustomForm({ ...customForm, name: e.target.value })} placeholder="Consignor name" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <Input value={customForm.phone} onChange={(e) => setCustomForm({ ...customForm, phone: e.target.value })} placeholder="Optional" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <Input value={customForm.email} onChange={(e) => setCustomForm({ ...customForm, email: e.target.value })} placeholder="For confirmation" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <Input value={customForm.note} onChange={(e) => setCustomForm({ ...customForm, note: e.target.value })} placeholder="Optional" />
+            </div>
+            {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button onClick={saveCustom} disabled={saving} className="flex-1">{saving ? "Saving…" : "Add & email confirmation"}</Button>
+              <Button variant="outline" onClick={() => setCustomOpen(false)}>Cancel</Button>
             </div>
           </div>
         </Modal>

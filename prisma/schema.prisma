@@ -478,8 +478,9 @@ model ConsignAppointment {
   id        String   @id @default(cuid())
   storeId   String
   store     Store    @relation(fields: [storeId], references: [id])
-  date      DateTime // the Saturday (date-only, UTC midnight)
-  slot      Int      // 0-based slot index (see lib/appointments SLOT_TIMES)
+  date      DateTime // the appointment day (date-only, UTC midnight)
+  slot      Int      // 0-3 = standard Saturday slots; >=10 = custom day/time entries
+  startTime String?  // "HH:MM" for custom appointments (any day/time)
   name      String
   email     String?
   phone     String?

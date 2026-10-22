@@ -14,11 +14,21 @@ export async function GET(req: NextRequest) {
 
   const store = await db.store.findUnique({ where: { id: storeId }, select: { cloverApiKey: true, cloverMerchantId: true } });
 
+  // Config snapshot for diagnostics (no secrets).
+  const baseUrl = process.env.CLOVER_API_BASE || "https://api.clover.com";
+  const merchantId = store?.cloverMerchantId || process.env.CLOVER_MERCHANT_ID || "";
+  const diag = {
+    base: baseUrl,
+    isSandbox: /sandbox|dev\.clover/i.test(baseUrl),
+    merchantIdMask: merchantId ? `${merchantId.slice(0, 4)}…${merchantId.slice(-3)} (${merchantId.length} chars)` : "(not set)",
+    keySource: store?.cloverApiKey ? "Settings" : (process.env.CLOVER_API_KEY ? "env var" : "(not set)"),
+  };
+
   let client;
   try {
     client = getCloverClient(store || undefined);
   } catch {
-    return NextResponse.json({ configured: false, error: "Clover isn't connected yet. Add your Clover API token and Merchant ID in Settings." }, { status: 200 });
+    return NextResponse.json({ configured: false, error: "Clover isn't connected yet. Add your Clover API token and Merchant ID in Settings.", diag }, { status: 200 });
   }
 
   let payments: any[];
@@ -28,8 +38,9 @@ export async function GET(req: NextRequest) {
     const msg = String(err?.message || "");
     const code = /error (\d{3})/.exec(msg)?.[1];
     let friendly = "Couldn't reach Clover.";
-    if (code === "401" || code === "403") friendly = "Clover rejected the request — the API token may be invalid or missing 'Payments: Read' permission. Check it in your Clover dashboard (Setup → API Tokens).";
-    return NextResponse.json({ configured: true, ok: false, error: friendly, detail: msg.slice(0, 300) }, { status: 200 });
+    if (code === "401") friendly = "Clover returned 401 (Unauthorized) — the token isn't valid for this environment/merchant. Most often the app is pointed at the wrong Clover environment (sandbox vs. production) or the token is from a different merchant.";
+    else if (code === "403") friendly = "Clover returned 403 (Forbidden) — the token is valid but lacks 'Payments: Read' permission. Add it in Clover → Setup → API Tokens.";
+    return NextResponse.json({ configured: true, ok: false, status: code || null, error: friendly, detail: msg.slice(0, 400), diag }, { status: 200 });
   }
 
   // Aggregate. Clover amounts are in cents; skip voided/declined where possible.

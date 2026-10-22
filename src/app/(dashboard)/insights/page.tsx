@@ -162,7 +162,18 @@ export default function InsightsPage() {
           ) : clover.configured === false ? (
             <p className="text-sm text-gray-600">{clover.error} <a href="/settings" className="text-accent font-medium underline">Open Settings</a></p>
           ) : clover.ok === false ? (
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">{clover.error}</div>
+            <div className="space-y-2">
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">{clover.error}</div>
+              {clover.diag && (
+                <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-xs text-gray-600 font-mono space-y-0.5">
+                  <div>Clover URL: {clover.diag.base} {clover.diag.isSandbox ? "⚠️ SANDBOX" : "(production)"}</div>
+                  <div>Merchant ID: {clover.diag.merchantIdMask}</div>
+                  <div>API token from: {clover.diag.keySource}</div>
+                  {clover.status && <div>HTTP status: {clover.status}</div>}
+                  {clover.detail && <div className="text-gray-400 break-all">Clover said: {clover.detail}</div>}
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

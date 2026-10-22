@@ -25,6 +25,7 @@ interface ConsignorDetail {
   splitPercent: number;
   balance: number;
   notes?: string;
+  portalEnabled?: boolean;
   createdAt: string;
   items: any[];
   ledgerEntries: any[];
@@ -274,9 +275,16 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
             <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {consignor.firstName} {consignor.lastName}
-            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {consignor.firstName} {consignor.lastName}
+              </h1>
+              {consignor.portalEnabled ? (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full"><CheckCircle className="h-3 w-3" /> Portal active</span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full"><Clock className="h-3 w-3" /> Portal not set</span>
+              )}
+            </div>
             <p className="text-sm text-gray-500">Member since {formatDate(consignor.createdAt)} · {consignor.splitPercent}% split</p>
           </div>
         </div>

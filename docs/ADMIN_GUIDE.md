@@ -215,6 +215,15 @@ Set `CLOVER_API_KEY` + `CLOVER_MERCHANT_ID` (env or Settings). Use
 a Clover **device/terminal** tied to the merchant — full in-app card capture is
 not yet implemented.
 
+**Live Clover transactions on Insights:** Store Insights shows a **Clover Card
+Transactions** panel (today + last 30 days + a recent list) that pulls real
+payments from Clover and auto-refreshes every 60s. Powered by
+`GET /api/clover/transactions` → `CloverClient.listPayments`
+(`/v3/merchants/{mId}/payments`). The API token must have **Payments: Read**
+permission (Clover dashboard → Setup → API Tokens); otherwise the panel shows a
+permission error. This is separate from the app's own POS revenue numbers (which
+only reflect sales rung up inside the app).
+
 ### Resend (email)
 Set `RESEND_API_KEY` and `EMAIL_FROM` (verified domain recommended). Powers
 contract links, payout notifications, welcome emails, and **appointment

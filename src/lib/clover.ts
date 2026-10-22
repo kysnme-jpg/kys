@@ -93,6 +93,24 @@ export class CloverClient {
   async getMerchant() {
     return this.request<any>("");
   }
+
+  // List payments (card transactions) created at/after a given epoch-ms time.
+  // Pages through results. Each payment has amount (cents), createdTime (ms).
+  async listPayments(sinceMs: number): Promise<any[]> {
+    const out: any[] = [];
+    let offset = 0;
+    const limit = 1000;
+    // Safety cap so a huge history can't loop forever.
+    for (let page = 0; page < 20; page++) {
+      const q = `/payments?filter=${encodeURIComponent(`createdTime>=${sinceMs}`)}&limit=${limit}&offset=${offset}&orderBy=createdTime%20DESC`;
+      const res = await this.request<any>(q);
+      const elements: any[] = res?.elements || [];
+      out.push(...elements);
+      if (elements.length < limit) break;
+      offset += limit;
+    }
+    return out;
+  }
 }
 
 export function getCloverClient(store?: { cloverApiKey?: string | null; cloverMerchantId?: string | null }) {

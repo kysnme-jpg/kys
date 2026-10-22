@@ -66,11 +66,28 @@ function StatCard({
 export default function InsightsPage() {
   const [data, setData] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(true);
+  const [clover, setClover] = useState<any>(null);
+  const [cloverAt, setCloverAt] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/insights")
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); });
+  }, []);
+
+  // Live Clover transactions — refresh on a loop.
+  useEffect(() => {
+    let active = true;
+    const loadClover = async () => {
+      try {
+        const r = await fetch("/api/clover/transactions?days=30");
+        const d = await r.json();
+        if (active) { setClover(d); setCloverAt(new Date().toLocaleTimeString()); }
+      } catch { /* ignore */ }
+    };
+    loadClover();
+    const t = setInterval(loadClover, 60000);
+    return () => { active = false; clearInterval(t); };
   }, []);
 
   if (loading || !data) {
@@ -130,6 +147,50 @@ export default function InsightsPage() {
           color="orange"
         />
       </div>
+
+      {/* Clover live card transactions */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /> Clover Card Transactions
+          </CardTitle>
+          {clover?.ok && cloverAt && <span className="text-xs text-gray-400">updated {cloverAt} · auto-refreshes</span>}
+        </CardHeader>
+        <CardContent>
+          {!clover ? (
+            <p className="text-sm text-gray-500">Loading Clover transactions…</p>
+          ) : clover.configured === false ? (
+            <p className="text-sm text-gray-600">{clover.error} <a href="/settings" className="text-accent font-medium underline">Open Settings</a></p>
+          ) : clover.ok === false ? (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">{clover.error}</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div><p className="text-xs text-gray-500 uppercase">Today</p><p className="text-2xl font-bold text-gray-900">{formatCurrency(clover.todayTotal)}</p><p className="text-xs text-gray-500">{clover.todayCount} transaction{clover.todayCount === 1 ? "" : "s"}</p></div>
+                <div><p className="text-xs text-gray-500 uppercase">Last 30 days</p><p className="text-2xl font-bold text-gray-900">{formatCurrency(clover.total)}</p><p className="text-xs text-gray-500">{clover.count} transaction{clover.count === 1 ? "" : "s"}</p></div>
+              </div>
+              {clover.recent?.length > 0 ? (
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-xs font-medium text-gray-500 uppercase mb-2">Recent transactions</p>
+                  <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto">
+                    {clover.recent.map((t: any) => (
+                      <div key={t.id} className="flex items-center justify-between py-2 text-sm">
+                        <div>
+                          <p className="text-gray-700">{new Date(t.createdTime).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
+                          <p className="text-xs text-gray-400">{t.tender}</p>
+                        </div>
+                        <p className="font-semibold text-gray-900">{formatCurrency(t.amount)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 border-t border-gray-100 pt-3">No Clover transactions in the last 30 days.</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Revenue chart */}
       <Card>

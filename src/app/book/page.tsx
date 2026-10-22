@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { slotLabel, prettyDate, SLOT_TIMES, MAX_APPTS_PER_DAY } from "@/lib/appointments";
-import { CalendarCheck, Check, Clock, MapPin } from "lucide-react";
+import { CalendarCheck, Check, Clock, MapPin, Phone } from "lucide-react";
 
 interface Saturday {
   date: string;
@@ -12,7 +12,7 @@ interface Saturday {
 }
 
 export default function BookPage() {
-  const [store, setStore] = useState<{ name: string; address?: string } | null>(null);
+  const [store, setStore] = useState<{ name: string; address?: string; phone?: string } | null>(null);
   const [saturdays, setSaturdays] = useState<Saturday[]>([]);
   const [loading, setLoading] = useState(true);
   const [picked, setPicked] = useState<{ date: string; slot: number } | null>(null);
@@ -67,6 +67,10 @@ export default function BookPage() {
             <li>First-time consigning: please bring <strong>no more than 10 items</strong>.</li>
             <li>Shoes &amp; jewelry are not counted in the 10 (please don’t bring tons of jewelry).</li>
           </ul>
+          <p className="flex items-center gap-2 text-ink pt-1">
+            <Phone className="h-4 w-4 text-accent shrink-0" />
+            <span>Can’t make a Saturday? {store?.phone ? <>Give us a call at <a href={`tel:${store.phone}`} className="font-semibold text-accent underline">{store.phone}</a> and we’ll find a time that works.</> : <>Give us a call and we’ll find a time that works.</>}</span>
+          </p>
         </div>
 
         {done ? (

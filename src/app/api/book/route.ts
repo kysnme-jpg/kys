@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { upcomingSaturdays, dateKey, slotLabel, prettyDate, SLOT_TIMES, MAX_APPTS_PER_DAY } from "@/lib/appointments";
+import { upcomingSaturdays, dateKey, slotLabel, prettyDate, SLOT_TIMES, MAX_APPTS_PER_DAY, CUSTOM_SLOT_BASE } from "@/lib/appointments";
 import { sendAppointmentEmail, sendBookingNotification } from "@/lib/email";
 
 const BOOK_WEEKS = 10;
@@ -9,14 +9,16 @@ const parseKey = (key: string) => new Date(`${key}T00:00:00.000Z`);
 
 // Public: list upcoming Saturdays with availability.
 export async function GET(_req: NextRequest) {
-  const store = await db.store.findFirst({ select: { id: true, name: true, address: true } });
+  const store = await db.store.findFirst({ select: { id: true, name: true, address: true, phone: true } });
   if (!store) return NextResponse.json({ error: "Store not configured" }, { status: 503 });
 
   const keys = upcomingSaturdays(BOOK_WEEKS);
   const from = parseKey(keys[0]);
 
   const [appts, blocks] = await Promise.all([
-    db.consignAppointment.findMany({ where: { storeId: store.id, date: { gte: from } }, select: { date: true, slot: true } }),
+    // Only the standard Saturday slots (0-3) affect public availability; custom
+    // staff-added appointments (slot >= CUSTOM_SLOT_BASE) don't fill a slot.
+    db.consignAppointment.findMany({ where: { storeId: store.id, date: { gte: from }, slot: { lt: CUSTOM_SLOT_BASE } }, select: { date: true, slot: true } }),
     db.consignBlockedDate.findMany({ where: { storeId: store.id, date: { gte: from } }, select: { date: true, reason: true } }),
   ]);
 
@@ -35,7 +37,7 @@ export async function GET(_req: NextRequest) {
     bookedSlots: bookedByDay[date] ?? [],
   }));
 
-  return NextResponse.json({ store: { name: store.name, address: store.address }, slotCount: SLOT_TIMES.length, saturdays });
+  return NextResponse.json({ store: { name: store.name, address: store.address, phone: store.phone }, slotCount: SLOT_TIMES.length, saturdays });
 }
 
 const bookSchema = z.object({

@@ -79,6 +79,7 @@ model Store {
   layaways         Layaway[]
   borrowedGarments BorrowedGarment[]
   sipShopEvents    SipShopEvent[]
+  emailLogs        EmailLog[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -134,6 +135,7 @@ model Consignor {
   ledgerEntries LedgerEntry[]
   payouts       Payout[]
   contracts     Contract[]
+  emailLogs     EmailLog[]
 }
 
 // ─── CATEGORIES ───────────────────────────────────────────────────────────────
@@ -402,6 +404,21 @@ model WorkLog {
   note         String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ─── EMAIL LOG ───────────────────────────────────────────────────────────────
+
+model EmailLog {
+  id          String     @id @default(cuid())
+  storeId     String
+  store       Store      @relation(fields: [storeId], references: [id])
+  consignorId String?
+  consignor   Consignor? @relation(fields: [consignorId], references: [id])
+  to          String
+  type        String     // INVENTORY | CONTRACT | APPOINTMENT | OTHER
+  subject     String?
+  status      String     @default("SENT") // SENT | TEST | FAILED
+  createdAt   DateTime   @default(now())
 }
 
 // ─── LAYAWAY AGREEMENTS ──────────────────────────────────────────────────────

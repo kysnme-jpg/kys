@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { sendContractEmail } from "@/lib/email";
+import { logEmail } from "@/lib/email-log";
 
 const DEFAULT_CONTRACT = (storeName: string, consignorName: string, splitPercent: number) => `
 ${storeName} — Consignment Agreement
@@ -114,6 +115,7 @@ export async function POST(req: NextRequest) {
     });
 
     await db.contract.update({ where: { id: contract.id }, data: { status: "SENT" } });
+    await logEmail({ storeId, consignorId, to: consignor.email, type: "CONTRACT", subject: `${contract.title} (signing link)`, status: "SENT" });
   }
 
   return NextResponse.json(contract, { status: 201 });

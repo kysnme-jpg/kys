@@ -24,6 +24,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         orderBy: { createdAt: "desc" },
         take: 20,
       },
+      emailLogs: {
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      },
     },
   });
 

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { sendConsignorInventoryEmail } from "@/lib/email";
+import { logEmail } from "@/lib/email-log";
 
 function tempPassword() {
   // Friendly 8-char password (no ambiguous chars).
@@ -59,8 +60,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       isTest,
     });
   } catch (err: any) {
+    await logEmail({ storeId, consignorId: id, to, type: "INVENTORY", subject: "Inventory summary", status: "FAILED" });
     return NextResponse.json({ error: err?.message || "Couldn't send the email." }, { status: 502 });
   }
+
+  await logEmail({ storeId, consignorId: id, to, type: "INVENTORY", subject: `Inventory summary (${consignor.items.length} items)`, status: isTest ? "TEST" : "SENT" });
 
   return NextResponse.json({ sent: true, to, test: isTest, portalEnabled, itemCount: consignor.items.length });
 }

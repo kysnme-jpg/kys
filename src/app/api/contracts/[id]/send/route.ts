@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendContractEmail } from "@/lib/email";
+import { logEmail } from "@/lib/email-log";
 
 // Staff: (re)send a contract's signing link by email. Optional { to } overrides
 // the recipient (e.g. to fix a wrong email). Marks the contract SENT.
@@ -32,12 +33,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       signUrl: `${baseUrl}/portal/sign/${contract.id}`,
     });
   } catch (err: any) {
+    await logEmail({ storeId, consignorId: contract.consignorId, to, type: "CONTRACT", subject: contract.title, status: "FAILED" });
     return NextResponse.json({ error: err?.message || "Couldn't send the email." }, { status: 502 });
   }
 
   if (contract.status !== "SENT") {
     await db.contract.update({ where: { id }, data: { status: "SENT" } });
   }
+  await logEmail({ storeId, consignorId: contract.consignorId, to, type: "CONTRACT", subject: `${contract.title} (signing link)`, status: "SENT" });
 
   return NextResponse.json({ sent: true, to });
 }

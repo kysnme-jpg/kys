@@ -255,6 +255,10 @@ here (Check / Cash / ACH).
     works right away.
 - Editing an item from here (or adding one) returns you right back to this
   consignor's page when you're done.
+- **Emails sent (history):** an **Emails sent** panel lists every inventory and
+  contract email sent for this consignor, with the **date & time**, type, who it
+  went to, and whether it was a real send, a **test**, or **failed** — so you
+  always have a record of what was sent and when.
 
 - **Notes:** there's a **Notes** box on each consignor's page — type anything
   you want to remember (preferences, reminders, special arrangements) and

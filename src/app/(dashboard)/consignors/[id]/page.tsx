@@ -30,6 +30,7 @@ interface ConsignorDetail {
   items: any[];
   ledgerEntries: any[];
   payouts: any[];
+  emailLogs?: { id: string; to: string; type: string; subject?: string; status: string; createdAt: string }[];
 }
 
 const itemStatusColors: Record<string, "success" | "default" | "warning" | "danger"> = {
@@ -401,6 +402,32 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </CardContent>
       </Card>
+
+      {/* Email history */}
+      {consignor.emailLogs && consignor.emailLogs.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-gray-400" /> Emails sent</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 pt-0">
+            <div className="divide-y divide-gray-100">
+              {consignor.emailLogs.map((e) => (
+                <div key={e.id} className="flex items-center justify-between py-2 text-sm gap-3">
+                  <div className="min-w-0">
+                    <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full mr-2 ${e.type === "CONTRACT" ? "bg-indigo-100 text-indigo-700" : e.type === "INVENTORY" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                      {e.type === "CONTRACT" ? "Contract" : e.type === "INVENTORY" ? "Inventory" : e.type}
+                    </span>
+                    <span className="text-gray-700">{e.subject || "—"}</span>
+                    <span className="text-xs text-gray-400 ml-2 truncate">to {e.to}</span>
+                    {e.status !== "SENT" && <span className={`text-[11px] font-medium ml-2 ${e.status === "FAILED" ? "text-red-600" : "text-amber-600"}`}>({e.status === "TEST" ? "test" : "failed"})</span>}
+                  </div>
+                  <span className="text-xs text-gray-500 whitespace-nowrap">{new Date(e.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <div>

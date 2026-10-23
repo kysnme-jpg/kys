@@ -331,6 +331,11 @@ Consignment agreements with e-signature. Open **Contracts** from the sidebar.
    submits. Their signature, IP, and timestamp are recorded.
 3. The contract's status moves **Draft → Sent → Signed**.
 4. Click the eye icon to view a contract (and its signature).
+5. **Resend / fix the email:** click the **paper-plane (Send)** icon on a contract
+   row to re-send the signing link. You'll be asked which email to send to —
+   enter your own to **test**, or **correct the consignor's email** if it was
+   wrong. The consignor opens the link and signs **without any login or
+   password**.
 
 The agreement text is your store's standard template; the owner can edit it in
 **Settings → Contract Template**.

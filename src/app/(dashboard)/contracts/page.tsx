@@ -41,6 +41,25 @@ export default function ContractsPage() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [viewContract, setViewContract] = useState<any>(null);
+  const [resending, setResending] = useState<string | null>(null);
+
+  const resend = async (c: Contract) => {
+    const to = prompt(
+      `Resend the signing link to which email?\n\n(Tip: enter your own email to test, or correct the consignor's email here.)`,
+      c.consignor?.email || ""
+    );
+    if (to === null) return;
+    if (!to.trim()) { alert("Please enter an email."); return; }
+    setResending(c.id);
+    const res = await fetch(`/api/contracts/${c.id}/send`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: to.trim() }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setResending(null);
+    if (!res.ok) { alert(d.error || "Couldn't resend."); return; }
+    alert(`✅ Signing link sent to ${d.to}.`);
+    load();
+  };
 
   // Create form
   const [selectedConsignorId, setSelectedConsignorId] = useState("");
@@ -184,15 +203,28 @@ export default function ContractsPage() {
                       : formatDate(c.createdAt)}
                   </td>
                   <td className="p-4">
-                    <button
-                      onClick={async () => {
-                        const r = await fetch(`/api/contracts/${c.id}`);
-                        setViewContract(await r.json());
-                      }}
-                      className="text-indigo-600 hover:text-indigo-800"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-3 justify-end">
+                      {c.status !== "SIGNED" && (
+                        <button
+                          onClick={() => resend(c)}
+                          disabled={resending === c.id}
+                          title="Resend signing link by email"
+                          className="text-accent hover:text-accent/80 disabled:opacity-50"
+                        >
+                          <Send className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={async () => {
+                          const r = await fetch(`/api/contracts/${c.id}`);
+                          setViewContract(await r.json());
+                        }}
+                        className="text-indigo-600 hover:text-indigo-800"
+                        title="View"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

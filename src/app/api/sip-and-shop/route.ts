@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { sendSipShopConfirmationEmail, sendSipShopStoreNotification } from "@/lib/email";
+import { logEmail } from "@/lib/email-log";
 
 const parseKey = (key: string) => new Date(`${key}T00:00:00.000Z`);
 const fmt = (d: Date) => d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
   if (d.email) {
     try {
       await sendSipShopConfirmationEmail({ to: d.email, hostName: d.hostName.trim(), storeName: store.name, dateLabel, guests: d.guests, address: store.address });
+      await logEmail({ storeId: store.id, to: d.email, type: "SIPSHOP", subject: `Sip & Shop — ${dateLabel}` });
     } catch { /* best-effort */ }
   }
 

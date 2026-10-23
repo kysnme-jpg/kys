@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { upcomingSaturdays, dateKey, slotLabel, prettyDate, SLOT_TIMES, MAX_APPTS_PER_DAY, CUSTOM_SLOT_BASE } from "@/lib/appointments";
 import { sendAppointmentEmail, sendBookingNotification } from "@/lib/email";
+import { logEmail } from "@/lib/email-log";
 
 const BOOK_WEEKS = 10;
 const parseKey = (key: string) => new Date(`${key}T00:00:00.000Z`);
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
   if (email) {
     try {
       await sendAppointmentEmail({ to: email, name: name.trim(), storeName: store.name, dateLabel, timeLabel, address: store.address });
+      await logEmail({ storeId: store.id, to: email, type: "APPOINTMENT", subject: `Appointment — ${dateLabel} ${timeLabel}` });
     } catch { /* ignore */ }
   }
 

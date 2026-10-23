@@ -13,9 +13,11 @@ export default function ReportsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [exporting, setExporting] = useState<string | null>(null);
+  const [emailLogs, setEmailLogs] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("/api/sales?limit=25").then((r) => r.json()).then((d) => setSales(d.sales || []));
+    fetch("/api/email-log").then((r) => r.json()).then((d) => setEmailLogs(d.logs || [])).catch(() => {});
   }, []);
 
   const totalRevenue = sales.reduce((s, sale) => s + sale.total, 0);
@@ -146,6 +148,43 @@ export default function ReportsPage() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Email activity */}
+      <Card>
+        <CardHeader><CardTitle>Email Activity</CardTitle></CardHeader>
+        <CardContent>
+          {emailLogs.length === 0 ? (
+            <p className="text-sm text-gray-500">No emails sent yet.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left p-4 font-medium text-gray-600">Date &amp; time</th>
+                  <th className="text-left p-4 font-medium text-gray-600">Type</th>
+                  <th className="text-left p-4 font-medium text-gray-600">To</th>
+                  <th className="text-left p-4 font-medium text-gray-600">Subject</th>
+                  <th className="text-left p-4 font-medium text-gray-600">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {emailLogs.map((l) => {
+                  const typeLabel = l.type === "CONTRACT" ? "Contract" : l.type === "INVENTORY" ? "Inventory" : l.type === "APPOINTMENT" ? "Appointment" : l.type === "SIPSHOP" ? "Sip & Shop" : l.type;
+                  const typeColor = l.type === "CONTRACT" ? "bg-indigo-100 text-indigo-700" : l.type === "INVENTORY" ? "bg-green-100 text-green-700" : l.type === "APPOINTMENT" ? "bg-blue-100 text-blue-700" : l.type === "SIPSHOP" ? "bg-pink-100 text-pink-700" : "bg-gray-100 text-gray-600";
+                  return (
+                    <tr key={l.id} className="hover:bg-gray-50">
+                      <td className="p-4 text-gray-500 text-xs whitespace-nowrap">{new Date(l.createdAt).toLocaleString()}</td>
+                      <td className="p-4"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${typeColor}`}>{typeLabel}</span></td>
+                      <td className="p-4 text-gray-700 text-xs">{l.to}{l.consignor ? <span className="text-gray-400"> · {l.consignor}</span> : null}</td>
+                      <td className="p-4 text-gray-700 text-xs">{l.subject || "—"}</td>
+                      <td className="p-4"><span className={`text-xs font-medium ${l.status === "FAILED" ? "text-red-600" : l.status === "TEST" ? "text-amber-600" : "text-green-600"}`}>{l.status === "SENT" ? "Sent" : l.status === "TEST" ? "Test" : "Failed"}</span></td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

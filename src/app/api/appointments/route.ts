@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { upcomingSaturdays, dateKey, slotLabel, prettyDate, formatTime, MAX_APPTS_PER_DAY, CUSTOM_SLOT_BASE } from "@/lib/appointments";
 import { sendAppointmentEmail } from "@/lib/email";
+import { logEmail } from "@/lib/email-log";
 
 const parseKey = (key: string) => new Date(`${key}T00:00:00.000Z`);
 const mapAppt = (a: any) => ({ id: a.id, slot: a.slot, startTime: a.startTime, name: a.name, email: a.email, phone: a.phone, note: a.note });
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
       const store = await db.store.findUnique({ where: { id: storeId }, select: { name: true, address: true } });
       if (store) {
         await sendAppointmentEmail({ to: email, name: name.trim(), storeName: store.name, dateLabel: prettyDate(date), timeLabel, address: store.address });
+        await logEmail({ storeId, to: email, type: "APPOINTMENT", subject: `Appointment — ${prettyDate(date)} ${timeLabel}` });
       }
     } catch { /* best-effort */ }
   }

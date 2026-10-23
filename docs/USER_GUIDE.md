@@ -380,6 +380,11 @@ Next to **Items** and **Contracts** there's an **Admin** tab (also reachable at
   status.
 - **Reports** — key numbers plus **CSV export** for Sales, Inventory,
   Consignors, and Ledger (with optional date range). Great for bookkeeping.
+- **Email Activity** (on the Reports page) — a store-wide log of every email the
+  platform has sent (inventory, contract, appointment, and Sip & Shop), with the
+  **date & time**, type, recipient, subject, and status (Sent / Test / Failed).
+  (Per-consignor inventory & contract emails also appear on each consignor's
+  page.)
 
 ---
 

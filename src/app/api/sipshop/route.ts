@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { sendSipShopConfirmationEmail } from "@/lib/email";
+import { logEmail } from "@/lib/email-log";
 import { processDueReminders } from "@/lib/reminders";
 
 const emptyToUndef = (v: unknown) => (v === "" || v == null ? undefined : v);
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
         guests: d.guests,
         address: store?.address,
       });
+      await logEmail({ storeId, to: d.email, type: "SIPSHOP", subject: `Sip & Shop — ${fmt(parseKey(d.eventDate))}` });
     } catch { /* best-effort */ }
   }
 

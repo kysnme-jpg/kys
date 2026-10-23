@@ -16,7 +16,7 @@ BRAND_TAGLINE = "Consignment Boutique"
 BRAND_ADDRESS = "7214 Harford Rd, Baltimore, MD 21234"
 BRAND_PHONE = "443.841.9730"
 BRAND_EMAIL = "kimberly@classicconsigns.com"
-PLATFORM = "ConsignPro platform"
+PLATFORM = "Classic Consigns by KYS"
 
 GUIDES = [
     ("USER_GUIDE.md", "User Guide", "For store staff"),

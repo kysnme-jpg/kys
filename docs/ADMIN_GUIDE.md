@@ -1,4 +1,4 @@
-# ConsignPro — Admin & Operations Guide
+# Classic Consigns by KYS — Admin & Operations Guide
 
 For the store owner / administrator. Covers hosting, configuration, accounts,
 security, integrations, data import/export, backups, and troubleshooting.

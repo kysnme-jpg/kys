@@ -11,7 +11,7 @@ interface ReceiptModalProps {
   onClose: () => void;
 }
 
-export function ReceiptModal({ sale, storeName = "ConsignPro", onClose }: ReceiptModalProps) {
+export function ReceiptModal({ sale, storeName = "Classic Consigns by KYS", onClose }: ReceiptModalProps) {
   const printReceipt = () => {
     const win = window.open("", "_blank", "width=400,height=600");
     if (!win) return;

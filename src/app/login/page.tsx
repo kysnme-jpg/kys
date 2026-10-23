@@ -40,7 +40,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-indigo-600 mb-4">
             <Store className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">ConsignPro</h1>
+          <h1 className="text-2xl font-bold text-white">Classic Consigns by KYS</h1>
           <p className="text-gray-400 text-sm mt-1">Sign in to your store</p>
         </div>
 

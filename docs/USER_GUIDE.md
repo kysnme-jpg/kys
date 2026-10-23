@@ -1,6 +1,6 @@
-# ConsignPro — User Guide
+# Classic Consigns by KYS — User Guide
 
-A guide for store staff (owners, managers, and employees) using the ConsignPro
+A guide for store staff (owners, managers, and employees) using the Classic Consigns by KYS
 consignment platform day to day.
 
 > **Your store address:** your platform lives at your own web address

@@ -20,14 +20,14 @@ function baseHtml(title: string, body: string, storeName: string) {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 0">
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden">
-        <tr><td style="background:#4f46e5;padding:24px 32px">
+        <tr><td style="background:#b4532a;padding:24px 32px">
           <p style="margin:0;color:#fff;font-size:20px;font-weight:700">${storeName}</p>
         </td></tr>
         <tr><td style="padding:32px">
           <h1 style="margin:0 0 16px;font-size:22px;color:#111827">${title}</h1>
           ${body}
           <p style="margin:32px 0 0;font-size:12px;color:#9ca3af">
-            This email was sent by ${storeName} via ConsignPro.
+            This email was sent by ${storeName}.
           </p>
         </td></tr>
       </table>
@@ -462,7 +462,7 @@ export async function sendItemSoldEmail(opts: {
       </tr>
       <tr style="border-top:1px solid #d1d5db">
         <td style="padding:10px 0 0;color:#6b7280;font-size:14px">New Balance</td>
-        <td style="padding:10px 0 0;color:#4f46e5;font-weight:700;font-size:16px;text-align:right">${fmt(opts.newBalance)}</td>
+        <td style="padding:10px 0 0;color:#b4532a;font-weight:700;font-size:16px;text-align:right">${fmt(opts.newBalance)}</td>
       </tr>
     </table>
     <p style="color:#374151;font-size:14px">
@@ -536,7 +536,7 @@ export async function sendWelcomeEmail(opts: {
     <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:20px 0;border-collapse:collapse">
       <tr>
         <td style="padding:6px 0;color:#6b7280;font-size:14px">Your Split</td>
-        <td style="padding:6px 0;color:#4f46e5;font-weight:700;font-size:16px;text-align:right">${opts.splitPercent}%</td>
+        <td style="padding:6px 0;color:#b4532a;font-weight:700;font-size:16px;text-align:right">${opts.splitPercent}%</td>
       </tr>
       ${opts.tempPassword ? `
       <tr>
@@ -545,7 +545,7 @@ export async function sendWelcomeEmail(opts: {
       </tr>` : ""}
     </table>
     <p style="margin:20px 0">
-      <a href="${opts.portalUrl}" style="background:#4f46e5;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;display:inline-block">
+      <a href="${opts.portalUrl}" style="background:#b4532a;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;display:inline-block">
         Access Your Portal →
       </a>
     </p>
@@ -626,7 +626,7 @@ export async function sendContractEmail(opts: {
       ${opts.storeName} has sent you a consignment agreement to review and sign.
     </p>
     <p style="margin:24px 0">
-      <a href="${opts.signUrl}" style="background:#4f46e5;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;display:inline-block">
+      <a href="${opts.signUrl}" style="background:#b4532a;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;display:inline-block">
         Review &amp; Sign Agreement →
       </a>
     </p>

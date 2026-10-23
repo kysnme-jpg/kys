@@ -62,7 +62,7 @@ export default function SetupPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-8">
           <Store className="h-8 w-8 text-indigo-400" />
-          <span className="text-2xl font-bold text-white">ConsignPro</span>
+          <span className="text-2xl font-bold text-white">Classic Consigns by KYS</span>
         </div>
 
         <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-8">

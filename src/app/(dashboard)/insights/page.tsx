@@ -123,16 +123,16 @@ export default function InsightsPage() {
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Revenue (30 days)"
-          value={formatCurrency(data.last30Days.revenue)}
-          sub={`${data.last30Days.transactions} transactions`}
+          label={clover?.ok ? "Revenue (30 days) · Clover" : "Revenue (30 days)"}
+          value={formatCurrency(clover?.ok ? clover.total : data.last30Days.revenue)}
+          sub={clover?.ok ? `${clover.count} card transactions` : `${data.last30Days.transactions} transactions`}
           icon={TrendingUp}
           color="green"
         />
         <StatCard
-          label="All-Time Revenue"
-          value={formatCurrency(data.allTime.revenue)}
-          sub={`${data.allTime.transactions} total sales`}
+          label={clover?.ok ? "Today · Clover" : "All-Time Revenue"}
+          value={formatCurrency(clover?.ok ? clover.todayTotal : data.allTime.revenue)}
+          sub={clover?.ok ? `${clover.todayCount} transaction${clover.todayCount === 1 ? "" : "s"} today` : `${data.allTime.transactions} total sales`}
           icon={DollarSign}
           color="indigo"
         />

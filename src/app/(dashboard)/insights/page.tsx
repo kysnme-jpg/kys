@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import {
   TrendingUp, ShoppingBag, Package, DollarSign,
-  RotateCcw, CheckCircle, ArrowUpRight
+  RotateCcw, CheckCircle, ArrowUpRight, RefreshCw
 } from "lucide-react";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6"];
@@ -68,6 +68,7 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(true);
   const [clover, setClover] = useState<any>(null);
   const [cloverAt, setCloverAt] = useState<string>("");
+  const [cloverLoading, setCloverLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/insights")
@@ -75,20 +76,23 @@ export default function InsightsPage() {
       .then((d) => { setData(d); setLoading(false); });
   }, []);
 
-  // Live Clover transactions — refresh on a loop.
+  // Pull Clover transactions (on demand + on a loop).
+  const loadClover = useCallback(async () => {
+    setCloverLoading(true);
+    try {
+      const r = await fetch("/api/clover/transactions?days=30", { cache: "no-store" });
+      const d = await r.json();
+      setClover(d); setCloverAt(new Date().toLocaleTimeString());
+    } catch { /* ignore */ } finally {
+      setCloverLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    let active = true;
-    const loadClover = async () => {
-      try {
-        const r = await fetch("/api/clover/transactions?days=30");
-        const d = await r.json();
-        if (active) { setClover(d); setCloverAt(new Date().toLocaleTimeString()); }
-      } catch { /* ignore */ }
-    };
     loadClover();
     const t = setInterval(loadClover, 60000);
-    return () => { active = false; clearInterval(t); };
-  }, []);
+    return () => clearInterval(t);
+  }, [loadClover]);
 
   if (loading || !data) {
     return (
@@ -154,7 +158,13 @@ export default function InsightsPage() {
           <CardTitle className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" /> Clover Card Transactions
           </CardTitle>
-          {clover?.ok && cloverAt && <span className="text-xs text-gray-400">updated {cloverAt} · auto-refreshes</span>}
+          <div className="flex items-center gap-3">
+            {clover?.ok && cloverAt && <span className="text-xs text-gray-400 hidden sm:inline">updated {cloverAt}</span>}
+            <button onClick={loadClover} disabled={cloverLoading} className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+              <RefreshCw className={`h-4 w-4 ${cloverLoading ? "animate-spin" : ""}`} />
+              {cloverLoading ? "Pulling…" : "Pull from Clover"}
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           {!clover ? (
@@ -167,7 +177,7 @@ export default function InsightsPage() {
               {clover.diag && (
                 <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-xs text-gray-600 font-mono space-y-0.5">
                   <div>Clover URL: {clover.diag.base} {clover.diag.isSandbox ? "⚠️ SANDBOX" : "(production)"}</div>
-                  <div>Merchant ID: {clover.diag.merchantIdMask}</div>
+                  <div>Merchant ID: {clover.diag.merchantIdMask} — from {clover.diag.merchantSource}</div>
                   <div>API token from: {clover.diag.keySource}</div>
                   {clover.status && <div>HTTP status: {clover.status}</div>}
                   {clover.detail && <div className="text-gray-400 break-all">Clover said: {clover.detail}</div>}

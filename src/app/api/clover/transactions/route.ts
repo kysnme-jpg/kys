@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
     base: baseUrl,
     isSandbox: /sandbox|dev\.clover/i.test(baseUrl),
     merchantIdMask: merchantId ? `${merchantId.slice(0, 4)}…${merchantId.slice(-3)} (${merchantId.length} chars)` : "(not set)",
-    keySource: store?.cloverApiKey ? "Settings" : (process.env.CLOVER_API_KEY ? "env var" : "(not set)"),
+    merchantSource: store?.cloverMerchantId ? "Settings (app)" : (process.env.CLOVER_MERCHANT_ID ? "env var (Railway)" : "(not set)"),
+    keySource: store?.cloverApiKey ? "Settings (app)" : (process.env.CLOVER_API_KEY ? "env var (Railway)" : "(not set)"),
   };
 
   let client;

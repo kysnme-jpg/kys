@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
-import { FileText, Send, Plus, CheckCircle, Clock, Eye } from "lucide-react";
+import { FileText, Send, Plus, CheckCircle, Clock, Eye, Download } from "lucide-react";
 
 interface Contract {
   id: string;
@@ -42,6 +42,47 @@ export default function ContractsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [viewContract, setViewContract] = useState<any>(null);
   const [resending, setResending] = useState<string | null>(null);
+
+  const downloadContract = (c: any) => {
+    const win = window.open("", "_blank", "width=820,height=950");
+    if (!win) return;
+    const esc = (s: any) => String(s ?? "").replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch] as string));
+    const name = `${c.consignor?.firstName ?? ""} ${c.consignor?.lastName ?? ""}`.trim();
+    const signed = c.status === "SIGNED" && c.signedAt;
+    const sig = c.signatureData
+      ? `<img src="${c.signatureData}" style="max-height:90px" alt="Signature" />`
+      : `<span style="color:#999">Not yet signed</span>`;
+    win.document.write(`
+      <!DOCTYPE html><html><head><title>${esc(c.title)} — ${esc(name)}</title><style>
+        * { box-sizing: border-box; }
+        body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; padding: 40px; max-width: 760px; margin: 0 auto; line-height: 1.5; }
+        h1 { font-size: 22px; margin: 0 0 4px; }
+        .store { font-size: 14px; color: #666; margin-bottom: 2px; }
+        .meta { font-size: 12px; color: #666; margin: 10px 0 20px; }
+        .status { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: ${signed ? "#dcfce7" : "#fef9c3"}; color: ${signed ? "#166534" : "#854d0e"}; }
+        .body { white-space: pre-wrap; font-size: 13px; font-family: Arial, sans-serif; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 18px 0; margin: 16px 0; }
+        .sig-label { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: .5px; margin-bottom: 6px; }
+        .sig-box { border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: inline-block; min-width: 260px; }
+        .signer { font-size: 12px; color: #444; margin-top: 8px; }
+        .foot { margin-top: 28px; font-size: 11px; color: #999; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+        <div class="store">${esc(c.store?.name || "Classic Consigns by KYS")}</div>
+        <h1>${esc(c.title)}</h1>
+        <div class="meta">
+          Consignor: <strong>${esc(name)}</strong>${c.consignor?.email ? ` · ${esc(c.consignor.email)}` : ""} · ${c.splitPercent}% split<br/>
+          <span class="status">${esc(c.status)}</span>
+          ${signed ? ` · Signed ${new Date(c.signedAt).toLocaleString()}` : ""}
+        </div>
+        <div class="body">${esc(c.body)}</div>
+        <div class="sig-label">Signature</div>
+        <div class="sig-box">${sig}</div>
+        ${signed ? `<div class="signer">Signed by ${esc(name)} on ${new Date(c.signedAt).toLocaleString()}${c.signerIp ? ` · IP: ${esc(c.signerIp)}` : ""}</div>` : ""}
+        <div class="foot">${esc(c.store?.name || "Classic Consigns by KYS")} · Downloaded ${new Date().toLocaleString()}</div>
+        <script>window.onload=function(){setTimeout(function(){window.print();},250);};</script>
+      </body></html>`);
+    win.document.close();
+  };
 
   const resend = async (c: Contract) => {
     const to = prompt(
@@ -292,11 +333,16 @@ export default function ContractsPage() {
       {viewContract && (
         <Modal open={!!viewContract} onClose={() => setViewContract(null)} title={viewContract.title} className="max-w-2xl">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Badge variant={statusColors[viewContract.status]}>{viewContract.status}</Badge>
-              {viewContract.status === "SIGNED" && viewContract.signedAt && (
-                <p className="text-xs text-gray-500">Signed {new Date(viewContract.signedAt).toLocaleString()}</p>
-              )}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Badge variant={statusColors[viewContract.status]}>{viewContract.status}</Badge>
+                {viewContract.status === "SIGNED" && viewContract.signedAt && (
+                  <p className="text-xs text-gray-500">Signed {new Date(viewContract.signedAt).toLocaleString()}</p>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => downloadContract(viewContract)} className="gap-1.5">
+                <Download className="h-4 w-4" /> Download
+              </Button>
             </div>
             <div className="bg-gray-50 rounded-xl p-5 max-h-72 overflow-y-auto">
               <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">

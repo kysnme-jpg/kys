@@ -336,6 +336,9 @@ Consignment agreements with e-signature. Open **Contracts** from the sidebar.
    enter your own to **test**, or **correct the consignor's email** if it was
    wrong. The consignor opens the link and signs **without any login or
    password**.
+6. **Download / print:** open a contract (eye icon) and click **Download** to get
+   a clean printable copy — the full agreement, the **signature**, and the signer
+   details (name, date, IP). Use your browser's **Save as PDF** or print it.
 
 The agreement text is your store's standard template; the owner can edit it in
 **Settings → Contract Template**.

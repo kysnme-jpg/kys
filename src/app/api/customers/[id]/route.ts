@@ -25,21 +25,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const lifetimeSpend = sales.reduce((s, x) => s + x.total, 0);
   const lastVisitAt = sales[0]?.createdAt ?? null;
 
-  const recentPurchases: any[] = [];
-  for (const sale of sales) {
-    for (const si of sale.items) {
-      if (recentPurchases.length >= 3) break;
-      recentPurchases.push({
-        title: si.item.title,
-        consignorName: si.item.consignor ? `${si.item.consignor.firstName} ${si.item.consignor.lastName}` : null,
-        price: si.price,
-        soldAt: sale.createdAt,
-      });
-    }
-    if (recentPurchases.length >= 3) break;
-  }
+  // Full itemized purchase history, newest sale first, each sale broken down
+  // into its items (title, price, and which consignor it came from).
+  const purchases = sales.map((sale) => ({
+    saleId: sale.id,
+    createdAt: sale.createdAt,
+    total: sale.total,
+    items: sale.items.map((si) => ({
+      title: si.item.title,
+      consignorName: si.item.consignor ? `${si.item.consignor.firstName} ${si.item.consignor.lastName}` : null,
+      price: si.price,
+    })),
+  }));
 
-  return NextResponse.json({ ...customer, visits, lifetimeSpend, lastVisitAt, recentPurchases });
+  return NextResponse.json({ ...customer, visits, lifetimeSpend, lastVisitAt, purchases });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -26,7 +26,8 @@ interface Customer {
   email?: string | null; phone?: string | null; points: number; createdAt: string;
   visits?: number; lifetimeSpend?: number; lastVisitAt?: string | null;
 }
-interface Detail extends Customer { recentPurchases?: { title: string; consignorName: string | null; price: number; soldAt: string }[]; }
+interface Purchase { saleId: string; createdAt: string; total: number; items: { title: string; consignorName: string | null; price: number }[]; }
+interface Detail extends Customer { purchases?: Purchase[]; }
 
 const digitsOnly = (s?: string | null) => (s || "").replace(/\D/g, "");
 const fmtPhone = (d: string) => {
@@ -416,15 +417,30 @@ function DetailSheet({ c, onClose, onChanged, onGivePoints }: { c: Detail; onClo
           <Button variant="outline" size="sm" onClick={onGivePoints}>Give points</Button>
         </div>
 
-        {/* Recent purchases */}
-        {c.recentPurchases && c.recentPurchases.length > 0 && (
+        {/* Purchase history — every item, grouped by sale */}
+        {c.purchases && c.purchases.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-[15px] font-semibold text-ink mb-2">Recent purchases</h3>
-            <div className="space-y-2">
-              {c.recentPurchases.map((p, i) => (
-                <div key={i} className="flex items-center justify-between text-[14px]">
-                  <span className="min-w-0"><span className="font-medium text-ink truncate block">{p.title}</span>{p.consignorName && <span className="text-[var(--muted)]">from {p.consignorName}</span>}</span>
-                  <span className="font-semibold text-ink shrink-0 ml-3">{formatCurrency(p.price)}</span>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[15px] font-semibold text-ink">Purchase history</h3>
+              <span className="text-[13px] font-medium text-[var(--muted)]">
+                {c.purchases.reduce((n, s) => n + s.items.length, 0)} items · {formatCurrency(c.lifetimeSpend || 0)}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {c.purchases.map((sale) => (
+                <div key={sale.saleId} className="bg-paper rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[13px] font-medium text-[var(--muted)]">{new Date(sale.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                    <span className="text-[14px] font-semibold text-ink">{formatCurrency(sale.total)}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {sale.items.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between text-[14px] gap-3">
+                        <span className="min-w-0 truncate"><span className="font-medium text-ink">{p.title}</span>{p.consignorName && <span className="text-[var(--muted)]"> · {p.consignorName}</span>}</span>
+                        <span className="font-semibold text-ink shrink-0">{formatCurrency(p.price)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

@@ -307,6 +307,10 @@ Your loyalty members. Open **Customers** from the sidebar.
 - **Add** a customer (name, email, phone).
 - **Click a customer** to edit name, email, phone, and **loyalty points**, or
   delete them.
+- **Purchase history:** the customer's detail panel shows their **visits**,
+  **lifetime spend**, and a full **Purchase history** — every item they've
+  bought, grouped by sale (date and amount), with each item's price and which
+  consignor it came from.
 - **Bulk actions:** add points to many at once, or delete.
 - Customers earn **1 point per $1** spent (when attached to a sale) and redeem
   **100 points = $1** at the POS.

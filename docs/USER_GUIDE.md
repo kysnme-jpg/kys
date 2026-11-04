@@ -100,6 +100,23 @@ checks or edits at the counter.
 7. **List on public online shop:** toggle on to show the item at your `/shop`.
 8. **Save** → you'll get the SKU and a **Print Label** button.
 
+### Quick Intake (camera-first, for the tablet)
+For adding many items fast — especially on the **store tablet** — use **Inventory
+→ Quick Intake** (or **Quick intake** on a consignor's Items tab to start with
+them pre-selected).
+1. **Pick the consignor once** and tap **Start** — they stay locked for the whole
+   batch, so you never re-select.
+2. Tap **Photograph the item** → the tablet **camera** opens → snap the item.
+3. The **AI reads the photo** and fills in the title, price, condition, brand,
+   size, and description. **Add angle** to attach more photos of the same item.
+4. **Glance and adjust** (mainly the price), then **Save & next item** — it saves
+   to that consignor and instantly resets for the next piece.
+5. Everything you add shows in **Added this session** with a **Print KYS tag**
+   button for each, plus a link to the consignor's items.
+
+So a whole bag becomes **snap → confirm → save**, repeated. (The AI needs
+`ANTHROPIC_API_KEY` set — see the Admin Guide.)
+
 ### Editing an item
 Click any item (row or card) in Inventory to open the quick **Edit** window
 (title, SKU, barcode, brand, size, condition, price, cost, location, status),

@@ -12,7 +12,7 @@ import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus, Pencil,
-  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText
+  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText, Camera
 } from "lucide-react";
 
 interface ConsignorDetail {
@@ -451,7 +451,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
         {/* Items tab */}
         {activeTab === "items" && (
           <div className="space-y-2">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Link href={`/inventory/intake?consignorId=${consignor.id}`}>
+                <Button size="sm" variant="outline" className="gap-1.5"><Camera className="h-4 w-4" /> Quick intake</Button>
+              </Link>
               <Link href={`/inventory/new?consignorId=${consignor.id}&from=${encodeURIComponent(`/consignors/${id}`)}`}>
                 <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Add item</Button>
               </Link>

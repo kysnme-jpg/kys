@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
-import { Search, X, ShoppingCart, Trash2, Star, Check } from "lucide-react";
+import { Search, X, ShoppingCart, Trash2, Star, Check, RotateCcw } from "lucide-react";
 import { ReceiptModal } from "@/components/pos/receipt-modal";
 
 interface Item {
@@ -28,6 +28,11 @@ export default function POSPage() {
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [lookingUp, setLookingUp] = useState(false);
   const [scanFlash, setScanFlash] = useState("");
+  const [mode, setMode] = useState<"sell" | "refund">("sell");
+  const [refundPreview, setRefundPreview] = useState<any>(null);
+  const [refundBusy, setRefundBusy] = useState(false);
+  const [refundMsg, setRefundMsg] = useState("");
+  const [refundDone, setRefundDone] = useState<any>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const POINTS_PER_DOLLAR = 100;
 
@@ -44,14 +49,14 @@ export default function POSPage() {
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (!search.trim()) { setResults([]); return; }
+      if (mode !== "sell" || !search.trim()) { setResults([]); return; }
       setLoading(true);
       const res = await fetch(`/api/items?search=${encodeURIComponent(search)}&status=ACTIVE&limit=20`);
       const data = await res.json();
       setResults(data.items || []); setLoading(false);
     }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, mode]);
 
   const addToCart = (item: Item) => {
     setCart((prev) => [...prev, { ...item, cartId: Math.random().toString(36) }]);
@@ -73,6 +78,42 @@ export default function POSPage() {
   };
 
   const removeFromCart = (cartId: string) => setCart((prev) => prev.filter((i) => i.cartId !== cartId));
+
+  // --- Refund mode ---
+  const switchMode = (m: "sell" | "refund") => {
+    setMode(m); setSearch(""); setResults([]); setScanFlash("");
+    setRefundPreview(null); setRefundMsg(""); setRefundDone(null);
+    setTimeout(() => searchRef.current?.focus(), 0);
+  };
+
+  const resetRefund = () => { setRefundPreview(null); setRefundMsg(""); setSearch(""); searchRef.current?.focus(); };
+
+  const handleRefundScan = async () => {
+    const code = search.trim();
+    if (!code) return;
+    setRefundMsg(""); setRefundDone(null);
+    try {
+      const res = await fetch(`/api/refunds?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (!data.found) { setRefundPreview(null); setRefundMsg(`No item found for "${code}".`); }
+      else if (!data.refundable) { setRefundPreview(null); setRefundMsg(data.reason || "This item can't be refunded."); }
+      else { setRefundPreview(data); }
+    } catch { setRefundMsg("Couldn't reach the catalog — check your connection."); }
+    setSearch("");
+  };
+
+  const processRefund = async (returnTo: "ACTIVE" | "RETURNED") => {
+    if (!refundPreview) return;
+    setRefundBusy(true);
+    try {
+      const res = await fetch("/api/refunds", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: refundPreview.item.id, returnTo }),
+      });
+      if (res.ok) { setRefundDone(await res.json()); setRefundPreview(null); searchRef.current?.focus(); }
+      else { const d = await res.json().catch(() => ({})); setRefundMsg(d.error || "Refund failed."); }
+    } finally { setRefundBusy(false); }
+  };
 
   const lookupCustomer = async () => {
     if (!customerEmail.trim()) return;
@@ -115,7 +156,17 @@ export default function POSPage() {
         {/* LEFT */}
         <div className="flex-1 min-w-0 w-full">
           <p className="text-[15px] font-medium text-[var(--muted)] mb-1.5">Point of Sale</p>
-          <h1 className="font-serif text-[40px] sm:text-[60px] leading-none text-ink mb-6">New sale</h1>
+          <h1 className="font-serif text-[40px] sm:text-[60px] leading-none text-ink mb-4">{mode === "sell" ? "New sale" : "Refund"}</h1>
+
+          {/* Sell / Refund toggle */}
+          <div className="inline-flex items-center gap-1 rounded-full bg-chip p-1 h-12 mb-6">
+            {(["sell", "refund"] as const).map((m) => (
+              <button key={m} onClick={() => switchMode(m)}
+                className={`inline-flex items-center justify-center rounded-full px-5 h-10 text-[15px] font-semibold transition-colors ${mode === m ? "bg-ink text-[var(--panel-ink)]" : "text-[var(--muted)] hover:text-ink"}`}>
+                {m === "sell" ? "Sell" : "Refund"}
+              </button>
+            ))}
+          </div>
 
           <div className="relative mb-3">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-[22px] w-[22px] text-[var(--muted)]" />
@@ -123,15 +174,29 @@ export default function POSPage() {
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleScanEnter(); } }}
-              placeholder="Scan a barcode, or search by name or SKU"
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); mode === "sell" ? handleScanEnter() : handleRefundScan(); } }}
+              placeholder={mode === "sell" ? "Scan a barcode, or search by name or SKU" : "Scan a sold item to refund"}
               className="w-full h-[68px] rounded-full border-[1.5px] border-line bg-surface pl-14 pr-12 text-[20px] text-ink placeholder:text-[var(--placeholder)] focus:outline-none focus:border-accent"
             />
             {search && <button onClick={() => { setSearch(""); setResults([]); }} className="absolute right-5 top-1/2 -translate-y-1/2"><X className="h-5 w-5 text-[var(--muted)]" /></button>}
           </div>
 
-          {scanFlash && (
+          {mode === "sell" && scanFlash && (
             <div className={`rounded-2xl px-4 py-3 text-[15px] font-semibold mb-3 ${scanFlash.startsWith("Added") ? "bg-[var(--ok-bg)] text-[var(--ok-ink)]" : "bg-[var(--danger-bg)] text-[var(--danger-ink)]"}`}>{scanFlash}</div>
+          )}
+
+          {mode === "refund" && refundMsg && (
+            <div className="rounded-2xl px-4 py-3 text-[15px] font-semibold mb-3 bg-[var(--danger-bg)] text-[var(--danger-ink)]">{refundMsg}</div>
+          )}
+          {mode === "refund" && refundDone && (
+            <div className="flex items-center gap-3 rounded-2xl bg-[var(--ok-bg)] p-4 mb-3">
+              <div className="h-10 w-10 bg-[var(--ok-ink)] rounded-full flex items-center justify-center shrink-0"><Check className="h-5 w-5 text-white" /></div>
+              <div className="flex-1">
+                <p className="font-semibold text-[var(--ok-ink)]">Refund complete</p>
+                <p className="text-sm text-[var(--ok-ink)]">{refundDone.title} · {refundDone.returnTo === "RETURNED" ? "returned to consignor" : "relisted"}{refundDone.reversed > 0 ? ` · reversed ${formatCurrency(refundDone.reversed)}${refundDone.consignor ? ` from ${refundDone.consignor}` : ""}` : ""}</p>
+              </div>
+              <button onClick={() => setRefundDone(null)}><X className="h-5 w-5 text-[var(--ok-ink)]" /></button>
+            </div>
           )}
 
           {results.length > 0 && (
@@ -151,7 +216,7 @@ export default function POSPage() {
 
           {loading && <p className="text-[var(--muted)]">Searching…</p>}
 
-          {lastSale && (
+          {mode === "sell" && lastSale && (
             <div className="flex items-center gap-3 rounded-2xl bg-[var(--ok-bg)] p-4">
               <div className="h-10 w-10 bg-[var(--ok-ink)] rounded-full flex items-center justify-center shrink-0"><Check className="h-5 w-5 text-white" /></div>
               <div className="flex-1"><p className="font-semibold text-[var(--ok-ink)]">Sale complete</p><p className="text-sm text-[var(--ok-ink)]">{formatCurrency(lastSale.total)} · #{lastSale.id.slice(-8)}</p></div>
@@ -161,7 +226,8 @@ export default function POSPage() {
           )}
         </div>
 
-        {/* RIGHT: cart (dark panel) */}
+        {/* RIGHT: cart (sell) or refund panel */}
+        {mode === "sell" && (
         <aside className="w-[420px] max-[1100px]:w-[380px] max-[900px]:w-full shrink-0 lg:sticky lg:top-9">
           <div className="bg-panel text-[var(--panel-ink)] rounded-[28px] flex flex-col overflow-hidden">
             <div className="px-6 pt-5 pb-3 flex items-center gap-2 border-b border-[var(--panel-key)]">
@@ -226,6 +292,48 @@ export default function POSPage() {
             </div>
           </div>
         </aside>
+        )}
+
+        {mode === "refund" && (
+        <aside className="w-[420px] max-[1100px]:w-[380px] max-[900px]:w-full shrink-0 lg:sticky lg:top-9">
+          <div className="bg-panel text-[var(--panel-ink)] rounded-[28px] flex flex-col overflow-hidden">
+            <div className="px-6 pt-5 pb-3 flex items-center gap-2 border-b border-[var(--panel-key)]">
+              <RotateCcw className="h-5 w-5" /><h2 className="font-serif text-[24px]">Refund</h2>
+            </div>
+            <div className="px-6 py-5">
+              {!refundPreview ? (
+                <div className="flex flex-col items-center justify-center py-10 text-[var(--panel-muted)] gap-2 text-center">
+                  <RotateCcw className="h-9 w-9" /><p>Scan a sold item to refund it.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[18px] font-semibold">{refundPreview.item.title}</p>
+                    <p className="text-[14px] text-[var(--panel-muted)]">{[refundPreview.item.brand, refundPreview.item.sku].filter(Boolean).join(" · ")}</p>
+                  </div>
+                  <div className="space-y-1.5 text-[15px]">
+                    <div className="flex justify-between text-[var(--panel-muted)]"><span>Sold for</span><span>{formatCurrency(refundPreview.item.price)}</span></div>
+                    {refundPreview.item.consignor && (
+                      <div className="flex justify-between text-[var(--panel-muted)]"><span>Consignor</span><span className="truncate max-w-[55%]">{refundPreview.item.consignor}</span></div>
+                    )}
+                    {refundPreview.reversal > 0 && (
+                      <div className="flex justify-between font-semibold pt-2 border-t border-[var(--panel-key)]"><span>Reverses credit</span><span>−{formatCurrency(refundPreview.reversal)}</span></div>
+                    )}
+                  </div>
+                  {refundPreview.reversal === 0 && (
+                    <p className="text-[13px] text-[var(--panel-muted)]">No consignor credit to reverse (store-owned item).</p>
+                  )}
+                  <div className="space-y-2 pt-1">
+                    <button onClick={() => processRefund("ACTIVE")} disabled={refundBusy} className="w-full h-[52px] rounded-full bg-accent text-[var(--accent-ink)] text-[16px] font-bold active:scale-[.98] transition disabled:opacity-45 disabled:active:scale-100">{refundBusy ? "Processing…" : "Refund & relist"}</button>
+                    <button onClick={() => processRefund("RETURNED")} disabled={refundBusy} className="w-full h-[52px] rounded-full bg-[var(--panel-key)] text-[var(--panel-ink)] text-[16px] font-semibold active:scale-[.98] transition disabled:opacity-45 disabled:active:scale-100">Refund &amp; return to consignor</button>
+                    <button onClick={resetRefund} className="w-full h-10 text-[14px] text-[var(--panel-muted)] hover:text-[var(--panel-ink)]">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+        )}
       </div>
 
       {receiptSale && <ReceiptModal sale={receiptSale} onClose={() => setReceiptSale(null)} />}

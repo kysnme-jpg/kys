@@ -60,7 +60,7 @@ li{margin:3px 0}
     <div class="logo">&#128717;</div>
     <span class="kicker" style="margin-bottom:18px">Consignment Boutique</span>
     <h1>Classic Consigns by KYS</h1>
-    <p class="tag">Point of Sale &amp; Store Management &nbsp;·&nbsp; Classic Consigns by KYS platform</p>
+    <p class="tag">Point of Sale &amp; Store Management &nbsp;·&nbsp; Classic Consigns by KYS</p>
     <p class="tag" style="font-size:22px;color:var(--ink);font-weight:600;margin-bottom:8px">User &amp; Admin Guides</p>
     <div class="toc-wrap"><div class='toc-col'><h3><a href='#user'>User Guide</a></h3><ul class='toc'>
 <li><a href='#1-signing-in'>1. Signing in</a>
@@ -68,6 +68,7 @@ li{margin:3px 0}
 <li><a href='#2-point-of-sale-pos'>2. Point of Sale (POS)</a>
 <ul>
 <li><a href='#ringing-up-a-sale'>Ringing up a sale</a></li>
+<li><a href='#refunds'>Refunds</a></li>
 <li><a href='#notes'>Notes</a></li>
 </ul>
 </li>
@@ -78,20 +79,29 @@ li{margin:3px 0}
 <li><a href='#adding-an-item'>Adding an item</a></li>
 <li><a href='#editing-an-item'>Editing an item</a></li>
 <li><a href='#bulk-actions'>Bulk actions</a></li>
-<li><a href='#labels'>Labels</a></li>
+<li><a href='#labels-kys-tags'>Labels &amp; KYS tags</a></li>
 <li><a href='#aging-alerts'>Aging alerts</a></li>
 </ul>
 </li>
 <li><a href='#4-consignors'>4. Consignors</a>
 <ul>
+<li><a href='#appointments-new-consignor-booking'>Appointments (new-consignor booking)</a></li>
+<li><a href='#layaway'>Layaway</a></li>
+<li><a href='#borrowed-garment-agreements'>Borrowed (garment agreements)</a></li>
+<li><a href='#sip-shop'>Sip &amp; Shop</a></li>
 <li><a href='#consignor-detail-page'>Consignor detail page</a></li>
 </ul>
 </li>
 <li><a href='#5-customers'>5. Customers</a>
+<ul>
+<li><a href='#kiosk-sign-in-digital-guest-book'>Kiosk sign-in (digital guest book)</a></li>
+</ul>
 </li>
 <li><a href='#6-payouts'>6. Payouts</a>
 </li>
 <li><a href='#7-contracts'>7. Contracts</a>
+</li>
+<li><a href='#7a-admin-employee-hours-payouts'>7a. Admin — employee hours &amp; payouts</a>
 </li>
 <li><a href='#8-store-insights-reports'>8. Store Insights &amp; Reports</a>
 </li>
@@ -121,6 +131,13 @@ li{margin:3px 0}
 </ul>
 </li>
 <li><a href='#6-store-configuration-settings'>6. Store configuration (Settings)</a>
+<ul>
+<li><a href='#admin-employee-work-log-admin'>Admin — employee work log (/admin)</a></li>
+<li><a href='#consignment-appointments-book-public-page'>Consignment appointments (/book public page)</a></li>
+<li><a href='#layaway-borrowed-agreements'>Layaway &amp; Borrowed agreements</a></li>
+<li><a href='#sip-shop-events'>Sip &amp; Shop events</a></li>
+<li><a href='#kiosk-customer-sign-in-welcome'>Kiosk customer sign-in (/welcome)</a></li>
+</ul>
 </li>
 <li><a href='#7-integrations'>7. Integrations</a>
 <ul>
@@ -147,7 +164,7 @@ li{margin:3px 0}
 </li>
 </ul></div></div>
     <div class="meta">
-      Updated <b>October 2026</b> &nbsp;·&nbsp; Staff User Guide and Owner/Admin Guide<br>
+      Updated <b>November 2026</b> &nbsp;·&nbsp; Staff User Guide and Owner/Admin Guide<br>
       <span style="display:inline-block;margin-top:8px">&#128205; 7214 Harford Rd, Baltimore, MD 21234 &nbsp;·&nbsp; &#128222; 443.841.9730 &nbsp;·&nbsp; &#9993; kimberly@classicconsigns.com</span>
     </div>
   </div>
@@ -158,7 +175,7 @@ li{margin:3px 0}
         <h1>User Guide</h1>
         <p class="subtitle">For store staff</p>
       </div>
-      <h1 id="consignpro-user-guide">Classic Consigns by KYS — User Guide</h1>
+      <h1 id="classic-consigns-by-kys-user-guide">Classic Consigns by KYS — User Guide</h1>
 <p>A guide for store staff (owners, managers, and employees) using the Classic Consigns by KYS
 consignment platform day to day.</p>
 <blockquote>
@@ -197,6 +214,25 @@ Light mode</strong> to switch themes. Your choice is remembered on that device.<
 <li>A <strong>receipt</strong> pops up — <strong>Print Receipt</strong> or Close. Points are awarded to the
    customer automatically (1 point per $1 spent) when a customer is attached.</li>
 </ol>
+<h3 id="refunds">Refunds</h3>
+<p>At the top of the POS screen, switch from <strong>Sell</strong> to <strong>Refund</strong> to undo a sale.
+1. <strong>Scan the sold item</strong> (or type its SKU) in the box. A refund card appears on
+   the right showing what it sold for and, for a consigned item, the <strong>consignor
+   credit that will be reversed</strong>.
+2. Choose how the item comes back:
+   - <strong>Refund &amp; relist</strong> — the item goes back on the floor as <strong>Active</strong>, ready
+     to sell again.
+   - <strong>Refund &amp; return to consignor</strong> — the item is marked <strong>Returned</strong>.
+3. Either way, the consignor's <strong>Ledger</strong> gets a matching <strong>debit</strong> (a red
+   <code>ADJUSTMENT</code>) that <strong>reverses the sale credit</strong>, and their balance drops by the
+   same amount.</p>
+<p>Notes:
+- Only a <strong>Sold</strong> item can be refunded; scanning anything else shows why it can't.
+- The reversal uses the <strong>price the item actually sold for</strong> (not its current
+  price). If the consignor was already paid out, their balance can go negative —
+  that simply means they owe that amount back.
+- The <strong>customer's</strong> money (card/cash) is returned on your payment terminal; the
+  refund here handles the inventory and the consignor's ledger.</p>
 <h3 id="notes">Notes</h3>
 <ul>
 <li>Only <strong>Active</strong> items can be sold. Sold/returned items won't scan into a sale.</li>
@@ -233,11 +269,14 @@ checks or edits at the counter.</p>
 <li><strong>Save</strong> → you'll get the SKU and a <strong>Print Label</strong> button.</li>
 </ol>
 <h3 id="editing-an-item">Editing an item</h3>
-<p>Click any item (row or card) to open the <strong>Edit</strong> window. You can change the
-title, SKU, barcode, brand, size, condition, <strong>price</strong>, <strong>cost</strong> (what it cost
-you), <strong>location</strong> (In-store / Storage), status, and online listing, <strong>Print
-Label</strong>, or <strong>Delete</strong> (deletion is blocked for items with sales). Items can
-also be edited from a consignor's <strong>Items</strong> tab (Edit pencil on each row).</p>
+<p>Click any item (row or card) in Inventory to open the quick <strong>Edit</strong> window
+(title, SKU, barcode, brand, size, condition, price, cost, location, status),
+with <strong>Print</strong>, <strong>KYS Tag</strong>, and <strong>Delete</strong>. For the complete form — the same
+one as Add Item, with <strong>photos, AI photo auto-fill, color, description, category,
+online listing</strong>, etc. — click <strong>Full edit</strong> in that window, or edit from a
+consignor's <strong>Items</strong> tab (the pencil opens the full editor directly). After
+saving, you're returned to wherever you came from (e.g. back to the consignor
+you were reviewing). Deletion is blocked for sold items.</p>
 <h3 id="bulk-actions">Bulk actions</h3>
 <p>Select items with the checkboxes (or "select all"), then use the blue bar:
 - <strong>Print labels</strong> — prints a scannable label for every selected item.
@@ -245,10 +284,24 @@ also be edited from a consignor's <strong>Items</strong> tab (Edit pencil on eac
 - <strong>List online / Unlist</strong> — show/hide on the public shop in bulk.
 - <strong>Mark Returned</strong> — change status in bulk.
 - <strong>Delete</strong> — remove selected items (sold items can't be deleted).</p>
-<h3 id="labels">Labels</h3>
-<p>Printed labels are <strong>2" × 1"</strong> and carry a <strong>scannable Code128 barcode</strong> (the
-item's barcode, or its SKU), the code, and the price. Print from the Add-Item
-screen, the Edit window, or the bulk <strong>Print labels</strong> action.</p>
+<h3 id="labels-kys-tags">Labels &amp; KYS tags</h3>
+<p>Two print formats, both with a <strong>scannable Code128 barcode</strong> (the item's barcode,
+or its SKU):
+- <strong>KYS Tag</strong> — a branded <strong>2" × 2"</strong> hang tag with the <strong>Classic Consigns by KYS
+  logo</strong>, a <strong>short description</strong> (the item's title), the <strong>Size</strong>, <strong>Price</strong>,
+  <strong>Consignor</strong>, the SKU barcode, and SKU text.
+  Designed to print on your <strong>own printer</strong> (plain cardstock or tag sheets).
+  Print it from the <strong>Add-Item</strong> screen, an item's <strong>Edit</strong> window ("KYS Tag"),
+  the inventory bulk bar (<strong>Print KYS tags</strong>), or a consignor's page (<strong>Print all
+  tags</strong> prints a sheet of tags for all their active items). Bulk printing lays
+  the tags out in a grid with faint cut guides.
+  - <strong>Blank price option:</strong> tick <strong>"Blank price"</strong> (on a consignor's page) or
+    <strong>"Blank $"</strong> (in the inventory bulk bar) before printing to leave the price
+    as a <strong>write-in line</strong> (<code>$______</code>) instead of printing the value — handy for
+    hand-writing or marking down prices. Size and Consignor still print.
+- <strong>Label</strong> — the compact <strong>2" × 1"</strong> thermal label (title, brand/size, price,
+  barcode). Print from the Edit window ("Label") — handy for a thermal label
+  printer.</p>
 <h3 id="aging-alerts">Aging alerts</h3>
 <p>On the Active tab, items expiring within 14 days are flagged at the top so you
 can mark them down or return them.</p>
@@ -271,10 +324,140 @@ can mark them down or return them.</p>
   <strong>"If items don't sell"</strong> preference: <strong>Pick-up</strong>, <strong>Donate</strong>, or <strong>Continue
   consigning (30 days)</strong>.</li>
 </ul>
+<h3 id="appointments-new-consignor-booking">Appointments (new-consignor booking)</h3>
+<p>Next to <strong>Customers</strong> and <strong>Consignors</strong> there's an <strong>Appointments</strong> tab for
+booking <strong>new/prospective consignors</strong> into drop-off slots.</p>
+<ul>
+<li><strong>Schedule:</strong> Saturdays only, <strong>12:00–3:00 PM</strong>, in four 40-minute slots
+  (12:00, 12:40, 1:20, 2:00) — up to <strong>4 appointments per day</strong>.</li>
+<li><strong>Public booking page:</strong> share <strong>your site <code>/book</code></strong> (use <strong>Copy booking
+  link</strong>). Prospective consignors pick an open Saturday slot and enter their
+  name, email, and phone — no login needed. Taken slots show as unavailable.
+  The page lists your rules (10-item first-visit limit; shoes &amp; jewelry not
+  counted).</li>
+<li><strong>Staff view:</strong> the Appointments tab shows each upcoming Saturday with its four
+  slots and who's booked. You can <strong>Add</strong> a booking manually, <strong>cancel</strong> one
+  (trash icon), or <strong>Block day</strong> / <strong>Unblock day</strong> to close a Saturday (e.g. a
+  holiday) so no new appointments can be booked.</li>
+<li><strong>Any day / any time (weekday exceptions &amp; 5th/6th appointments):</strong> click
+  <strong>New appointment</strong> (top-right) to schedule someone on <strong>any date and any
+  time</strong> — e.g. a consignor who can't do Saturday and wants Friday at 4:30 PM, or
+  an extra person beyond the four Saturday slots. Pick the date and time, enter
+  their details, and they get the <strong>same email confirmation</strong>. These show up under
+  <strong>"Also booked (extra times)"</strong> on that Saturday (if it's a Saturday) or in the
+  <strong>"Other appointments"</strong> section for weekdays. There's also an <strong>"Add extra
+  appointment (any time)"</strong> link on each Saturday for quick extra bookings.</li>
+<li><strong>Email confirmations:</strong> when someone books with an email address, they
+  automatically get a confirmation email with the date, time, location, and the
+  item/jewelry reminders. (If they don't enter an email, no confirmation is sent
+  — but you'll still be notified, see below.)</li>
+<li><strong>You get notified of every booking:</strong> each time someone books (online or
+  added by staff online), the store receives a <strong>"New appointment" email</strong> with
+  the person's name, time, phone, and email. It goes to your store email (set in
+  <strong>Settings → Store Information</strong>), or to <code>kimberly@classicconsigns.com</code> if no
+  store email is set. The Appointments page also <strong>auto-refreshes</strong>, so new
+  bookings appear on their own within about 30 seconds.</li>
+<li><strong>Turn an appointment into a consignor:</strong> once someone shows up and you're
+  ready to set them up, click <strong>Add as consignor</strong> on their appointment. It
+  creates a consignor record from their name/email/phone (50% split), removes the
+  appointment, and opens the new consignor's page. If a consignor with that email
+  already exists, it opens that one instead of making a duplicate.</li>
+</ul>
+<h3 id="layaway">Layaway</h3>
+<p>The <strong>Layaway</strong> tab (next to Appointments) tracks layaway agreements.</p>
+<ul>
+<li><strong>New Layaway:</strong> enter the buyer's info, the item(s), total price, the $5
+  layaway fee, and the four payments (deposit today, then day 15, day 30, and the
+  final at day 45). If you enter the buyer's <strong>email</strong>, they're automatically sent
+  their <strong>layaway agreement with the full payment schedule</strong> when you save.</li>
+<li><strong>Automatic reminders:</strong> the buyer gets an email reminder at <strong>15, 30, and 45
+  days</strong> for the next payment due (and the balance remaining). Reminders stop once
+  the layaway is fully paid.</li>
+<li><strong>Recording payments:</strong> open a layaway (pencil) and use <strong>Record a payment</strong> to
+  add what the buyer paid; the balance updates and it marks <strong>Completed</strong> when
+  paid in full. You can also set the status to Cancelled.</li>
+<li>The top cards show how many are active and the total outstanding balance.</li>
+</ul>
+<h3 id="borrowed-garment-agreements">Borrowed (garment agreements)</h3>
+<p>The <strong>Borrowed</strong> tab tracks items lent out (e.g. for events).</p>
+<ul>
+<li><strong>New Agreement:</strong> enter the borrower's name, ID, phone, email, the dates
+  borrowed/return, the item list, condition notes, and who's responsible for dry
+  cleaning. If you enter the borrower's <strong>email</strong>, they're automatically sent the
+  <strong>agreement listing the items</strong> and the terms.</li>
+<li><strong>Scan to add items (easiest):</strong> in the item list area there's a <strong>scan box</strong> —
+  scan each borrowed piece's <strong>KYS tag</strong> (or type its SKU and press Enter) and the
+  app pulls that item's <strong>brand, size, price, and consignor</strong> straight from
+  inventory and adds a line automatically. No more typing it all out.</li>
+<li><strong>Add from a photo (AI):</strong> for an item that isn't in inventory, click <strong>Add from
+  photo (AI)</strong>, snap/upload a picture, and it fills in a line (title, brand, size,
+  suggested price) for you to tweak.</li>
+<li>You can still type or edit any line by hand in the box.</li>
+<li><strong>Return reminder:</strong> if a return date and email are set, the borrower gets a
+  reminder email when the item is due back.</li>
+<li>Mark an agreement <strong>Returned</strong> (pencil → Status) when the items come back.</li>
+</ul>
+<h3 id="sip-shop">Sip &amp; Shop</h3>
+<p>The <strong>Sip &amp; Shop</strong> tab is a <strong>calendar</strong> for scheduling private Sip &amp; Shop
+events (they run <strong>7:00–10:00 PM</strong>).</p>
+<ul>
+<li><strong>Schedule an event:</strong> tap any day on the calendar (or <strong>New Event</strong>) and enter
+  the <strong>host's name, phone, email</strong>, and <strong>how many guests</strong> are joining. Events
+  show on the calendar as a pink name chip; tap a name to edit.</li>
+<li><strong>Host confirmation email:</strong> if you add the host's email, they're automatically
+  emailed a confirmation with the <strong>date, the 7–10 PM time, their guest count</strong>,
+  and the perks (two wines, charcuterie, up to 15 guests, 15% store credit).</li>
+<li><strong>Reminder:</strong> the host gets a reminder email a couple of days before the event.</li>
+<li><strong>Customers can book themselves:</strong> share <strong>your site <code>/sip-and-shop</code></strong> (use
+  <strong>Copy booking link</strong>). Customers pick their own date, enter their info and
+  guest count, and submit — it drops straight onto your calendar, emails them a
+  confirmation, and emails you a "New Sip &amp; Shop request" alert.</li>
+<li>Edit an event to change the date/guests or set it <strong>Completed</strong> / <strong>Cancelled</strong>.</li>
+</ul>
 <h3 id="consignor-detail-page">Consignor detail page</h3>
 <p>Shows KPI cards (balance, earned, active, sold), and tabs for <strong>Items</strong>,
 <strong>Ledger</strong> (every credit/debit), and <strong>Payouts</strong>. You can <strong>issue a payout</strong>
 here (Check / Cash / ACH).</p>
+<ul>
+<li><strong>Download report:</strong> the <strong>Download report</strong> button opens a clean, printable
+  summary of that consignor — their contact/split, the KPI totals, every item
+  (with SKU, price, status), and their payout history. Use your browser's
+  <strong>Print</strong> dialog to print it or <strong>Save as PDF</strong>.</li>
+<li><strong>Email inventory (onboarding):</strong> the <strong>Email inventory</strong> button emails the
+  consignor a welcome message with <strong>their list of items</strong> (title, SKU, size,
+  price) and a link to their <strong>Consignor Portal</strong> so they can track items going
+  forward. You'll be asked which email to send to:</li>
+<li>Enter <strong>your own email</strong> to <strong>test it first</strong> — a test send makes <strong>no
+    changes</strong> to the consignor's portal.</li>
+<li>Send to the <strong>consignor's own email</strong> to go live — this also <strong>enables their
+    portal</strong> and includes a temporary login password in the email so the link
+    works right away.</li>
+<li>Editing an item from here (or adding one) returns you right back to this
+  consignor's page when you're done.</li>
+<li>
+<p><strong>Emails sent (history):</strong> an <strong>Emails sent</strong> panel lists every inventory and
+  contract email sent for this consignor, with the <strong>date &amp; time</strong>, type, who it
+  went to, and whether it was a real send, a <strong>test</strong>, or <strong>failed</strong> — so you
+  always have a record of what was sent and when.</p>
+</li>
+<li>
+<p><strong>Notes:</strong> there's a <strong>Notes</strong> box on each consignor's page — type anything
+  you want to remember (preferences, reminders, special arrangements) and
+  <strong>Save notes</strong>. It's kept with the consignor.</p>
+</li>
+<li><strong>Item notes:</strong> open an item's <strong>Edit</strong> window (pencil on the Items tab) and
+  use the <strong>Note</strong> field to jot anything specific to that item. Saved with the item.</li>
+<li><strong>Consignor payout preview:</strong> the Edit window shows the <strong>consignor's payout</strong>
+  (price × their split %) live as you change the price. If you edit the price of
+  an item that's already <strong>SOLD</strong>, saving automatically re-adjusts the
+  consignor's credit and balance to match. (The <strong>Sync sold items</strong> button on the
+  Payouts page also corrects any sold items whose price changed earlier.)</li>
+<li><strong>Returns on the ledger:</strong> when you mark an item <strong>Returned</strong> — the pencil →
+  <strong>Status → Returned</strong> on the Items tab, or <strong>Mark Returned</strong> as a bulk action in
+  Inventory — the consignor's <strong>Ledger</strong> records it as <em>Returned: "&lt;item&gt;" to
+  consignor</em> at <strong>$0.00</strong> (a return moves no money, so the balance is unchanged).
+  It's logged once, the first time the item becomes Returned.</li>
+</ul>
 <hr />
 <h2 id="5-customers">5. Customers</h2>
 <p>Your loyalty members. Open <strong>Customers</strong> from the sidebar.</p>
@@ -283,9 +466,26 @@ here (Check / Cash / ACH).</p>
 <li><strong>Add</strong> a customer (name, email, phone).</li>
 <li><strong>Click a customer</strong> to edit name, email, phone, and <strong>loyalty points</strong>, or
   delete them.</li>
+<li><strong>Purchase history:</strong> the customer's detail panel shows their <strong>visits</strong>,
+  <strong>lifetime spend</strong>, and a full <strong>Purchase history</strong> — every item they've
+  bought, grouped by sale (date and amount), with each item's price and which
+  consignor it came from.</li>
 <li><strong>Bulk actions:</strong> add points to many at once, or delete.</li>
 <li>Customers earn <strong>1 point per $1</strong> spent (when attached to a sale) and redeem
   <strong>100 points = $1</strong> at the POS.</li>
+</ul>
+<h3 id="kiosk-sign-in-digital-guest-book">Kiosk sign-in (digital guest book)</h3>
+<p>Replace the paper guest book with a tablet. Share <strong>your site <code>/welcome</code></strong> (use
+the <strong>Kiosk link</strong> button on the Customers page to copy it), open it on the
+tablet in full-screen, and set the tablet to <strong>kiosk / Guided Access mode</strong> so
+customers stay on that page.</p>
+<ul>
+<li>Customers enter their <strong>name, email, phone</strong>, and optionally their <strong>birthday</strong>
+  (month/day, for birthday offers) and <strong>how they heard about you</strong>.</li>
+<li>It creates their customer record (or updates an existing one — matched by email
+  or phone, so no duplicates), shows a friendly <strong>thank-you</strong> screen, and
+  <strong>resets automatically</strong> for the next guest.</li>
+<li>No login is required and the rest of your store stays private.</li>
 </ul>
 <hr />
 <h2 id="6-payouts">6. Payouts</h2>
@@ -298,6 +498,11 @@ here (Check / Cash / ACH).</p>
   Zelle phone/email, Cash App $Cashtag, or mailing address). It's saved on the
   consignor, so next time it's pre-filled. Batch payouts use each consignor's
   saved details automatically.</li>
+<li><strong>Sync sold items</strong> (top-right of the Payouts page) credits consignors for any
+  items already marked <strong>SOLD</strong> that aren't yet showing a balance — for example,
+  sales brought in through a data import. Normally selling an item (via the POS
+  or by marking it SOLD) credits the consignor automatically; use this button
+  once after an import, or any time a sold item isn't reflected on a balance.</li>
 <li><strong>Payout History</strong> tab shows everything you've paid.</li>
 <li>You can <strong>edit a past payout</strong> (amount, method, destination, status, note) from
   the <strong>Payouts</strong> tab on a consignor's page — changing the amount automatically
@@ -315,9 +520,40 @@ here (Check / Cash / ACH).</p>
    submits. Their signature, IP, and timestamp are recorded.</li>
 <li>The contract's status moves <strong>Draft → Sent → Signed</strong>.</li>
 <li>Click the eye icon to view a contract (and its signature).</li>
+<li><strong>Resend / fix the email:</strong> click the <strong>paper-plane (Send)</strong> icon on a contract
+   row to re-send the signing link. You'll be asked which email to send to —
+   enter your own to <strong>test</strong>, or <strong>correct the consignor's email</strong> if it was
+   wrong. The consignor opens the link and signs <strong>without any login or
+   password</strong>.</li>
+<li><strong>Download / print:</strong> open a contract (eye icon) and click <strong>Download</strong> to get
+   a clean printable copy — the full agreement, the <strong>signature</strong>, and the signer
+   details (name, date, IP). Use your browser's <strong>Save as PDF</strong> or print it.</li>
 </ol>
 <p>The agreement text is your store's standard template; the owner can edit it in
 <strong>Settings → Contract Template</strong>.</p>
+<hr />
+<h2 id="7a-admin-employee-hours-payouts">7a. Admin — employee hours &amp; payouts</h2>
+<p>Next to <strong>Items</strong> and <strong>Contracts</strong> there's an <strong>Admin</strong> tab (also reachable at
+<strong>your site <code>/admin</code></strong>). It's a simple log for tracking staff work and pay.</p>
+<ul>
+<li>Each row records a <strong>Date</strong>, <strong>Employee name</strong>, <strong>Phone number</strong>, <strong>Work
+  hours</strong>, and <strong>Payout</strong> (plus an optional note).</li>
+<li><strong>Add</strong> — click <strong>Add</strong> (top-right) to log a new entry. Fill in the name,
+  date, hours, payout, and optional phone/note, then <strong>Add entry</strong>.</li>
+<li><strong>Calendar</strong> — a monthly calendar sits above the table.</li>
+<li><strong>Tap any day</strong> (including future dates) to open the Add form with that date
+    pre-filled, so you can schedule upcoming shifts.</li>
+<li>Each day shows the <strong>employee names</strong> working that day, color-coded. A
+    <strong>color legend</strong> of all employees appears under the calendar.</li>
+<li><strong>Select many days at once:</strong> click <strong>Select days</strong>, then click the days you
+    want (hold <strong>Shift</strong> and click to pick a whole range). Click <strong>Log hours for
+    N days</strong> and the hours/employee you enter are applied to <em>every</em> selected
+    day in one go — great for scheduling a recurring week or a vacation block.</li>
+<li>Use the arrows (or <strong>Today</strong>) to move between months.</li>
+<li><strong>Edit</strong> — click the pencil on any row to change it, or <strong>Delete</strong> it.</li>
+<li>The cards at the top total the number of <strong>employees</strong>, <strong>hours</strong>, and
+  <strong>payout</strong> across all entries.</li>
+</ul>
 <hr />
 <h2 id="8-store-insights-reports">8. Store Insights &amp; Reports</h2>
 <ul>
@@ -325,6 +561,11 @@ here (Check / Cash / ACH).</p>
   status.</li>
 <li><strong>Reports</strong> — key numbers plus <strong>CSV export</strong> for Sales, Inventory,
   Consignors, and Ledger (with optional date range). Great for bookkeeping.</li>
+<li><strong>Email Activity</strong> (on the Reports page) — a store-wide log of every email the
+  platform has sent (inventory, contract, appointment, and Sip &amp; Shop), with the
+  <strong>date &amp; time</strong>, type, recipient, subject, and status (Sent / Test / Failed).
+  (Per-consignor inventory &amp; contract emails also appear on each consignor's
+  page.)</li>
 </ul>
 <hr />
 <h2 id="9-online-shop">9. Online shop</h2>
@@ -367,7 +608,7 @@ Guide.</em></p>
         <h1>Admin &amp; Operations Guide</h1>
         <p class="subtitle">For the owner / administrator</p>
       </div>
-      <h1 id="consignpro-admin-operations-guide">Classic Consigns by KYS — Admin &amp; Operations Guide</h1>
+      <h1 id="classic-consigns-by-kys-admin-operations-guide">Classic Consigns by KYS — Admin &amp; Operations Guide</h1>
 <p>For the store owner / administrator. Covers hosting, configuration, accounts,
 security, integrations, data import/export, backups, and troubleshooting.</p>
 <hr />
@@ -484,7 +725,15 @@ Watch the <strong>Deployments</strong> tab; a healthy deploy ends <strong>Active
 </tr>
 <tr>
 <td><code>RESEND_API_KEY</code> / <code>EMAIL_FROM</code></td>
-<td><em>Optional.</em> Enables outbound email (contracts, payouts).</td>
+<td><em>Optional.</em> Enables outbound email (contracts, payouts, appointments, layaway, borrowed).</td>
+</tr>
+<tr>
+<td><code>BOOKING_NOTIFY_EMAIL</code></td>
+<td><em>Optional.</em> Where new-appointment alerts go (falls back to store email, then kimberly@classicconsigns.com).</td>
+</tr>
+<tr>
+<td><code>CRON_SECRET</code></td>
+<td><em>Optional.</em> Secret that protects <code>/api/cron/reminders</code> for the daily layaway/return reminder runner.</td>
 </tr>
 <tr>
 <td><code>SHOPIFY_WEBHOOK_SECRET</code></td>
@@ -544,7 +793,82 @@ photos under <code>&lt;mount&gt;/uploads</code>. <code>UPLOAD_DIR</code> can ove
 - <strong>Discount Rules</strong> — percentage or fixed-amount rules, optional promo codes.
 - <strong>Contract Template</strong> — edit the consignment agreement. Placeholders:
   <code>{{storeName}}</code>, <code>{{consignorName}}</code>, <code>{{splitPercent}}</code>.</p>
+<h3 id="admin-employee-work-log-admin">Admin — employee work log (<code>/admin</code>)</h3>
+<p>The <strong>Admin</strong> tab (next to Items/Contracts, at <code>/admin</code>) is a lightweight log of
+employee <strong>hours and payouts</strong> — date, employee name, phone, work hours, payout,
+and an optional note. Staff can <strong>Add</strong> entries and <strong>Edit/Delete</strong> existing
+ones. It's backed by the <code>WorkLog</code> table (one row per entry, scoped to the
+store); no external payroll integration is involved. It is not a payroll
+processor — it's a record you keep for your own bookkeeping.</p>
 <hr />
+<h3 id="consignment-appointments-book-public-page">Consignment appointments (<code>/book</code> public page)</h3>
+<p>Prospective consignors book drop-off appointments at the <strong>public</strong> page
+<strong><code>/book</code></strong> (no login). Staff manage them under <strong>People → Appointments</strong>
+(<code>/appointments</code>).</p>
+<ul>
+<li>Scheduling rules live in <code>src/lib/appointments.ts</code> — <code>SLOT_TIMES</code> (the four
+  40-minute Saturday slots), <code>SLOT_MINUTES</code>, and <code>upcomingSaturdays()</code>. Edit
+  <code>SLOT_TIMES</code> there to change times or the number of slots per day.</li>
+<li>Data: <code>ConsignAppointment</code> (one row per booked slot; unique per
+  store+date+slot prevents double-booking) and <code>ConsignBlockedDate</code> (a blocked
+  Saturday). Both are created by <code>prisma db push</code> on deploy.</li>
+<li><code>/book</code> and <code>/api/book</code> are in the middleware <code>PUBLIC_PATHS</code> allow-list so
+  they're reachable without a login.</li>
+<li><strong>Booking notifications:</strong> every online booking emails the store. The
+  recipient is <code>BOOKING_NOTIFY_EMAIL</code> (env var) if set, otherwise the store email
+  from Settings, otherwise <code>kimberly@classicconsigns.com</code>. Set
+  <code>BOOKING_NOTIFY_EMAIL</code> to send alerts somewhere specific. The consignor also
+  gets a confirmation if they entered an email.</li>
+<li><strong>Test email:</strong> People → Appointments has a <strong>Send test email</strong> button
+  (<code>POST /api/appointments/test-email</code>) that returns the real Resend result for
+  troubleshooting delivery.</li>
+</ul>
+<h3 id="layaway-borrowed-agreements">Layaway &amp; Borrowed agreements</h3>
+<p>Two more People tabs: <strong>Layaway</strong> (<code>/layaway</code>) and <strong>Borrowed</strong> (<code>/borrowed</code>).</p>
+<ul>
+<li>Data: <code>Layaway</code> and <code>BorrowedGarment</code> tables (created by <code>prisma db push</code>).</li>
+<li>On creation, the customer/borrower is emailed the agreement if an email is
+  provided (layaway → agreement + payment schedule; borrowed → item list +
+  terms).</li>
+<li><strong>Reminders:</strong> layaway payment reminders fire at <strong>15 / 30 / 45 days</strong> from the
+  start date; borrowed-garment <strong>return reminders</strong> fire on/after the return
+  date. Logic lives in <code>src/lib/reminders.ts</code> and is idempotent (each reminder is
+  timestamped once sent).</li>
+<li>Reminders run two ways:
+  1. <strong>Opportunistically</strong> whenever staff open the Layaway/Borrowed pages (the
+     list endpoints call the processor). Good enough if staff visit regularly.
+  2. <strong>Daily</strong> via <code>POST /api/cron/reminders</code>, protected by the <code>CRON_SECRET</code>
+     env var (send <code>Authorization: Bearer &lt;CRON_SECRET&gt;</code> or <code>?secret=</code>). If
+     <code>CRON_SECRET</code> is unset the endpoint is disabled (503).</li>
+</ul>
+<h3 id="sip-shop-events">Sip &amp; Shop events</h3>
+<p>People tab <strong>Sip &amp; Shop</strong> (<code>/sip-shop</code>, staff) plus a <strong>public</strong> request page at
+<code>/sip-and-shop</code> (no login). Model: <code>SipShopEvent</code>. Events run 7–10 PM.</p>
+<ul>
+<li>Staff schedule events on a calendar; the host gets a confirmation email (date,
+  7–10 PM, guests, perks) when an email is provided, and a reminder email
+  ~2 days before (see <code>SIP_REMINDER_DAYS_BEFORE</code> in <code>src/lib/reminders.ts</code>).</li>
+<li>The public page lets customers request their own date; it creates a
+  <code>SipShopEvent</code>, emails the customer a confirmation, and notifies the store
+  (<code>BOOKING_NOTIFY_EMAIL</code> → store email → kimberly@classicconsigns.com).</li>
+<li><code>/sip-and-shop</code> and <code>/api/sip-and-shop</code> are in the middleware public allow-list.</li>
+</ul>
+<h3 id="kiosk-customer-sign-in-welcome">Kiosk customer sign-in (<code>/welcome</code>)</h3>
+<p>Public kiosk page at <code>/welcome</code> (no login) for a tablet to replace the paper
+guest book. <code>POST /api/checkin</code> creates or updates a <code>Customer</code> (matched by
+email or phone to avoid duplicates). Added <code>Customer.birthday</code> ("MM-DD") and
+<code>Customer.source</code> fields. <code>/welcome</code> and <code>/api/checkin</code> are in the middleware
+public allow-list. Put the tablet in kiosk/Guided-Access mode on this page so
+customers can't reach the staff dashboard.</p>
+<p><strong>To enable the daily runner (recommended):</strong>
+1. Set a <code>CRON_SECRET</code> env var in Railway (any long random string).
+2. In GitHub → repo <strong>Settings → Secrets and variables → Actions</strong>, add two
+   repository secrets:
+   - <code>APP_URL</code> = your live site, e.g. <code>https://data-production-5b03.up.railway.app</code>
+   - <code>CRON_SECRET</code> = the same value as in Railway
+3. The workflow <code>.github/workflows/reminders.yml</code> runs daily (14:00 UTC) and can
+   be run manually from the <strong>Actions</strong> tab (Run workflow). It no-ops if the
+   secrets aren't set.</p>
 <h2 id="7-integrations">7. Integrations</h2>
 <h3 id="clover-card-payments">Clover (card payments)</h3>
 <p>Set <code>CLOVER_API_KEY</code> + <code>CLOVER_MERCHANT_ID</code> (env or Settings). Use
@@ -552,9 +876,55 @@ photos under <code>&lt;mount&gt;/uploads</code>. <code>UPLOAD_DIR</code> can ove
 <strong>Note:</strong> the app creates Clover <strong>orders</strong>; the actual card capture happens on
 a Clover <strong>device/terminal</strong> tied to the merchant — full in-app card capture is
 not yet implemented.</p>
+<p><strong>Live Clover transactions on Insights:</strong> Store Insights shows a <strong>Clover Card
+Transactions</strong> panel (today + last 30 days + a recent list) that pulls real
+payments from Clover and auto-refreshes every 60s. Powered by
+<code>GET /api/clover/transactions</code> → <code>CloverClient.listPayments</code>
+(<code>/v3/merchants/{mId}/payments</code>). The API token must have <strong>Payments: Read</strong>
+permission (Clover dashboard → Setup → API Tokens); otherwise the panel shows a
+permission error. This is separate from the app's own POS revenue numbers (which
+only reflect sales rung up inside the app).</p>
 <h3 id="resend-email">Resend (email)</h3>
 <p>Set <code>RESEND_API_KEY</code> and <code>EMAIL_FROM</code> (verified domain recommended). Powers
-contract links, payout notifications, and welcome emails.</p>
+contract links, payout notifications, welcome emails, and <strong>appointment
+confirmations</strong> (sent when a consignor books at <code>/book</code> or staff add a booking
+with an email). If <code>RESEND_API_KEY</code> is unset, bookings still work — no email is
+sent.</p>
+<p><strong>Test your email setup</strong> with the included script — it sends a sample
+appointment confirmation so you can confirm the key/domain work before going
+live:</p>
+<pre><code class="language-bash"># locally
+RESEND_API_KEY=re_xxx EMAIL_FROM=&quot;Classic Consigns by KYS &lt;kimberly@classicconsigns.com&gt;&quot; \
+  node scripts/send-test-email.mjs you@example.com
+
+# on Railway (RESEND_API_KEY / EMAIL_FROM already set) — from the service shell:
+node scripts/send-test-email.mjs you@example.com
+</code></pre>
+<p>If Resend returns a domain error, the sender domain isn't verified yet — verify
+it under Resend → Domains (add the SPF/DKIM DNS records), or point <code>EMAIL_FROM</code>
+at an already-verified address.</p>
+<p><strong>DMARC (deliverability):</strong> in addition to Resend's SPF/DKIM records, add a
+DMARC record at the domain's DNS to improve inbox placement and satisfy
+Gmail/Yahoo sender requirements:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TXT</td>
+<td><code>_dmarc</code></td>
+<td><code>v=DMARC1; p=none; rua=mailto:kimberly@classicconsigns.com</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>p=none</code> is monitor-only (no effect on mail flow); it can be tightened to
+<code>p=quarantine</code> later once reports look clean. Verify at whatsmydns.net by
+looking up <code>_dmarc.classicconsigns.com</code> (TXT).</p>
 <h3 id="anthropic-claude-ai-item-entry">Anthropic / Claude (AI item entry)</h3>
 <p>Set <code>ANTHROPIC_API_KEY</code>. The add-item photo analysis uses <code>claude-haiku-4-5</code>.
 Cost is well under a cent per item. If unset, AI entry simply returns a 503 and

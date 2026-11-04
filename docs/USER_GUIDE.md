@@ -43,6 +43,27 @@ The POS is where you ring up sales.
 7. A **receipt** pops up — **Print Receipt** or Close. Points are awarded to the
    customer automatically (1 point per $1 spent) when a customer is attached.
 
+### Refunds
+At the top of the POS screen, switch from **Sell** to **Refund** to undo a sale.
+1. **Scan the sold item** (or type its SKU) in the box. A refund card appears on
+   the right showing what it sold for and, for a consigned item, the **consignor
+   credit that will be reversed**.
+2. Choose how the item comes back:
+   - **Refund & relist** — the item goes back on the floor as **Active**, ready
+     to sell again.
+   - **Refund & return to consignor** — the item is marked **Returned**.
+3. Either way, the consignor's **Ledger** gets a matching **debit** (a red
+   `ADJUSTMENT`) that **reverses the sale credit**, and their balance drops by the
+   same amount.
+
+Notes:
+- Only a **Sold** item can be refunded; scanning anything else shows why it can't.
+- The reversal uses the **price the item actually sold for** (not its current
+  price). If the consignor was already paid out, their balance can go negative —
+  that simply means they owe that amount back.
+- The **customer's** money (card/cash) is returned on your payment terminal; the
+  refund here handles the inventory and the consignor's ledger.
+
 ### Notes
 - Only **Active** items can be sold. Sold/returned items won't scan into a sale.
 - Card payments create an order in your Clover account; the actual card charge

@@ -38,6 +38,7 @@ export default function POSPage() {
   const [customer, setCustomer] = useState<{ id: string; firstName: string; lastName: string; points: number } | null>(null);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [lookingUp, setLookingUp] = useState(false);
+  const [scanMsg, setScanMsg] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const POINTS_PER_DOLLAR = 100; // 100 points = $1
@@ -62,7 +63,45 @@ export default function POSPage() {
     setCart((prev) => [...prev, { ...item, cartId: Math.random().toString(36) }]);
     setSearch("");
     setResults([]);
+    setScanMsg(null);
     searchRef.current?.focus();
+  };
+
+  // Exact SKU / barcode match for a scanned code
+  const findExact = (list: Item[], code: string) => {
+    const c = code.trim().toLowerCase();
+    return list.find(
+      (i) => i.sku?.toLowerCase() === c || (i.barcode && i.barcode.toLowerCase() === c)
+    );
+  };
+
+  // Scanner sends the SKU followed by Enter — drop the matching item straight
+  // into the cart so one scan = one item, no mouse needed.
+  const handleScan = async () => {
+    const code = search.trim();
+    if (!code) return;
+
+    // Prefer an item already loaded in the results list
+    let match = findExact(results, code);
+
+    // Otherwise look it up directly (the debounced search may not have run yet)
+    if (!match) {
+      try {
+        const res = await fetch(`/api/items?search=${encodeURIComponent(code)}&status=ACTIVE&limit=5`);
+        const data = await res.json();
+        const found: Item[] = data.items || [];
+        match = findExact(found, code) || (found.length === 1 ? found[0] : undefined);
+      } catch {
+        setScanMsg("Couldn't reach the catalog — check your connection.");
+        return;
+      }
+    }
+
+    if (match) {
+      addToCart(match);
+    } else {
+      setScanMsg(`No active item matches "${code}". Check the tag or search by name.`);
+    }
   };
 
   const removeFromCart = (cartId: string) => {
@@ -154,16 +193,31 @@ export default function POSPage() {
           <Input
             ref={searchRef}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setScanMsg(null); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleScan();
+              }
+            }}
             placeholder="Search by name, SKU, or scan barcode..."
             className="pl-10 text-base h-12"
           />
           {search && (
-            <button onClick={() => { setSearch(""); setResults([]); }} className="absolute right-3 top-3">
+            <button onClick={() => { setSearch(""); setResults([]); setScanMsg(null); }} className="absolute right-3 top-3">
               <X className="h-5 w-5 text-gray-400" />
             </button>
           )}
         </div>
+
+        {/* Scan feedback (e.g. unknown barcode) */}
+        {scanMsg && (
+          <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            <X className="h-4 w-4 flex-shrink-0" />
+            <span className="flex-1">{scanMsg}</span>
+            <button onClick={() => setScanMsg(null)} className="text-red-600 hover:text-red-800 font-medium">Dismiss</button>
+          </div>
+        )}
 
         {/* Results */}
         {results.length > 0 && (

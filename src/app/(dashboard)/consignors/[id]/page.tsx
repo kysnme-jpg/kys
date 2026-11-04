@@ -50,6 +50,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"items" | "ledger" | "payouts">("items");
 
+  // Return-to-consignor state (two-click confirm)
+  const [confirmReturnId, setConfirmReturnId] = useState<string | null>(null);
+  const [returningId, setReturningId] = useState<string | null>(null);
+
   // Payout form state
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutMethod, setPayoutMethod] = useState<"CHECK" | "CASH" | "ACH">("CHECK");
@@ -100,6 +104,14 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
     setPayoutNote("");
     setPayoutLoading(false);
     load(); // Refresh
+  };
+
+  const handleReturn = async (itemId: string) => {
+    setReturningId(itemId);
+    const res = await fetch(`/api/items/${itemId}/return`, { method: "POST" });
+    setReturningId(null);
+    setConfirmReturnId(null);
+    if (res.ok) load(); // Refresh items, ledger, and balance
   };
 
   if (loading || !consignor) {
@@ -229,7 +241,28 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                   </div>
                   <Badge variant={itemStatusColors[item.status]}>{item.status}</Badge>
                   {item.status === "ACTIVE" && (
-                    <PrintLabelButton item={item} size="sm" />
+                    <div className="flex items-center gap-2">
+                      <PrintLabelButton item={item} size="sm" />
+                      {confirmReturnId === item.id ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleReturn(item.id)}
+                            disabled={returningId === item.id}
+                          >
+                            {returningId === item.id ? "..." : "Confirm return"}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setConfirmReturnId(null)}>
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => setConfirmReturnId(item.id)}>
+                          Return
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))

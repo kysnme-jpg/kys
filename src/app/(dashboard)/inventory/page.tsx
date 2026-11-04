@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   Package, Search, Plus, Trash2, Pencil, X, Tag,
-  LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Globe, ScanLine, Printer,
+  LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Globe, ScanLine, Printer, Camera,
 } from "lucide-react";
 import { printLabel, printLabels, printKysTag, printKysTags } from "@/components/inventory/label-print";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
@@ -166,6 +166,7 @@ export default function InventoryPage() {
               <button key={v} onClick={() => setView(v)} className={`p-1.5 rounded-md ${view === v ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-100"}`} title={v}><Icon className="h-4 w-4" /></button>
             ))}
           </div>
+          <Link href="/inventory/intake"><Button variant="outline" className="gap-2"><Camera className="h-4 w-4" /> Quick Intake</Button></Link>
           <Link href="/inventory/new"><Button className="gap-2"><Plus className="h-4 w-4" /> Add Item</Button></Link>
         </div>
       </div>

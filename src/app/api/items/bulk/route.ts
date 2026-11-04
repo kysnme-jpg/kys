@@ -17,6 +17,24 @@ export async function POST(req: NextRequest) {
 
   try {
     if (action === "setStatus") {
+      // A bulk return logs a ledger note per consigned item, so it matches a
+      // single return (pencil → Status → Returned). Other statuses are a plain update.
+      if (value === "RETURNED") {
+        const items = await db.item.findMany({ where, include: { consignor: true } });
+        let affected = 0;
+        for (const it of items) {
+          await db.$transaction(async (tx: any) => {
+            await tx.item.update({ where: { id: it.id }, data: { status: "RETURNED" } });
+            if (it.status !== "RETURNED" && it.type === "CONSIGNED" && it.consignorId) {
+              await tx.ledgerEntry.create({
+                data: { consignorId: it.consignorId, itemId: it.id, type: "ADJUSTMENT", amount: 0, note: `Returned: "${it.title}" to consignor` },
+              });
+            }
+          });
+          affected++;
+        }
+        return NextResponse.json({ affected });
+      }
       const r = await db.item.updateMany({ where, data: { status: value } });
       return NextResponse.json({ affected: r.count });
     }

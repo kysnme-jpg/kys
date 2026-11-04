@@ -90,6 +90,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           await tx.consignor.update({ where: { id: existing.consignorId }, data: { balance: { decrement: manualCredit.amount } } });
         }
       }
+
+      // Log a return on the consignor's ledger when an item is handed back, so
+      // the hand-off shows alongside their sales. A return moves no money (any
+      // sale credit is reversed above), so the amount is 0.
+      if (
+        resultingStatus === "RETURNED" &&
+        existing.status !== "RETURNED" &&
+        existing.type === "CONSIGNED" &&
+        existing.consignorId
+      ) {
+        await tx.ledgerEntry.create({
+          data: {
+            consignorId: existing.consignorId,
+            itemId: id,
+            type: "ADJUSTMENT",
+            amount: 0,
+            note: `Returned: "${existing.title}" to consignor`,
+          },
+        });
+      }
     });
 
     return NextResponse.json({ updated: true });

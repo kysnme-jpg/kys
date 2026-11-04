@@ -270,6 +270,11 @@ here (Check / Cash / ACH).
   an item that's already **SOLD**, saving automatically re-adjusts the
   consignor's credit and balance to match. (The **Sync sold items** button on the
   Payouts page also corrects any sold items whose price changed earlier.)
+- **Returns on the ledger:** when you mark an item **Returned** — the pencil →
+  **Status → Returned** on the Items tab, or **Mark Returned** as a bulk action in
+  Inventory — the consignor's **Ledger** records it as *Returned: "&lt;item&gt;" to
+  consignor* at **$0.00** (a return moves no money, so the balance is unchanged).
+  It's logged once, the first time the item becomes Returned.
 
 ---
 

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { sendPortalAccessEmail } from "@/lib/email";
 import { logEmail } from "@/lib/email-log";
+import { getBaseUrl } from "@/lib/base-url";
 
 function tempPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (to) {
     try {
       const store = await db.store.findUnique({ where: { id: storeId }, select: { name: true } });
-      const portalUrl = `${new URL(req.url).origin}/portal/login`;
+      const portalUrl = `${getBaseUrl(req)}/portal/login`;
       const res = await sendPortalAccessEmail({
         to,
         consignorName: consignor.firstName,

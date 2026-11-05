@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBaseUrl } from "@/lib/base-url";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendContractEmail } from "@/lib/email";
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const to = (body.to || contract.consignor?.email || "").trim();
   if (!to) return NextResponse.json({ error: "No email on file. Enter an email to send to." }, { status: 400 });
 
-  const baseUrl = process.env.NEXTAUTH_URL || new URL(req.url).origin;
+  const baseUrl = getBaseUrl(req);
   try {
     await sendContractEmail({
       to,

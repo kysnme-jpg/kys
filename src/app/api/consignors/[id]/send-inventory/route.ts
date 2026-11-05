@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { sendConsignorInventoryEmail } from "@/lib/email";
 import { logEmail } from "@/lib/email-log";
+import { getBaseUrl } from "@/lib/base-url";
 
 function tempPassword() {
   // Friendly 8-char password (no ambiguous chars).
@@ -32,8 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const isTest = !consignor.email || to.toLowerCase() !== consignor.email.toLowerCase();
 
   const store = await db.store.findUnique({ where: { id: storeId }, select: { name: true } });
-  const origin = new URL(req.url).origin;
-  const portalUrl = `${origin}/portal/login`;
+  const portalUrl = `${getBaseUrl(req)}/portal/login`;
 
   // Only when sending to the real consignor: make sure the portal works. Enable
   // it and set a temp password if they don't have one yet (never reset an

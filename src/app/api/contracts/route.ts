@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBaseUrl } from "@/lib/base-url";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (sendEmail && consignor.email) {
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl(req);
     await sendContractEmail({
       to: consignor.email,
       consignorName: `${consignor.firstName} ${consignor.lastName}`,

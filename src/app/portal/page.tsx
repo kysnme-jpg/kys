@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import {
   DollarSign, Package, TrendingUp, LogOut, ShoppingBag, Clock, Send,
-  MessageCircle, RotateCcw, Check, Undo2,
+  MessageCircle, RotateCcw, Check, Undo2, KeyRound,
 } from "lucide-react";
 
 interface PortalData {
   firstName: string; lastName: string; balance: number; splitPercent: number;
   store: { name: string; logoUrl?: string };
-  items: any[]; ledgerEntries: any[];
+  items: any[]; ledgerEntries: any[]; portalMustReset?: boolean;
 }
 interface Msg { id: string; sender: string; body: string; createdAt: string; }
 
@@ -92,8 +92,44 @@ export default function PortalPage() {
 
   const signOut = () => { try { localStorage.removeItem("portal_token"); } catch {} router.push("/portal/login"); };
 
+  // Forced password reset (after the store resends access with a temp password)
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetErr, setResetErr] = useState("");
+  const submitNewPassword = async () => {
+    setResetErr("");
+    if (newPw.length < 6) { setResetErr("Choose a password of at least 6 characters."); return; }
+    if (newPw !== confirmPw) { setResetErr("Those passwords don't match."); return; }
+    setResetting(true);
+    const res = await fetch("/api/portal/set-password", { method: "POST", headers: authHeaders(true), body: JSON.stringify({ password: newPw }) });
+    setResetting(false);
+    if (res.ok) { setNewPw(""); setConfirmPw(""); loadMe(); }
+    else { const d = await res.json().catch(() => ({})); setResetErr(d.error || "Couldn't set your password."); }
+  };
+
   if (loading || !data) {
     return <div className="min-h-screen bg-paper flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" /></div>;
+  }
+
+  if (data.portalMustReset) {
+    return (
+      <div className="min-h-screen bg-paper text-ink flex items-center justify-center p-5">
+        <div className="w-full max-w-sm bg-surface border border-line rounded-[24px] p-6">
+          <div className="flex items-center gap-2.5 mb-5">
+            <span className="h-10 w-10 rounded-xl grid place-items-center text-white shrink-0" style={{ background: "linear-gradient(135deg, var(--accent), #d98a4e)" }}><KeyRound className="h-5 w-5" /></span>
+            <div><p className="font-serif text-[18px] font-semibold leading-none">Choose your password</p><p className="text-[12.5px] text-[var(--muted)] mt-1.5">Welcome, {data.firstName} — set a password to secure your account.</p></div>
+          </div>
+          <label className="block text-[13px] font-semibold text-[var(--muted)] mb-1">New password</label>
+          <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="At least 6 characters" className="w-full h-12 rounded-xl border-[1.5px] border-line bg-paper px-3.5 text-[15px] text-ink focus:outline-none focus:border-accent mb-3" />
+          <label className="block text-[13px] font-semibold text-[var(--muted)] mb-1">Confirm password</label>
+          <input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitNewPassword(); }} placeholder="Re-enter it" className="w-full h-12 rounded-xl border-[1.5px] border-line bg-paper px-3.5 text-[15px] text-ink focus:outline-none focus:border-accent mb-3" />
+          {resetErr && <p className="text-[13px] text-[var(--danger-ink)] bg-[var(--danger-bg)] rounded-xl px-3 py-2 mb-3">{resetErr}</p>}
+          <button onClick={submitNewPassword} disabled={resetting} className="w-full h-12 rounded-full bg-accent text-[var(--accent-ink)] text-[15px] font-bold disabled:opacity-50">{resetting ? "Saving…" : "Save password & continue"}</button>
+          <button onClick={signOut} className="w-full mt-2.5 text-[13px] font-semibold text-[var(--muted)]">Sign out</button>
+        </div>
+      </div>
+    );
   }
 
   const activeItems = data.items.filter((i) => i.status === "ACTIVE");

@@ -12,7 +12,7 @@ import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus, Pencil,
-  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText, Camera, Send
+  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText, Camera, Send, KeyRound
 } from "lucide-react";
 
 interface ConsignorDetail {
@@ -219,6 +219,20 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  const resendPortalAccess = async () => {
+    if (!consignor) return;
+    if (!confirm(`Resend portal access to ${consignor.firstName}?\n\nThis sets a NEW temporary password (their old one stops working)${consignor.email ? ` and emails it to ${consignor.email}` : ""}. They'll be asked to choose their own password the next time they sign in.`)) return;
+    const res = await fetch(`/api/consignors/${id}/portal-access`, { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(d.error || "Couldn't reset portal access."); return; }
+    load();
+    if (d.emailed) {
+      alert(`✅ Portal access resent to ${d.to}.\n\nThey'll choose their own password the first time they sign in.`);
+    } else {
+      alert(`✅ New temporary password set${d.to ? " — but the email didn't send" : " (no email on file)"}.\n\nShare these with ${consignor.firstName}:\n\nLogin email: ${d.to || consignor.email || "(add an email to their profile)"}\nTemporary password: ${d.tempPassword}\n\nThey'll be asked to choose their own password on first login.`);
+    }
+  };
+
   const printReport = () => {
     if (!consignor) return;
     const win = window.open("", "_blank", "width=800,height=900");
@@ -328,6 +342,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
           <Button variant="outline" onClick={emailInventory} className="gap-2">
             <Mail className="h-4 w-4" />
             Email inventory
+          </Button>
+          <Button variant="outline" onClick={resendPortalAccess} className="gap-2">
+            <KeyRound className="h-4 w-4" />
+            Resend portal access
           </Button>
           <Button variant="outline" onClick={printReport} className="gap-2">
             <FileText className="h-4 w-4" />

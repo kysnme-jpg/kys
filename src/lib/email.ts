@@ -397,6 +397,38 @@ export async function sendConsignorInventoryEmail(opts: {
   });
 }
 
+// Resend a consignor their portal access with a fresh temporary password.
+export async function sendPortalAccessEmail(opts: {
+  to: string;
+  consignorName: string;
+  storeName: string;
+  portalUrl: string;
+  loginEmail: string;
+  tempPassword: string;
+}): Promise<{ sent: boolean }> {
+  const r = getResend();
+  if (!r) return { sent: false };
+
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.consignorName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Here's fresh access to your <strong>Consignor Portal</strong> with ${opts.storeName}, where you can track your items, see what's sold, check your balance, and message us.</p>
+    <table width="100%" style="background:#f6eef0;border-radius:8px;padding:14px;margin:14px 0;border-collapse:collapse">
+      <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Portal</td><td style="padding:4px 0;text-align:right"><a href="${opts.portalUrl}" style="color:#b4532a;font-weight:600;font-size:13px">${opts.portalUrl}</a></td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Login email</td><td style="padding:4px 0;color:#111827;font-size:13px;text-align:right">${opts.loginEmail}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;font-size:13px">Temporary password</td><td style="padding:4px 0;color:#111827;font-family:monospace;font-size:14px;text-align:right">${opts.tempPassword}</td></tr>
+    </table>
+    <p style="margin:10px 0"><a href="${opts.portalUrl}" style="background:#b4532a;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:600;font-size:14px;display:inline-block">Open your portal →</a></p>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6">For your security, you'll be asked to <strong>choose your own password</strong> the first time you sign in with this temporary one.</p>`;
+
+  await r.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `Your consignor portal access — ${opts.storeName}`,
+    html: baseHtml("Your Portal Access", body, opts.storeName),
+  });
+  return { sent: true };
+}
+
 // ─── Diagnostics ───────────────────────────────────────────────────────────────
 
 // Sends a test email and RETURNS the outcome (does not swallow errors), so the

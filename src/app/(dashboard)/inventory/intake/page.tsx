@@ -28,6 +28,7 @@ export default function IntakePage() {
   const [consignorId, setConsignorId] = useState("");
   const [split, setSplit] = useState("");
   const [locked, setLocked] = useState(false);
+  const [cQuery, setCQuery] = useState("");
 
   const [phase, setPhase] = useState<"idle" | "working" | "review">("idle");
   const [preview, setPreview] = useState<string | null>(null);
@@ -55,11 +56,18 @@ export default function IntakePage() {
   const consignor = consignors.find((c) => c.id === consignorId);
   const setD = (k: string, v: string) => setDraft((d) => ({ ...d, [k]: v }));
 
-  const pickConsignor = (id: string) => {
-    const c = consignors.find((x) => x.id === id);
-    setConsignorId(id);
-    setSplit(c ? String(c.splitPercent) : "");
+  // Pick a consignor from the search results and start the batch.
+  const selectConsignor = (c: Consignor) => {
+    setConsignorId(c.id);
+    setSplit(String(c.splitPercent));
+    setCQuery("");
+    setLocked(true);
   };
+
+  const q = cQuery.trim().toLowerCase();
+  const matches = q
+    ? consignors.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(q)).slice(0, 12)
+    : [];
 
   const resetDraft = () => { setPhase("idle"); setPreview(null); setPhotoUrls([]); setDraft({ ...EMPTY }); setAiNote(""); };
 
@@ -178,16 +186,35 @@ export default function IntakePage() {
             <button onClick={() => { setLocked(false); resetDraft(); }} className="ml-auto h-10 px-4 rounded-full border-[1.5px] border-line text-[14px] font-semibold text-ink hover:border-accent">Change</button>
           </>
         ) : (
-          <>
-            <span className="text-[15px] font-semibold text-ink">Consignor</span>
-            <select value={consignorId} onChange={(e) => pickConsignor(e.target.value)}
-              className="flex-1 min-w-[200px] h-12 rounded-full border-[1.5px] border-line bg-surface px-4 text-[16px] text-ink focus:outline-none focus:border-accent">
-              <option value="">Select a consignor…</option>
-              {consignors.map((c) => <option key={c.id} value={c.id}>{c.firstName} {c.lastName} ({c.splitPercent}% split)</option>)}
-            </select>
-            <button onClick={() => consignorId && setLocked(true)} disabled={!consignorId}
-              className="h-12 px-6 rounded-full bg-accent text-[var(--accent-ink)] text-[16px] font-bold disabled:opacity-40">Start</button>
-          </>
+          <div className="w-full">
+            <label className="block text-[13px] font-semibold text-ink mb-1.5">Consignor</label>
+            <div className="relative">
+              <input
+                value={cQuery}
+                onChange={(e) => { setCQuery(e.target.value); setConsignorId(""); }}
+                placeholder="Type a consignor's name…"
+                autoFocus
+                className="w-full h-12 rounded-full border-[1.5px] border-line bg-surface px-4 text-[16px] text-ink placeholder:text-[var(--muted)] focus:outline-none focus:border-accent"
+              />
+              {cQuery.trim() && (
+                <div className="absolute z-20 left-0 right-0 mt-2 max-h-72 overflow-y-auto rounded-2xl border-[1.5px] border-line bg-surface shadow-[0_12px_32px_rgba(60,40,20,.18)]">
+                  {matches.length === 0 ? (
+                    <div className="px-4 py-3 text-[14px] text-[var(--muted)]">No consignor matches “{cQuery.trim()}”.</div>
+                  ) : matches.map((c) => (
+                    <button key={c.id} onClick={() => selectConsignor(c)}
+                      className="flex items-center gap-3 w-full px-4 h-14 text-left hover:bg-chip transition-colors">
+                      <span className="h-9 w-9 rounded-full bg-accent text-[var(--accent-ink)] flex items-center justify-center text-[13px] font-bold shrink-0">{(c.firstName[0] || "") + (c.lastName[0] || "")}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[16px] font-semibold text-ink truncate">{c.firstName} {c.lastName}</span>
+                        <span className="block text-[13px] text-[var(--muted)]">{c.splitPercent}% split</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-[13px] text-[var(--muted)] mt-2">Start typing, then tap the person to begin adding their items.</p>
+          </div>
         )}
       </div>
 

@@ -12,7 +12,7 @@ import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus, Pencil,
-  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText, Camera
+  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText, Camera, Send
 } from "lucide-react";
 
 interface ConsignorDetail {
@@ -53,7 +53,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   const [consignor, setConsignor] = useState<ConsignorDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [payoutOpen, setPayoutOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"items" | "ledger" | "payouts">("items");
+  const [activeTab, setActiveTab] = useState<"items" | "ledger" | "payouts" | "messages">("items");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [msgDraft, setMsgDraft] = useState("");
+  const [msgSending, setMsgSending] = useState(false);
 
   // Payout form state
   const [payoutAmount, setPayoutAmount] = useState("");
@@ -80,6 +83,20 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   };
 
   useEffect(load, [id]);
+
+  const loadMessages = () => {
+    fetch(`/api/consignors/${id}/messages`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setMessages(d.messages || []); });
+  };
+  useEffect(loadMessages, [id]);
+
+  const sendMessage = async () => {
+    const text = msgDraft.trim();
+    if (!text || msgSending) return;
+    setMsgSending(true);
+    const res = await fetch(`/api/consignors/${id}/messages`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: text }) });
+    if (res.ok) { const d = await res.json(); setMessages((m) => [...m, d.message]); setMsgDraft(""); }
+    setMsgSending(false);
+  };
 
   // Keep the notes editor in sync with the loaded consignor.
   useEffect(() => { setNotesDraft(consignor?.notes || ""); }, [consignor?.id]);
@@ -432,7 +449,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
       {/* Tabs */}
       <div>
         <div className="flex gap-1 border-b border-gray-200 mb-4">
-          {(["items", "ledger", "payouts"] as const).map((tab) => (
+          {(["items", "ledger", "payouts", "messages"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -444,6 +461,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
             >
               {tab}
               {tab === "items" && <span className="ml-1.5 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{consignor.items.length}</span>}
+              {tab === "messages" && messages.length > 0 && <span className="ml-1.5 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{messages.length}</span>}
             </button>
           ))}
         </div>
@@ -486,6 +504,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                     {item.costPrice != null && <p className="text-xs text-gray-500">Cost {formatCurrency(item.costPrice)}</p>}
                     <p className="text-xs text-gray-500">{calcConsignorCredit(item.price, item.splitPercent ?? consignor.splitPercent).toFixed(2)} to consignor</p>
                   </div>
+                  {item.returnRequestedAt && item.status === "ACTIVE" && <Badge variant="warning">Return requested</Badge>}
                   <Badge variant={itemStatusColors[item.status]}>{item.status}</Badge>
                   <Button size="sm" variant="outline" onClick={() => router.push(`/inventory/${item.id}/edit?from=${encodeURIComponent(`/consignors/${id}`)}`)}><Pencil className="h-3.5 w-3.5" /></Button>
                   {item.status === "ACTIVE" && (
@@ -577,6 +596,31 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {activeTab === "messages" && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 440 }}>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+              {messages.length === 0 && (
+                <p className="text-gray-500 text-sm text-center py-8">No messages yet. Send a note — it reaches {consignor.firstName} in their consignor portal.</p>
+              )}
+              {messages.map((m: any) => {
+                const store = m.sender === "STORE";
+                return (
+                  <div key={m.id} className={`flex ${store ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 ${store ? "bg-indigo-600 text-white rounded-br-md" : "bg-gray-100 text-gray-900 rounded-bl-md"}`}>
+                      <p className="text-sm leading-snug whitespace-pre-wrap break-words">{m.body}</p>
+                      <p className={`text-[10.5px] mt-1 ${store ? "text-indigo-200" : "text-gray-500"}`}>{store ? "You" : consignor.firstName} · {new Date(m.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="border-t border-gray-200 p-3 flex items-end gap-2">
+              <textarea value={msgDraft} onChange={(e) => setMsgDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} rows={1} placeholder={`Message ${consignor.firstName}…`} className="flex-1 max-h-28 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+              <Button onClick={sendMessage} disabled={!msgDraft.trim() || msgSending} className="gap-1.5"><Send className="h-4 w-4" />Send</Button>
+            </div>
           </div>
         )}
       </div>

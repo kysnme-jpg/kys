@@ -80,6 +80,7 @@ model Store {
   borrowedGarments BorrowedGarment[]
   sipShopEvents    SipShopEvent[]
   emailLogs        EmailLog[]
+  consignorMessages ConsignorMessage[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ model Consignor {
   payouts       Payout[]
   contracts     Contract[]
   emailLogs     EmailLog[]
+  messages      ConsignorMessage[]
 }
 
 // ─── CATEGORIES ───────────────────────────────────────────────────────────────
@@ -202,6 +204,7 @@ model Item {
 
   expiresAt      DateTime?
   soldAt         DateTime?
+  returnRequestedAt DateTime? // consignor asked (via portal) to have this item back
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
@@ -543,4 +546,21 @@ model Contract {
   expiresAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+}
+
+// ─── CONSIGNOR ↔ STORE MESSAGES ───────────────────────────────────────────────
+
+model ConsignorMessage {
+  id              String    @id @default(cuid())
+  storeId         String
+  store           Store     @relation(fields: [storeId], references: [id])
+  consignorId     String
+  consignor       Consignor @relation(fields: [consignorId], references: [id])
+  sender          String    // "STORE" | "CONSIGNOR"
+  body            String    @db.Text
+  readByStore     Boolean   @default(false)
+  readByConsignor Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@index([consignorId, createdAt])
 }

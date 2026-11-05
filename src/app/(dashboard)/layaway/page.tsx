@@ -78,6 +78,7 @@ export default function LayawayPage() {
       deposit: form.deposit, payment2: form.payment2, payment3: form.payment3, finalPayment: form.finalPayment,
       startDate: form.startDate, status: form.status,
     };
+    if (form.id) payload.amountPaid = form.amountPaid; // running total is directly correctable on edit
     let res;
     if (form.id) {
       if (form.addPayment && Number(form.addPayment) > 0) payload.addPayment = form.addPayment;
@@ -189,19 +190,39 @@ export default function LayawayPage() {
               </div>
             </div>
 
-            {form.id && (
-              <div className="rounded-xl border border-accent/20 bg-accent/10 p-3 space-y-2">
-                <div className="flex items-center justify-between text-sm"><span className="text-gray-600">Paid so far</span><span className="font-semibold">{formatCurrency(Number(form.amountPaid) || 0)}</span></div>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1"><label className="block text-[11px] text-gray-500 mb-1">Record a payment ($)</label><Input type="number" min={0} step="0.01" value={form.addPayment} onChange={(e) => setForm({ ...form, addPayment: e.target.value })} placeholder="0.00" /></div>
-                  <div className="w-40"><label className="block text-[11px] text-gray-500 mb-1">Status</label>
-                    <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="flex h-[52px] w-full rounded-[14px] border-[1.5px] border-line bg-surface px-3 text-[15px] text-ink focus:outline-none focus:border-accent">
+            {form.id && (() => {
+              const total = Number(form.totalPrice) || 0;
+              const paid = Number(form.amountPaid) || 0;
+              const adding = Number(form.addPayment) || 0;
+              const balance = Math.max(0, total - paid - adding);
+              return (
+              <div className="rounded-xl border border-accent/20 bg-accent/10 p-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Amount paid so far ($)</label>
+                    <Input type="number" min={0} step="0.01" value={form.amountPaid} onChange={(e) => setForm({ ...form, amountPaid: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Record a payment (+$)</label>
+                    <Input type="number" min={0} step="0.01" value={form.addPayment} onChange={(e) => setForm({ ...form, addPayment: e.target.value })} placeholder="0.00" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500">To fix a mistake, correct the running total on the left. To log a new payment, use the box on the right. Don’t do both for the same payment — the balance below shows the result.</p>
+                <div className="flex items-end justify-between pt-2 border-t border-accent/20">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Status</label>
+                    <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="flex h-11 rounded-[12px] border-[1.5px] border-line bg-surface px-3 text-[15px] text-ink focus:outline-none focus:border-accent">
                       <option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option>
                     </select>
                   </div>
+                  <div className="text-right">
+                    <p className="text-[11px] text-gray-500 uppercase tracking-wide">Balance remaining</p>
+                    <p className="text-[22px] font-bold text-ink leading-none mt-0.5">{formatCurrency(balance)}</p>
+                  </div>
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{error}</p>}
             <div className="flex gap-2 pt-1">

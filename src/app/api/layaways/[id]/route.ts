@@ -16,17 +16,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   for (const k of ["buyerName", "address", "cityStateZip", "phone", "email", "items"] as const) {
     if (body[k] !== undefined) data[k] = body[k] || (k === "buyerName" || k === "items" ? existing[k] : null);
   }
-  for (const k of ["totalPrice", "serviceFee", "deposit", "payment2", "payment3", "finalPayment", "amountPaid"] as const) {
+  for (const k of ["totalPrice", "serviceFee", "deposit", "payment2", "payment3", "finalPayment"] as const) {
     if (body[k] !== undefined) data[k] = Math.max(0, Number(body[k]) || 0);
   }
   if (body.status !== undefined && ["ACTIVE", "COMPLETED", "CANCELLED"].includes(body.status)) data.status = body.status;
 
-  // Record an additional payment (adds to amountPaid; completes when fully paid).
-  if (body.addPayment !== undefined) {
-    const add = Math.max(0, Number(body.addPayment) || 0);
-    const newPaid = existing.amountPaid + add;
-    data.amountPaid = newPaid;
-    if (newPaid >= existing.totalPrice) data.status = "COMPLETED";
+  // Amount paid: take the corrected running total (amountPaid) as the source of
+  // truth, then add any new payment on top. This replaces rather than re-adds,
+  // so the total is always exactly what staff see — never double-counted.
+  if (body.amountPaid !== undefined || body.addPayment !== undefined) {
+    const base = body.amountPaid !== undefined ? Math.max(0, Number(body.amountPaid) || 0) : existing.amountPaid;
+    const add = body.addPayment !== undefined ? Math.max(0, Number(body.addPayment) || 0) : 0;
+    const paid = base + add;
+    data.amountPaid = paid;
+    const total = data.totalPrice ?? existing.totalPrice;
+    if (total > 0 && paid >= total) data.status = "COMPLETED";
   }
 
   await db.layaway.update({ where: { id }, data });

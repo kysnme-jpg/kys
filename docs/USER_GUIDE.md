@@ -104,8 +104,9 @@ checks or edits at the counter.
 For adding many items fast — especially on the **store tablet** — use **Inventory
 → Quick Intake** (or **Quick intake** on a consignor's Items tab to start with
 them pre-selected).
-1. **Pick the consignor once** and tap **Start** — they stay locked for the whole
-   batch, so you never re-select.
+1. **Search the consignor by name** and tap them in the list — they stay locked
+   for the whole batch, so you never re-select. (Opening it from a consignor's
+   Items tab pre-selects them.)
 2. Tap **Photograph the item** → the tablet **camera** opens → snap the item.
 3. The **AI reads the photo** and fills in the title, price, condition, brand,
    size, and description. **Add angle** to attach more photos of the same item.

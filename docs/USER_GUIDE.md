@@ -298,6 +298,12 @@ here (Check / Cash / ACH).
   - Send to the **consignor's own email** to go live — this also **enables their
     portal** and includes a temporary login password in the email so the link
     works right away.
+- **Resend portal access:** the **Resend portal access** button issues a **brand-new
+  temporary password** (the old one stops working), emails it to the consignor with
+  the login link, and flags the account so they must **choose their own password
+  the first time they sign in**. Use this if a consignor is locked out or never set
+  a password. If there's no email on file (or email isn't configured), the button
+  shows you the temporary password to share with them directly.
 - Editing an item from here (or adding one) returns you right back to this
   consignor's page when you're done.
 - **Emails sent (history):** an **Emails sent** panel lists every inventory and

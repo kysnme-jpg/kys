@@ -123,6 +123,7 @@ model Consignor {
   contractSignedAt DateTime?
   portalPassword   String?
   portalEnabled    Boolean   @default(false)
+  portalMustReset  Boolean   @default(false) // force a password reset on next portal login
   bankAccountMask  String?
   achEnabled       Boolean   @default(false)
   payoutMethod     PayoutMethod?

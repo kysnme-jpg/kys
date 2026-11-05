@@ -453,7 +453,15 @@ there automatically. Share that link on social media or your website.
 ## 10. Consignor & Dealer portals
 
 - **Consignor portal** (`/portal`) — consignors with portal access sign in to
-  see their items, earnings, and balance, and to **request a payout**.
+  see their items, earnings, and balance, and to **request a payout**. They can
+  also:
+  - **Message the store** — a built-in message thread (Messages tab). Whatever
+    they send lands on **their consignor page → Messages tab** on your end, and
+    your replies show up in their portal. Two-way, in one place.
+  - **Request an item back** — on any **active** (unsold) item, the consignor can
+    tap **Request this item back**. That item then shows a **"Return requested"**
+    badge on your consignor page's Items tab, so you know to set it aside. When
+    you hand it over, mark it **Returned** (pencil → Status) as usual.
 - **Dealer entry** (`/dealer`) — lets approved dealers submit multiple items at
   once for your review.
 

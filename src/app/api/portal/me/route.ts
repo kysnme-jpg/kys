@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
         select: {
           id: true, title: true, brand: true, size: true, color: true,
           condition: true, price: true, status: true, soldAt: true,
+          returnRequestedAt: true,
           photoUrls: true, splitPercent: true, createdAt: true,
           category: { select: { name: true } },
         },

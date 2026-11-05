@@ -1,290 +1,280 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
-import { DollarSign, Package, TrendingUp, LogOut, ShoppingBag, Clock, Send } from "lucide-react";
+import {
+  DollarSign, Package, TrendingUp, LogOut, ShoppingBag, Clock, Send,
+  MessageCircle, RotateCcw, Check, Undo2,
+} from "lucide-react";
 
 interface PortalData {
-  firstName: string;
-  lastName: string;
-  balance: number;
-  splitPercent: number;
+  firstName: string; lastName: string; balance: number; splitPercent: number;
   store: { name: string; logoUrl?: string };
-  items: any[];
-  ledgerEntries: any[];
+  items: any[]; ledgerEntries: any[];
 }
-
-const statusColors: Record<string, "success" | "default" | "warning"> = {
-  ACTIVE: "success",
-  SOLD: "default",
-  RETURNED: "warning",
-};
-
-const ledgerColors: Record<string, string> = {
-  SALE_CREDIT: "text-green-600",
-  PAYOUT_DEBIT: "text-red-600",
-  FEE_DEBIT: "text-orange-600",
-  ADJUSTMENT: "text-blue-600",
-};
+interface Msg { id: string; sender: string; body: string; createdAt: string; }
 
 export default function PortalPage() {
   const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"items" | "ledger">("items");
+  const [tab, setTab] = useState<"items" | "ledger" | "messages">("items");
+  const router = useRouter();
+
+  // payout
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [payoutMethod, setPayoutMethod] = useState("CHECK");
   const [payoutNotes, setPayoutNotes] = useState("");
   const [requesting, setRequesting] = useState(false);
   const [payoutRequested, setPayoutRequested] = useState(false);
-  const router = useRouter();
+
+  // returns
+  const [busyItem, setBusyItem] = useState<string | null>(null);
+
+  // messages
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const threadRef = useRef<HTMLDivElement>(null);
+
+  const authHeaders = useCallback((json = false): Record<string, string> => {
+    const token = (() => { try { return localStorage.getItem("portal_token"); } catch { return null; } })();
+    return { ...(json ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  }, []);
+
+  const loadMe = useCallback(() => {
+    fetch("/api/portal/me", { headers: authHeaders() })
+      .then((r) => { if (r.status === 401) { router.push("/portal/login"); return null; } return r.json(); })
+      .then((d) => { if (d) { setData(d); setLoading(false); } });
+  }, [authHeaders, router]);
+
+  useEffect(() => { loadMe(); }, [loadMe]);
+  useEffect(() => {
+    fetch("/api/portal/messages", { headers: authHeaders() })
+      .then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setMessages(d.messages || []); });
+  }, [authHeaders]);
 
   useEffect(() => {
-    const token = localStorage.getItem("portal_token");
-    fetch("/api/portal/me", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then((r) => {
-        if (r.status === 401) { router.push("/portal/login"); return null; }
-        return r.json();
-      })
-      .then((d) => { if (d) { setData(d); setLoading(false); } });
-  }, [router]);
+    if (tab === "messages" && threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
+  }, [tab, messages]);
 
   const requestPayout = async () => {
     setRequesting(true);
-    const token = localStorage.getItem("portal_token");
     const res = await fetch("/api/portal/payout-request", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      method: "POST", headers: authHeaders(true),
       body: JSON.stringify({ method: payoutMethod, notes: payoutNotes }),
     });
-    if (res.ok) {
-      setPayoutRequested(true);
-      setPayoutOpen(false);
-    }
+    if (res.ok) { setPayoutRequested(true); setPayoutOpen(false); }
     setRequesting(false);
   };
 
-  const signOut = () => {
-    localStorage.removeItem("portal_token");
-    router.push("/portal/login");
+  const toggleReturn = async (item: any) => {
+    setBusyItem(item.id);
+    const cancel = !!item.returnRequestedAt;
+    const res = await fetch("/api/portal/request-return", {
+      method: "POST", headers: authHeaders(true),
+      body: JSON.stringify({ itemId: item.id, cancel }),
+    });
+    if (res.ok) {
+      setData((d) => d ? { ...d, items: d.items.map((it) => it.id === item.id ? { ...it, returnRequestedAt: cancel ? null : new Date().toISOString() } : it) } : d);
+    }
+    setBusyItem(null);
   };
 
+  const send = async () => {
+    const text = draft.trim();
+    if (!text || sending) return;
+    setSending(true);
+    const res = await fetch("/api/portal/messages", { method: "POST", headers: authHeaders(true), body: JSON.stringify({ body: text }) });
+    if (res.ok) { const d = await res.json(); setMessages((m) => [...m, d.message]); setDraft(""); }
+    setSending(false);
+  };
+
+  const signOut = () => { try { localStorage.removeItem("portal_token"); } catch {} router.push("/portal/login"); };
+
   if (loading || !data) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
-      </div>
-    );
+    return <div className="min-h-screen bg-paper flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" /></div>;
   }
 
   const activeItems = data.items.filter((i) => i.status === "ACTIVE");
   const soldItems = data.items.filter((i) => i.status === "SOLD");
-  const totalEarned = data.ledgerEntries
-    .filter((e) => e.type === "SALE_CREDIT")
-    .reduce((s: number, e: any) => s + e.amount, 0);
+  const totalEarned = data.ledgerEntries.filter((e) => e.type === "SALE_CREDIT").reduce((s: number, e: any) => s + e.amount, 0);
+
+  const statusPill = (s: string) => {
+    if (s === "ACTIVE") return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[var(--ok-bg)] text-[var(--ok-ink)]">LIVE</span>;
+    if (s === "SOLD") return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-chip text-[var(--chip-ink)]">SOLD</span>;
+    return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold" style={{ background: "#f6ecd4", color: "#8a6d1f" }}>{s}</span>;
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-paper text-ink">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <ShoppingBag className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">{data.store.name}</p>
-              <p className="text-sm font-semibold text-gray-900">
-                {data.firstName} {data.lastName}
-              </p>
-            </div>
+      <header className="sticky top-0 z-20 border-b border-line" style={{ background: "color-mix(in srgb, var(--paper) 88%, transparent)", backdropFilter: "blur(8px)", top: "env(safe-area-inset-top, 0px)" }}>
+        <div className="max-w-xl mx-auto px-5 py-3.5 flex items-center gap-3">
+          <span className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--accent), #d98a4e)" }}><ShoppingBag className="h-5 w-5 text-white" /></span>
+          <div className="min-w-0">
+            <p className="font-serif text-[15px] font-semibold leading-none truncate">{data.store.name}</p>
+            <p className="text-[12px] text-[var(--muted)] mt-0.5 truncate">{data.firstName} {data.lastName}</p>
           </div>
-          <button
-            onClick={signOut}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+          <button onClick={signOut} className="ml-auto flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--muted)] hover:text-ink"><LogOut className="h-4 w-4" />Sign out</button>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-xl mx-auto px-5 py-5 space-y-4">
         {/* Balance hero */}
-        <div className="bg-indigo-600 rounded-2xl p-6 text-white">
-          <p className="text-indigo-200 text-sm font-medium">Available Balance</p>
-          <p className="text-4xl font-bold mt-1">{formatCurrency(data.balance)}</p>
+        <section className="rounded-[24px] p-6 relative overflow-hidden" style={{ background: "linear-gradient(160deg, var(--panel-key), var(--panel))", color: "var(--panel-ink)" }}>
+          <p className="text-[12.5px] font-semibold uppercase tracking-wide" style={{ color: "var(--panel-muted)" }}>Available balance</p>
+          <p className="font-serif text-[44px] font-semibold leading-none mt-1.5 tabular-nums">{formatCurrency(data.balance)}</p>
           {payoutRequested ? (
-            <p className="text-indigo-300 text-xs mt-3">Payout request submitted — the store will process it shortly.</p>
+            <p className="text-[12px] mt-3" style={{ color: "var(--panel-muted)" }}>Payout request submitted — the store will process it shortly.</p>
           ) : (
-            <button
-              onClick={() => setPayoutOpen(true)}
-              className="mt-3 flex items-center gap-1.5 text-xs text-indigo-200 hover:text-white transition-colors"
-            >
-              <Send className="h-3.5 w-3.5" />
-              Request payout
-            </button>
+            <button onClick={() => setPayoutOpen((v) => !v)} className="mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-full bg-accent text-[var(--accent-ink)] text-[14px] font-bold"><Send className="h-4 w-4" />Request payout</button>
           )}
-        </div>
+          <p className="text-[12px] mt-2.5" style={{ color: "var(--panel-muted)" }}>Hi {data.firstName} — here's everything you've got with us.</p>
+        </section>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Payout request */}
+        {payoutOpen && !payoutRequested && (
+          <section className="bg-surface border border-line rounded-[18px] p-4">
+            <h3 className="font-serif text-[17px] font-semibold">Request a payout</h3>
+            <p className="text-[13px] text-[var(--muted)] mt-1 mb-3">Your balance of <b className="text-ink">{formatCurrency(data.balance)}</b> — the store will process it and reach out.</p>
+            <div className="flex gap-1.5 mb-3">
+              {(["CHECK", "CASH", "ACH"] as const).map((m) => (
+                <button key={m} onClick={() => setPayoutMethod(m)} className={`flex-1 h-10 rounded-full text-[13.5px] font-semibold border-[1.5px] ${payoutMethod === m ? "bg-accent border-accent text-[var(--accent-ink)]" : "bg-surface border-line text-ink"}`}>{m === "ACH" ? "Bank (ACH)" : m[0] + m.slice(1).toLowerCase()}</button>
+              ))}
+            </div>
+            <textarea value={payoutNotes} onChange={(e) => setPayoutNotes(e.target.value)} rows={2} placeholder="Any special instructions (optional)" className="w-full rounded-xl border-[1.5px] border-line bg-paper px-3 py-2 text-[14px] text-ink focus:outline-none focus:border-accent resize-none mb-3" />
+            <div className="flex gap-2">
+              <button onClick={requestPayout} disabled={requesting} className="flex-1 h-11 rounded-full bg-accent text-[var(--accent-ink)] text-[14.5px] font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50"><Send className="h-4 w-4" />{requesting ? "Submitting…" : "Submit request"}</button>
+              <button onClick={() => setPayoutOpen(false)} className="h-11 px-4 rounded-full border-[1.5px] border-line text-[14px] font-semibold">Cancel</button>
+            </div>
+          </section>
+        )}
+
+        {/* Stats */}
+        <section className="grid grid-cols-3 gap-2.5">
           {[
-            { label: "Active Items", value: activeItems.length, icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
-            { label: "Items Sold", value: soldItems.length, icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
-            { label: "Total Earned", value: formatCurrency(totalEarned), icon: DollarSign, color: "text-purple-600", bg: "bg-purple-50" },
-          ].map(({ label, value, icon: Icon, color, bg }) => (
-            <Card key={label}>
-              <CardContent className="p-4 text-center">
-                <div className={`h-9 w-9 ${bg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
-                  <Icon className={`h-4.5 w-4.5 ${color}`} />
-                </div>
-                <p className="text-lg font-bold text-gray-900">{value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-              </CardContent>
-            </Card>
+            { label: "Active items", value: String(activeItems.length), Icon: Package, cls: "bg-[#d6ece6] text-[#2b7a66]" },
+            { label: "Items sold", value: String(soldItems.length), Icon: TrendingUp, cls: "text-accent", style: { background: "color-mix(in srgb, var(--accent) 16%, transparent)" } },
+            { label: "Total earned", value: formatCurrency(totalEarned), Icon: DollarSign, cls: "bg-[#fbead0] text-[#b4822a]" },
+          ].map(({ label, value, Icon, cls, style }) => (
+            <div key={label} className="bg-surface border border-line rounded-[18px] p-3.5 text-center">
+              <div className={`h-8 w-8 rounded-[9px] grid place-items-center mx-auto mb-2 ${cls}`} style={style}><Icon className="h-4 w-4" /></div>
+              <p className="font-serif text-[20px] font-semibold tabular-nums">{value}</p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5 leading-tight">{label}</p>
+            </div>
+          ))}
+        </section>
+
+        {/* Split */}
+        <section className="flex items-center gap-2.5 bg-chip rounded-[16px] px-3.5 py-3">
+          <span className="h-8 w-8 rounded-[9px] bg-surface grid place-items-center shrink-0"><TrendingUp className="h-4 w-4 text-accent" /></span>
+          <div><b className="text-[13.5px] font-bold block">Your split: {data.splitPercent}%</b><span className="text-[12px] text-[var(--muted)]">You earn {data.splitPercent}% of each item's sale price.</span></div>
+        </section>
+
+        {/* Tabs */}
+        <div className="inline-flex gap-1 bg-chip rounded-full p-1">
+          {([["items", `My items`], ["ledger", "Earnings"], ["messages", "Messages"]] as const).map(([t, label]) => (
+            <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-2 text-[13.5px] font-semibold ${tab === t ? "bg-surface text-ink shadow-sm" : "text-[var(--muted)]"}`}>{label}</button>
           ))}
         </div>
 
-        {/* Split info */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
-          <div className="h-9 w-9 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
-            <TrendingUp className="h-4 w-4 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-amber-900">Your Split: {data.splitPercent}%</p>
-            <p className="text-xs text-amber-700">You earn {data.splitPercent}% of each item sale price</p>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div>
-          <div className="flex gap-1 border-b border-gray-200 mb-4">
-            {(["items", "ledger"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-                  tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {t === "items" ? `My Items (${data.items.length})` : "Earnings History"}
-              </button>
-            ))}
-          </div>
-
-          {/* Items */}
-          {tab === "items" && (
-            <div className="space-y-3">
-              {data.items.length === 0 && (
-                <p className="text-gray-500 text-sm py-4 text-center">No items on record yet</p>
-              )}
-              {data.items.map((item: any) => (
-                <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-4 flex gap-4">
-                  {item.photoUrls?.[0] ? (
-                    <img src={item.photoUrls[0]} className="h-16 w-16 rounded-lg object-cover shrink-0" alt="" />
-                  ) : (
-                    <div className="h-16 w-16 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center text-gray-400 text-xs">
-                      No photo
-                    </div>
-                  )}
+        {/* Items */}
+        {tab === "items" && (
+          <section className="space-y-2.5">
+            {data.items.length === 0 && <p className="text-[var(--muted)] text-sm py-6 text-center">No items on record yet.</p>}
+            {data.items.map((item: any) => (
+              <div key={item.id} className="bg-surface border border-line rounded-[18px] p-3">
+                <div className="flex gap-3">
+                  {item.photoUrls?.[0]
+                    ? <img src={item.photoUrls[0]} className="h-16 w-16 rounded-xl object-cover shrink-0" alt="" />
+                    : <div className="h-16 w-16 rounded-xl shrink-0 grid place-items-center text-white" style={{ background: "linear-gradient(145deg, var(--accent), #d98a4e)" }}><ShoppingBag className="h-6 w-6" /></div>}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium text-gray-900 text-sm leading-snug">{item.title}</p>
-                      <Badge variant={statusColors[item.status]}>{item.status}</Badge>
+                      <p className="font-bold text-[14px] leading-snug">{item.title}</p>
+                      {statusPill(item.status)}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {[item.brand, item.size, item.condition].filter(Boolean).join(" · ")}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-sm font-bold text-gray-900">{formatCurrency(item.price)}</p>
-                      <p className="text-xs text-indigo-600 font-medium">
-                        Your share: {formatCurrency(calcConsignorCredit(item.price, item.splitPercent ?? data.splitPercent))}
-                      </p>
+                    <p className="text-[12px] text-[var(--muted)] mt-0.5">{[item.brand, item.size, item.condition].filter(Boolean).join(" · ")}</p>
+                    <div className="flex items-center justify-between mt-2 gap-2">
+                      <p className="text-[14.5px] font-extrabold tabular-nums">{formatCurrency(item.price)}</p>
+                      <p className="text-[12px] font-bold text-accent">Your share {formatCurrency(calcConsignorCredit(item.price, item.splitPercent ?? data.splitPercent))}</p>
                     </div>
                     {item.status === "SOLD" && item.soldAt && (
-                      <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Sold {formatDate(item.soldAt)}
-                      </p>
+                      <p className="text-[11.5px] text-[var(--muted)] mt-1.5 flex items-center gap-1"><Clock className="h-3 w-3" />Sold {formatDate(item.soldAt)}</p>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Ledger */}
-          {tab === "ledger" && (
-            <div className="space-y-2">
-              {data.ledgerEntries.length === 0 && (
-                <p className="text-gray-500 text-sm py-4 text-center">No transactions yet</p>
-              )}
-              {data.ledgerEntries.map((entry: any) => (
-                <div key={entry.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
-                  <div>
-                    <p className={`text-xs font-semibold ${ledgerColors[entry.type]}`}>
-                      {entry.type.replace(/_/g, " ")}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-0.5">{entry.note || "—"}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{new Date(entry.createdAt).toLocaleDateString()}</p>
+                {item.status === "ACTIVE" && (
+                  <div className="mt-2.5 pt-2.5 border-t border-line-soft">
+                    {item.returnRequestedAt ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[12.5px] font-semibold text-accent inline-flex items-center gap-1.5"><Check className="h-4 w-4" />Return requested — the store will be in touch</span>
+                        <button onClick={() => toggleReturn(item)} disabled={busyItem === item.id} className="text-[12.5px] font-semibold text-[var(--muted)] inline-flex items-center gap-1 disabled:opacity-50"><Undo2 className="h-3.5 w-3.5" />Undo</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => toggleReturn(item)} disabled={busyItem === item.id} className="w-full h-10 rounded-full border-[1.5px] border-line text-[13.5px] font-semibold text-ink inline-flex items-center justify-center gap-2 hover:border-accent disabled:opacity-50">
+                        <RotateCcw className="h-4 w-4" />{busyItem === item.id ? "…" : "Request this item back"}
+                      </button>
+                    )}
                   </div>
-                  <p className={`font-bold text-base ${entry.amount >= 0 ? "text-green-700" : "text-red-600"}`}>
-                    {entry.amount >= 0 ? "+" : ""}{formatCurrency(entry.amount)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
 
-      <Modal open={payoutOpen} onClose={() => setPayoutOpen(false)} title="Request Payout" className="max-w-sm">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Your current balance is <span className="font-bold text-gray-900">{formatCurrency(data.balance)}</span>.
-            The store will process your payout and contact you.
-          </p>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Method</label>
-            <select
-              value={payoutMethod}
-              onChange={(e) => setPayoutMethod(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="CHECK">Check</option>
-              <option value="CASH">Cash</option>
-              <option value="ACH">Bank Transfer (ACH)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
-            <textarea
-              value={payoutNotes}
-              onChange={(e) => setPayoutNotes(e.target.value)}
-              className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              rows={2}
-              placeholder="Any special instructions..."
-            />
-          </div>
-          <div className="flex gap-3">
-            <Button onClick={requestPayout} disabled={requesting} className="flex-1 gap-2">
-              <Send className="h-4 w-4" />
-              {requesting ? "Submitting..." : "Submit Request"}
-            </Button>
-            <Button variant="outline" onClick={() => setPayoutOpen(false)}>Cancel</Button>
-          </div>
-        </div>
-      </Modal>
+        {/* Earnings / ledger */}
+        {tab === "ledger" && (
+          <section className="space-y-2">
+            {data.ledgerEntries.length === 0 && <p className="text-[var(--muted)] text-sm py-6 text-center">No transactions yet.</p>}
+            {data.ledgerEntries.map((e: any) => {
+              const tyCls = e.type === "SALE_CREDIT" ? "text-[var(--ok-ink)]" : e.type === "ADJUSTMENT" ? "text-[#2f6fae]" : "text-[var(--danger-ink)]";
+              const amtCls = e.amount > 0 ? "text-[var(--ok-ink)]" : e.amount < 0 ? "text-[var(--danger-ink)]" : "text-[var(--muted)]";
+              return (
+                <div key={e.id} className="bg-surface border border-line rounded-[16px] p-3.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={`text-[10.5px] font-extrabold tracking-wide ${tyCls}`}>{e.type.replace(/_/g, " ")}</p>
+                    <p className="text-[13px] mt-0.5 leading-snug">{e.note || "—"}</p>
+                    <p className="text-[11.5px] text-[var(--muted)] mt-0.5">{new Date(e.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <p className={`font-extrabold text-[15px] tabular-nums whitespace-nowrap ${amtCls}`}>{e.amount >= 0 ? "+" : ""}{formatCurrency(e.amount)}</p>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        {/* Messages */}
+        {tab === "messages" && (
+          <section className="bg-surface border border-line rounded-[20px] overflow-hidden flex flex-col" style={{ height: "60vh", minHeight: 360 }}>
+            <div ref={threadRef} className="flex-1 overflow-y-auto p-4 space-y-2.5">
+              {messages.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-center text-[var(--muted)] gap-2 px-4">
+                  <MessageCircle className="h-8 w-8" />
+                  <p className="text-[14px]">Message the store directly — questions about your items, pricing, or a payout. They'll reply right here.</p>
+                </div>
+              )}
+              {messages.map((m) => {
+                const mine = m.sender === "CONSIGNOR";
+                return (
+                  <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 ${mine ? "bg-accent text-[var(--accent-ink)] rounded-br-md" : "bg-chip text-ink rounded-bl-md"}`}>
+                      <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">{m.body}</p>
+                      <p className={`text-[10.5px] mt-1 ${mine ? "text-white/70" : "text-[var(--muted)]"}`}>{!mine ? `${data.store.name} · ` : ""}{new Date(m.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="border-t border-line p-3 flex items-end gap-2" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}>
+              <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                rows={1} placeholder="Write a message…" className="flex-1 max-h-28 rounded-2xl border-[1.5px] border-line bg-paper px-3.5 py-2.5 text-[14px] text-ink focus:outline-none focus:border-accent resize-none" />
+              <button onClick={send} disabled={!draft.trim() || sending} className="h-11 w-11 rounded-full bg-accent text-[var(--accent-ink)] grid place-items-center shrink-0 disabled:opacity-40"><Send className="h-4.5 w-4.5" /></button>
+            </div>
+          </section>
+        )}
+      </main>
     </div>
   );
 }

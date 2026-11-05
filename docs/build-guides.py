@@ -5,10 +5,28 @@ Usage:  python3 docs/build-guides.py
 Outputs: docs/guides.html  and  docs/ConsignPro-Guides.pdf
 Regenerate this whenever USER_GUIDE.md / ADMIN_GUIDE.md change.
 """
-import os, re, subprocess, datetime, markdown
+import os, re, subprocess, datetime, glob, markdown
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
+
+def find_chrome():
+    """Locate a headless Chrome/Chromium. The Playwright build is versioned
+    (e.g. chromium-1243), so glob for it instead of pinning one version."""
+    env = os.environ.get("CHROME_PATH")
+    patterns = [
+        env,
+        "/opt/pw-browsers/chromium-*/chrome-linux*/chrome",
+        "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome",
+    ]
+    for p in patterns:
+        if not p:
+            continue
+        hits = sorted(glob.glob(p), reverse=True) if "*" in p else ([p] if os.path.exists(p) else [])
+        if hits:
+            return hits[0]
+    raise FileNotFoundError("No Chrome/Chromium found; set CHROME_PATH")
+
+CHROME = find_chrome()
 
 # Store branding shown on the cover and guide headers.
 BRAND = "Classic Consigns by KYS"

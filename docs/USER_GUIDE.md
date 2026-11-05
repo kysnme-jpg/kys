@@ -230,9 +230,15 @@ The **Layaway** tab (next to Appointments) tracks layaway agreements.
 - **Automatic reminders:** the buyer gets an email reminder at **15, 30, and 45
   days** for the next payment due (and the balance remaining). Reminders stop once
   the layaway is fully paid.
-- **Recording payments:** open a layaway (pencil) and use **Record a payment** to
-  add what the buyer paid; the balance updates and it marks **Completed** when
-  paid in full. You can also set the status to Cancelled.
+- **Recording payments:** open a layaway (pencil). Two separate controls:
+  - **Record a payment (+$)** — the normal flow: type what the buyer just handed
+    you and it's **added** to their running total.
+  - **Amount paid so far ($)** — the actual running total, which you can **edit
+    directly** to correct a mistake (e.g. set it back to the right number if it
+    was ever entered twice).
+  Use one or the other for a given payment, not both — the **Balance remaining**
+  shown right there updates live so you can confirm before saving. It marks
+  **Completed** automatically when paid in full, and you can set Cancelled.
 - The top cards show how many are active and the total outstanding balance.
 
 ### Borrowed (garment agreements)

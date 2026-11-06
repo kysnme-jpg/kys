@@ -23,6 +23,23 @@ export default function ReportsPage() {
   const totalRevenue = sales.reduce((s, sale) => s + sale.total, 0);
   const totalItems = sales.reduce((s, sale) => s + sale.items.length, 0);
 
+  const exportFull = async () => {
+    setExporting("__full");
+    try {
+      const res = await fetch("/api/export/full");
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || "Couldn't export."); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.headers.get("content-disposition")?.split('filename="')[1]?.replace('"', '') || "backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(null);
+    }
+  };
+
   const exportCSV = async (type: string) => {
     setExporting(type);
     const params = new URLSearchParams({ type });
@@ -105,6 +122,13 @@ export default function ReportsPage() {
                 {exporting === type ? "Exporting..." : `Export ${label} CSV`}
               </Button>
             ))}
+          </div>
+          <div className="mt-5 pt-5 border-t border-gray-100">
+            <p className="text-sm text-gray-600 mb-2"><strong>Full backup:</strong> download your entire store's data (consignors, items, sales, payouts, and more) as one JSON file. Keep it somewhere safe.</p>
+            <Button onClick={exportFull} disabled={exporting === "__full"} className="gap-2">
+              <Download className="h-4 w-4" />
+              {exporting === "__full" ? "Preparing…" : "Export everything (JSON)"}
+            </Button>
           </div>
         </CardContent>
       </Card>

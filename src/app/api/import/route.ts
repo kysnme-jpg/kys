@@ -9,6 +9,10 @@ interface ImportItem {
   title: string;
   size?: string | null;
   price?: number | null;
+  cost?: number | null;
+  description?: string | null;
+  condition?: string | null;
+  color?: string | null;
   notes?: string | null;
 }
 interface ImportConsignor {
@@ -84,6 +88,10 @@ export async function POST(req: NextRequest) {
         brand: it.brand || null,
         size: it.size != null ? String(it.size) : null,
         price: typeof it.price === "number" ? it.price : 0,
+        costPrice: typeof it.cost === "number" ? it.cost : null,
+        description: it.description ? String(it.description) : null,
+        condition: it.condition ? String(it.condition) : null,
+        color: it.color ? String(it.color) : null,
         splitPercent: split,
         type: "CONSIGNED" as const,
         status: "ACTIVE" as const,

@@ -82,6 +82,7 @@ model Store {
   emailLogs        EmailLog[]
   consignorMessages ConsignorMessage[]
   rolePermissions  RolePermission[]
+  posts            Post[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -430,6 +431,72 @@ model WorkLog {
   note         String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ─── CONTENT FEED / POSTS (§2) ───────────────────────────────────────────────
+
+enum PostType {
+  ANNOUNCEMENT
+  NEWS
+  EVENT
+  PROMOTION
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+// Who a post is shown to. INTERNAL_ROLE uses audienceRole; TAG uses audienceTag
+// (tags land in §5). ALL_CUSTOMERS is defined for when customers get logins.
+enum AudienceScope {
+  EVERYONE
+  ALL_INTERNAL
+  INTERNAL_ROLE
+  ALL_CONSIGNORS
+  ALL_CUSTOMERS
+  TAG
+}
+
+model Post {
+  id            String        @id @default(cuid())
+  storeId       String
+  store         Store         @relation(fields: [storeId], references: [id])
+  authorUserId  String?
+  type          PostType      @default(ANNOUNCEMENT)
+  title         String
+  body          String        @db.Text
+  imageUrl      String?
+  linkUrl       String?
+  linkLabel     String?
+  rsvpEnabled   Boolean       @default(false)
+  audienceScope AudienceScope @default(EVERYONE)
+  audienceRole  String?
+  audienceTag   String?
+  status        PostStatus    @default(DRAFT)
+  publishAt     DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  rsvps PostRsvp[]
+
+  @@index([storeId, status])
+}
+
+model PostRsvp {
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  actorClass  String // INTERNAL | EXTERNAL
+  userId      String?
+  consignorId String?
+  response    String // YES | NO | MAYBE
+  createdAt   DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@unique([postId, consignorId])
 }
 
 // ─── EMAIL LOG ───────────────────────────────────────────────────────────────

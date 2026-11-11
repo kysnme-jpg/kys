@@ -88,7 +88,9 @@ photos under `<mount>/uploads`. `UPLOAD_DIR` can override the location.
 
 ## 5. Accounts & roles
 
-Roles: **OWNER**, **MANAGER**, **EMPLOYEE** (set on the `User` record).
+Roles: **OWNER**, **MANAGER**, **EMPLOYEE** (set on the `User` record). The
+schema also recognises **ASSOCIATE** (the preferred name for EMPLOYEE, which is
+kept as a legacy alias) and **INVENTORY_CLERK**.
 
 - **Owner/Manager** can change store settings, manage API keys & webhooks,
   import data, and edit store/Clover settings.
@@ -96,6 +98,29 @@ Roles: **OWNER**, **MANAGER**, **EMPLOYEE** (set on the `User` record).
 - There is no staff-invite UI yet. To add staff, create a `User` row in the
   database (see "Direct database access") with the store's `storeId`, a
   bcrypt-hashed password, and the desired role.
+
+### Role permissions (RBAC)
+
+Authorization runs through one central helper and a database-backed permission
+table, so what each role can do is **data, not hard-coded**:
+
+- Permissions include `owner_only`, `content_admin` (manage the content feed),
+  `internal_comms`, `external_comms`, and `export_all`.
+- Defaults are seeded per store on first use into the **`RolePermission`** table
+  (`storeId`, `role`, `permission`). Owners get everything; managers get content
+  + comms; associates get comms; inventory clerks get internal comms only.
+- To change what a role can do, edit that store's `RolePermission` rows (see
+  "Direct database access"). The app reads this table live and falls back to the
+  built-in defaults if a store isn't seeded yet.
+- **Account class** is enforced separately: internal staff vs. external
+  (consignor/customer) accounts are resolved on the server from the session —
+  never from the request — and the two can never cross into each other's
+  messaging. This is the isolation boundary the messaging features are built on.
+
+The **content feed** (announcements/news/events/promotions — see the User Guide
+§9a) is gated on `content_admin`: owners and managers can post; everyone sees the
+posts aimed at them. Consignors see consignor-targeted posts in the portal's
+**Updates** tab. No new environment variables are needed.
 
 ### Resetting a password
 1. Add a temporary env var `RESET_TOKEN` = any random string.

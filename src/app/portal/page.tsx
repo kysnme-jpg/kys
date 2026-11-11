@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
+import { ContentFeed } from "@/components/feed/content-feed";
 import {
   DollarSign, Package, TrendingUp, LogOut, ShoppingBag, Clock, Send,
   MessageCircle, RotateCcw, Check, Undo2, KeyRound,
@@ -18,7 +19,7 @@ interface Msg { id: string; sender: string; body: string; createdAt: string; }
 export default function PortalPage() {
   const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"items" | "ledger" | "messages">("items");
+  const [tab, setTab] = useState<"items" | "ledger" | "messages" | "updates">("items");
   const router = useRouter();
 
   // payout
@@ -210,7 +211,7 @@ export default function PortalPage() {
 
         {/* Tabs */}
         <div className="inline-flex gap-1 bg-chip rounded-full p-1">
-          {([["items", `My items`], ["ledger", "Earnings"], ["messages", "Messages"]] as const).map(([t, label]) => (
+          {([["items", `My items`], ["ledger", "Earnings"], ["messages", "Messages"], ["updates", "Updates"]] as const).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-2 text-[13.5px] font-semibold ${tab === t ? "bg-surface text-ink shadow-sm" : "text-[var(--muted)]"}`}>{label}</button>
           ))}
         </div>
@@ -308,6 +309,13 @@ export default function PortalPage() {
                 rows={1} placeholder="Write a message…" className="flex-1 max-h-28 rounded-2xl border-[1.5px] border-line bg-paper px-3.5 py-2.5 text-[14px] text-ink focus:outline-none focus:border-accent resize-none" />
               <button onClick={send} disabled={!draft.trim() || sending} className="h-11 w-11 rounded-full bg-accent text-[var(--accent-ink)] grid place-items-center shrink-0 disabled:opacity-40"><Send className="h-4.5 w-4.5" /></button>
             </div>
+          </section>
+        )}
+
+        {/* Updates (content feed) */}
+        {tab === "updates" && (
+          <section>
+            <ContentFeed authHeaders={() => authHeaders()} emptyLabel="No updates from the store right now." compact />
           </section>
         )}
       </main>

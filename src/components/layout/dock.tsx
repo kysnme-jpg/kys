@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp, MoreHorizontal,
-  Globe, Upload, Settings, LogOut, Sun, Moon, X,
+  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -81,10 +81,14 @@ function DockItem({ item, active }: { item: (typeof ITEMS)[number]; active: bool
 
 function MoreSheet({ onClose }: { onClose: () => void }) {
   const [dark, setDark] = useState(false);
+  const [canManageContent, setCanManageContent] = useState(false);
   useEffect(() => {
     try { setDark(document.documentElement.classList.contains("dark")); } catch {}
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
+    fetch("/api/me").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (d?.permissions?.includes("content_admin")) setCanManageContent(true);
+    }).catch(() => {});
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
@@ -111,6 +115,8 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
           <span className="font-serif text-[22px] text-ink">More</span>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-chip" aria-label="Close"><X className="h-5 w-5 text-[var(--muted)]" /></button>
         </div>
+        <Row icon={Megaphone} label="Announcements" href="/announcements" />
+        {canManageContent && <Row icon={Megaphone} label="Manage content" href="/content" />}
         <Row icon={Globe} label="Online Shop" href="/shop" />
         <Row icon={Upload} label="Import" href="/import" />
         <Row icon={Settings} label="Settings" href="/settings" />

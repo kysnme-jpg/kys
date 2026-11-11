@@ -456,6 +456,47 @@ there automatically. Share that link on social media or your website.
 
 ---
 
+## 9a. Announcements & the content feed
+
+The platform has a built-in **content feed** — a simple way to post
+announcements, news, events, and promotions, and choose exactly **who sees
+each one**.
+
+**Where posts show up:**
+- **Staff** see them under **More → Announcements**.
+- **Consignors** see them in their portal, on the new **Updates** tab.
+
+**Who can post:** only the **owner** and **managers** (anyone with the
+"manage content" permission). They'll find **More → Manage content** in the menu.
+
+**Creating a post** (More → Manage content → New post):
+1. Pick a **type** — Announcement, News, Event, or Promotion (just a label/icon).
+2. Write a **title** and **message**. Optionally add an **image URL** and a
+   **link** (e.g. "RSVP here", "Shop the sale").
+3. Choose the **audience**:
+   - **Everyone** — all staff and all consignors.
+   - **All staff** — the whole team only.
+   - **A specific staff role** — e.g. only managers.
+   - **All consignors** — every consignor with portal access.
+   - **All customers** / **Tag** — reserved for later (customer logins and tags
+     aren't live yet).
+4. Optionally set **Publish at** (schedule it to go live later) and **Expires at**
+   (auto-hide after a date).
+5. Optionally turn on **RSVP** so people can tap to say they're coming.
+6. Save as **Draft** (hidden) or **Published** (live to its audience).
+
+**Managing posts:** the Manage content list shows each post's status — **Draft**,
+**Scheduled**, **Live**, **Expired**, or **Retired** — plus its audience and RSVP
+count. Use **Publish / Retire** to flip a post on or off, the pencil to edit, or
+the trash to delete. **Preview** (inside the editor) shows exactly how the post
+will look.
+
+> The audience picker here is the same one the email tool will use later, so a
+> "promotion to all consignors" means the same thing whether it's a feed post or
+> an email.
+
+---
+
 ## 10. Consignor & Dealer portals
 
 - **Consignor portal** (`/portal`) — consignors with portal access sign in to
@@ -468,6 +509,8 @@ there automatically. Share that link on social media or your website.
     tap **Request this item back**. That item then shows a **"Return requested"**
     badge on your consignor page's Items tab, so you know to set it aside. When
     you hand it over, mark it **Returned** (pencil → Status) as usual.
+  - **See store updates** — the **Updates** tab shows any content-feed posts
+    aimed at consignors (see §9a).
 - **Dealer entry** (`/dealer`) — lets approved dealers submit multiple items at
   once for your review.
 

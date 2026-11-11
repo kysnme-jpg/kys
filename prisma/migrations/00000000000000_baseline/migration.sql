@@ -26,6 +26,15 @@ CREATE TYPE "PayoutMethod" AS ENUM ('CHECK', 'CASH', 'ACH', 'ZELLE', 'CASHAPP');
 CREATE TYPE "PayoutStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
 
 -- CreateEnum
+CREATE TYPE "PostType" AS ENUM ('ANNOUNCEMENT', 'NEWS', 'EVENT', 'PROMOTION');
+
+-- CreateEnum
+CREATE TYPE "PostStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'RETIRED');
+
+-- CreateEnum
+CREATE TYPE "AudienceScope" AS ENUM ('EVERYONE', 'ALL_INTERNAL', 'INTERNAL_ROLE', 'ALL_CONSIGNORS', 'ALL_CUSTOMERS', 'TAG');
+
+-- CreateEnum
 CREATE TYPE "ContractStatus" AS ENUM ('DRAFT', 'SENT', 'SIGNED', 'EXPIRED');
 
 -- CreateTable
@@ -338,6 +347,43 @@ CREATE TABLE "WorkLog" (
 );
 
 -- CreateTable
+CREATE TABLE "Post" (
+    "id" TEXT NOT NULL,
+    "storeId" TEXT NOT NULL,
+    "authorUserId" TEXT,
+    "type" "PostType" NOT NULL DEFAULT 'ANNOUNCEMENT',
+    "title" TEXT NOT NULL,
+    "body" TEXT NOT NULL,
+    "imageUrl" TEXT,
+    "linkUrl" TEXT,
+    "linkLabel" TEXT,
+    "rsvpEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "audienceScope" "AudienceScope" NOT NULL DEFAULT 'EVERYONE',
+    "audienceRole" TEXT,
+    "audienceTag" TEXT,
+    "status" "PostStatus" NOT NULL DEFAULT 'DRAFT',
+    "publishAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Post_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PostRsvp" (
+    "id" TEXT NOT NULL,
+    "postId" TEXT NOT NULL,
+    "actorClass" TEXT NOT NULL,
+    "userId" TEXT,
+    "consignorId" TEXT,
+    "response" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PostRsvp_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "EmailLog" (
     "id" TEXT NOT NULL,
     "storeId" TEXT NOT NULL,
@@ -516,6 +562,15 @@ CREATE UNIQUE INDEX "DiscountRule_code_key" ON "DiscountRule"("code");
 CREATE UNIQUE INDEX "ApiKey_keyHash_key" ON "ApiKey"("keyHash");
 
 -- CreateIndex
+CREATE INDEX "Post_storeId_status_idx" ON "Post"("storeId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PostRsvp_postId_userId_key" ON "PostRsvp"("postId", "userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PostRsvp_postId_consignorId_key" ON "PostRsvp"("postId", "consignorId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ConsignAppointment_storeId_date_slot_key" ON "ConsignAppointment"("storeId", "date", "slot");
 
 -- CreateIndex
@@ -598,6 +653,12 @@ ALTER TABLE "WebhookDelivery" ADD CONSTRAINT "WebhookDelivery_endpointId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "WorkLog" ADD CONSTRAINT "WorkLog_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Post" ADD CONSTRAINT "Post_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PostRsvp" ADD CONSTRAINT "PostRsvp_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EmailLog" ADD CONSTRAINT "EmailLog_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

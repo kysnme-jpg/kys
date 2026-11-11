@@ -34,6 +34,12 @@ export default function POSPage() {
   const [refundMsg, setRefundMsg] = useState("");
   const [refundDone, setRefundDone] = useState<any>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  // Scanner auto-submit: a barcode scanner types a burst of very fast keystrokes.
+  // We detect that burst and auto-add without needing the Enter key, while plain
+  // human typing (name search) still behaves normally.
+  const lastKeyRef = useRef(0);
+  const rapidRef = useRef(0);
+  const scanTimerRef = useRef<any>(null);
   const POINTS_PER_DOLLAR = 100;
 
   useEffect(() => { searchRef.current?.focus(); }, []);
@@ -87,6 +93,28 @@ export default function POSPage() {
       setScanFlash(`No active item for "${code}"`); setTimeout(() => setScanFlash(""), 1800);
     }
   };
+
+  // Input handler that auto-submits a scanned barcode (no Enter needed).
+  const onSearchInput = (val: string) => {
+    const now = performance.now();
+    const gap = now - lastKeyRef.current;
+    lastKeyRef.current = now;
+    if (gap > 120) rapidRef.current = 0;        // a pause = human typing, reset
+    else if (gap < 35) rapidRef.current += 1;   // very fast chars = scanner
+    setSearch(val);
+
+    clearTimeout(scanTimerRef.current);
+    const v = val.trim();
+    // Only auto-fire for a scanner-like burst of a SKU-shaped value.
+    const action = mode === "sell" ? handleScanEnter : handleRefundScan;
+    if (rapidRef.current >= 3 && v.length >= 4 && !/\s/.test(v)) {
+      scanTimerRef.current = setTimeout(() => {
+        if ((searchRef.current?.value ?? "").trim() === v) { rapidRef.current = 0; action(); }
+      }, 80);
+    }
+  };
+
+  useEffect(() => () => clearTimeout(scanTimerRef.current), []);
 
   const removeFromCart = (cartId: string) => setCart((prev) => prev.filter((i) => i.cartId !== cartId));
 
@@ -184,8 +212,8 @@ export default function POSPage() {
             <input
               ref={searchRef}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); mode === "sell" ? handleScanEnter() : handleRefundScan(); } }}
+              onChange={(e) => onSearchInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); clearTimeout(scanTimerRef.current); rapidRef.current = 0; mode === "sell" ? handleScanEnter() : handleRefundScan(); } }}
               placeholder={mode === "sell" ? "Scan a barcode, or search by name or SKU" : "Scan a sold item to refund"}
               className="w-full h-[68px] rounded-full border-[1.5px] border-line bg-surface pl-14 pr-12 text-[20px] text-ink placeholder:text-[var(--placeholder)] focus:outline-none focus:border-accent"
             />

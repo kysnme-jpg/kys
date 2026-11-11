@@ -28,8 +28,8 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       // Hard navigation so the freshly-set session cookie is sent with the
-      // request for /pos (a soft router.push can race the cookie and bounce).
-      window.location.href = "/pos";
+      // request for /home (a soft router.push can race the cookie and bounce).
+      window.location.href = "/home";
     }
   }
 

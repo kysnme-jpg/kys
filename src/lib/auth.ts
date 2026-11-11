@@ -28,6 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         if (!user?.passwordHash) return null;
+        if (user.active === false) return null; // deactivated staff can't sign in
 
         const valid = await bcrypt.compare(
           credentials.password as string,
@@ -35,6 +36,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
 
         if (!valid) return null;
+
+        // Record the sign-in (best-effort; never blocks login).
+        try { await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }); } catch {}
 
         return {
           id: user.id,

@@ -12,10 +12,13 @@ consignment platform day to day.
 
 1. Go to **your site** → you'll land on the **Sign in** page.
 2. Enter your **email** and **password** → **Sign In**.
-3. You'll arrive at the **Point of Sale** screen.
+3. You'll arrive at your **Home** screen — a greeting plus quick-access tiles for
+   everything you can do (and a big **New sale** tile to jump into the POS). The
+   tiles you see depend on your role. You can return to it anytime from
+   **More → Home**.
 
-Forgot your password? Ask your store owner/admin — they can reset it (see the
-Admin Guide → "Resetting a password").
+Forgot your password? Ask your store owner/admin — they can reset it from
+**More → Staff & roles** (owners), or see the Admin Guide → "Resetting a password".
 
 **Dark / light mode:** at the bottom of the left sidebar, use **Dark mode /
 Light mode** to switch themes. Your choice is remembered on that device.
@@ -630,6 +633,27 @@ prepared file:
 The page shows a preview (counts) before you confirm. Records are matched by
 email so nothing is duplicated. (Preparing these files from spreadsheets is
 done with help from your admin.)
+
+---
+
+## 12. Staff & roles (owner only)
+
+**More → Staff & roles** is where the owner manages who can sign in.
+
+- **Add staff** — name, email, phone, and a **role**. The app generates a
+  **temporary password** shown once; share it with the new staff member. They
+  sign in with their email + that password.
+- **Roles** (what each can do):
+  - **Owner** — everything, including staff/roles, exports, and owner-only tools.
+  - **Manager** — content, messaging, and day-to-day operations.
+  - **Employee** — everyday staff: sell, manage inventory, talk to customers.
+  - **Inventory clerk** — inventory plus team chat.
+- **Change a role** — pick a new role from the dropdown next to each person.
+- **Reset a password** — the key icon sets a new temporary password (shown once).
+- **Deactivate / reactivate** — a deactivated account can't sign in but its
+  history is kept. You can't deactivate yourself or the last owner.
+- The **Roles & access** tab shows, read-only, exactly what each role can do and
+  the three account types (staff, consignor, customer).
 
 ---
 

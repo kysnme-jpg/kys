@@ -121,9 +121,16 @@ kept as a legacy alias) and **INVENTORY_CLERK**.
 - **Owner/Manager** can change store settings, manage API keys & webhooks,
   import data, and edit store/Clover settings.
 - The first owner is created via `/setup`.
-- There is no staff-invite UI yet. To add staff, create a `User` row in the
-  database (see "Direct database access") with the store's `storeId`, a
-  bcrypt-hashed password, and the desired role.
+- **Staff management UI (`/settings/staff`, owner only)** — the owner can add
+  staff, assign a role (Owner / Manager / Employee / Inventory clerk), reset a
+  member's password (shown once to share), and deactivate/reactivate accounts.
+  New accounts get a one-time temporary password. "Employee" is the base staff
+  role (stored as `ASSOCIATE`; the legacy `EMPLOYEE` value also shows as
+  "Employee"). A deactivated account cannot sign in, and the UI prevents removing
+  or demoting the last active owner. The **Roles & access** tab is a read-only
+  view of what each role can do and the account types (staff / consignor /
+  customer). Manual `User`-row creation still works but is no longer required.
+- `lastLoginAt` is recorded on each successful sign-in.
 
 ### Role permissions (RBAC)
 

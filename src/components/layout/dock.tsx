@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp, MoreHorizontal,
-  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle, MessagesSquare, Mail, Tag, Bell,
+  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle, MessagesSquare, Mail, Tag, Bell, Home, Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -85,6 +85,7 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
   const [canComms, setCanComms] = useState(false);
   const [canInternal, setCanInternal] = useState(false);
   const [canSettings, setCanSettings] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [unread, setUnread] = useState(0);
   const [unreadTeam, setUnreadTeam] = useState(0);
   const [feedNew, setFeedNew] = useState(false);
@@ -97,6 +98,7 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
       if (d?.permissions?.includes("external_comms")) setCanComms(true);
       if (d?.permissions?.includes("internal_comms")) setCanInternal(true);
       if (d?.role === "owner" || d?.role === "manager") setCanSettings(true);
+      if (d?.role === "owner") setIsOwner(true);
       if (typeof d?.unreadExternal === "number") setUnread(d.unreadExternal);
       if (typeof d?.unreadInternal === "number") setUnreadTeam(d.unreadInternal);
       if (d?.latestPostAt) {
@@ -137,12 +139,14 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
           <span className="font-serif text-[22px] text-ink">More</span>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-chip" aria-label="Close"><X className="h-5 w-5 text-[var(--muted)]" /></button>
         </div>
+        <Row icon={Home} label="Home" href="/home" />
         {canComms && <Row icon={MessageCircle} label="Messages" href="/messages" badge={unread} />}
         {canInternal && <Row icon={MessagesSquare} label="Team chat" href="/team" badge={unreadTeam} />}
         <Row icon={Megaphone} label="Announcements" href="/announcements" dot={feedNew} />
         {canManageContent && <Row icon={Megaphone} label="Manage content" href="/content" />}
         {canManageContent && <Row icon={Mail} label="Email blast" href="/email" />}
         {canManageContent && <Row icon={Tag} label="Tags" href="/tags" />}
+        {isOwner && <Row icon={Shield} label="Staff & roles" href="/settings/staff" />}
         {canSettings && <Row icon={Bell} label="Notifications" href="/settings/notifications" />}
         <Row icon={Globe} label="Online Shop" href="/shop" />
         <Row icon={Upload} label="Import" href="/import" />

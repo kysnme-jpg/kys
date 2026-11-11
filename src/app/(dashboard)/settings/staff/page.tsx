@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Users, Plus, Lock, KeyRound, Shield, UserCheck, UserX, Trash2, Copy, Check } from "lucide-react";
+import { Users, Plus, Lock, KeyRound, Shield, UserCheck, UserX, Trash2, Copy, Check, Pencil, X } from "lucide-react";
 
 interface StaffUser {
   id: string; name: string | null; email: string | null; phone: string | null;
@@ -26,6 +26,14 @@ export default function StaffPage() {
   const [identities, setIdentities] = useState<Identity[]>([]);
   const [adding, setAdding] = useState(false);
   const [cred, setCred] = useState<{ email: string; password: string; title: string } | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "" });
+  const [editErr, setEditErr] = useState("");
+
+  const permsForRole = (uiRole: string) => {
+    const key = uiRole === "employee" ? "associate" : uiRole;
+    return roles.find((r) => r.role === key)?.permissions || [];
+  };
 
   const load = useCallback(() => {
     fetch("/api/staff/users").then((r) => {
@@ -58,6 +66,14 @@ export default function StaffPage() {
     const res = await fetch(`/api/staff/users/${u.id}`, { method: "DELETE" });
     if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || "Couldn't remove."); }
     load();
+  };
+  const startEdit = (u: StaffUser) => { setEditId(u.id); setEditForm({ name: u.name || "", email: u.email || "", phone: u.phone || "" }); setEditErr(""); };
+  const saveEdit = async (u: StaffUser) => {
+    setEditErr("");
+    const res = await fetch(`/api/staff/users/${u.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editForm) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { setEditErr(d.error || "Couldn't save."); return; }
+    setEditId(null); load();
   };
 
   if (allowed === false) {
@@ -92,25 +108,50 @@ export default function StaffPage() {
         <div className="space-y-2 max-w-3xl">
           {users.map((u) => (
             <div key={u.id} className={`rounded-2xl border-[1.5px] border-line bg-surface p-4 ${!u.active ? "opacity-60" : ""}`}>
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-[16px] text-ink">{u.name || "(no name)"}</span>
-                    {u.isSelf && <span className="text-[11px] font-bold uppercase bg-chip text-[var(--muted)] rounded-full px-2 py-0.5">You</span>}
-                    {!u.active && <span className="text-[11px] font-bold uppercase bg-chip text-[var(--muted)] rounded-full px-2 py-0.5">Inactive</span>}
+              {editId === u.id ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[15px] text-ink">Edit account</span>
+                    <button onClick={() => setEditId(null)} className="rounded-full p-1.5 hover:bg-chip"><X className="h-4 w-4 text-[var(--muted)]" /></button>
                   </div>
-                  <div className="text-[13.5px] text-[var(--muted)] mt-0.5">{u.email}{u.phone ? ` · ${u.phone}` : ""}</div>
-                  <div className="text-[12px] text-[var(--muted)] mt-0.5">{u.lastLoginAt ? `Last signed in ${new Date(u.lastLoginAt).toLocaleDateString()}` : "Never signed in"}</div>
+                  <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Full name" className="w-full rounded-2xl border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink" />
+                  <input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="Email (used to sign in)" className="w-full rounded-2xl border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink" />
+                  <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="Phone (optional)" className="w-full rounded-2xl border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink" />
+                  {editErr && <p className="text-[14px] text-[var(--danger-ink)]">{editErr}</p>}
+                  <div className="flex gap-2">
+                    <button onClick={() => setEditId(null)} className="flex-1 rounded-full border-[1.5px] border-line py-2 text-[14px] font-semibold text-ink hover:bg-chip">Cancel</button>
+                    <button onClick={() => saveEdit(u)} className="flex-1 rounded-full bg-accent text-[var(--accent-ink)] py-2 text-[14px] font-bold">Save</button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <select value={u.role} onChange={(e) => setRole(u, e.target.value)} className="rounded-full border-[1.5px] border-line bg-surface px-3 py-1.5 text-[13.5px] font-semibold text-ink">
-                    {ROLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <button onClick={() => resetPw(u)} title="Reset password" className="rounded-full p-2 hover:bg-chip"><KeyRound className="h-4 w-4 text-[var(--muted)]" /></button>
-                  <button onClick={() => toggleActive(u)} title={u.active ? "Deactivate" : "Reactivate"} className="rounded-full p-2 hover:bg-chip">{u.active ? <UserX className="h-4 w-4 text-[var(--muted)]" /> : <UserCheck className="h-4 w-4 text-green-600" />}</button>
-                  {!u.isSelf && <button onClick={() => remove(u)} title="Remove" className="rounded-full p-2 hover:bg-chip"><Trash2 className="h-4 w-4 text-[var(--danger-ink)]" /></button>}
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-[16px] text-ink">{u.name || "(no name)"}</span>
+                        {u.isSelf && <span className="text-[11px] font-bold uppercase bg-chip text-[var(--muted)] rounded-full px-2 py-0.5">You</span>}
+                        {!u.active && <span className="text-[11px] font-bold uppercase bg-chip text-[var(--muted)] rounded-full px-2 py-0.5">Inactive</span>}
+                      </div>
+                      <div className="text-[13.5px] text-[var(--muted)] mt-0.5">{u.email}{u.phone ? ` · ${u.phone}` : ""}</div>
+                      <div className="text-[12px] text-[var(--muted)] mt-0.5">{u.lastLoginAt ? `Last signed in ${new Date(u.lastLoginAt).toLocaleDateString()}` : "Never signed in"}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <select value={u.role} onChange={(e) => setRole(u, e.target.value)} className="rounded-full border-[1.5px] border-line bg-surface px-3 py-1.5 text-[13.5px] font-semibold text-ink">
+                        {ROLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      <button onClick={() => startEdit(u)} title="Edit name & email" className="rounded-full p-2 hover:bg-chip"><Pencil className="h-4 w-4 text-[var(--muted)]" /></button>
+                      <button onClick={() => resetPw(u)} title="Reset password" className="rounded-full p-2 hover:bg-chip"><KeyRound className="h-4 w-4 text-[var(--muted)]" /></button>
+                      <button onClick={() => toggleActive(u)} title={u.active ? "Deactivate" : "Reactivate"} className="rounded-full p-2 hover:bg-chip">{u.active ? <UserX className="h-4 w-4 text-[var(--muted)]" /> : <UserCheck className="h-4 w-4 text-green-600" />}</button>
+                      {!u.isSelf && <button onClick={() => remove(u)} title="Remove" className="rounded-full p-2 hover:bg-chip"><Trash2 className="h-4 w-4 text-[var(--danger-ink)]" /></button>}
+                    </div>
+                  </div>
+                  {permsForRole(u.role).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {permsForRole(u.role).map((p) => <span key={p.key} className="text-[11.5px] font-semibold rounded-full bg-chip text-ink px-2.5 py-1">{p.label}</span>)}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           ))}
         </div>

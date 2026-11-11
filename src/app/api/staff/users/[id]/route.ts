@@ -23,6 +23,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.name === "string" && body.name.trim()) data.name = body.name.trim();
   if ("phone" in body) data.phone = body.phone ? String(body.phone).trim() : null;
 
+  // Email change — validate and keep it unique across accounts.
+  if (typeof body.email === "string") {
+    const email = body.email.trim().toLowerCase();
+    if (!email || !email.includes("@")) return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
+    const dup = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" }, id: { not: id } }, select: { id: true } });
+    if (dup) return NextResponse.json({ error: "Another account already uses that email." }, { status: 409 });
+    data.email = email;
+  }
+
   // Role change — guard the last active owner.
   if (typeof body.role === "string" && UI_ROLE_TO_ENUM[body.role]) {
     const nextRole = UI_ROLE_TO_ENUM[body.role];

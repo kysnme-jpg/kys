@@ -409,9 +409,9 @@ The agreement text is your store's standard template; the owner can edit it in
 
 ---
 
-## 7a. Admin — employee hours & payouts
+## 7a. Time Card — employee hours & payouts
 
-Next to **Items** and **Contracts** there's an **Admin** tab (also reachable at
+Next to **Items** and **Contracts** there's a **Time Card** tab (also reachable at
 **your site `/admin`**). It's a simple log for tracking staff work and pay.
 
 - Each row records a **Date**, **Employee name**, **Phone number**, **Work

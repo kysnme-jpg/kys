@@ -12,7 +12,7 @@ import { Plus, Pencil, Users, Clock, DollarSign, Trash2, ChevronLeft, ChevronRig
 const ADMIN_TABS = [
   { label: "Items", href: "/inventory" },
   { label: "Contracts", href: "/contracts" },
-  { label: "Admin", href: "/admin" },
+  { label: "Time Card", href: "/admin" },
 ];
 
 interface WorkLog {
@@ -197,7 +197,7 @@ export default function AdminPage() {
       <SegmentedTabs tabs={ADMIN_TABS} />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Admin</h1>
+          <h1 className="font-serif text-[40px] sm:text-[48px] leading-none text-ink">Time Card</h1>
           <p className="text-[15px] font-medium text-[var(--muted)] mt-1.5">
             Employee work hours &amp; payouts
           </p>

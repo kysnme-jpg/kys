@@ -252,9 +252,9 @@ No new environment variables are needed for messaging.
 - **Contract Template** — edit the consignment agreement. Placeholders:
   `{{storeName}}`, `{{consignorName}}`, `{{splitPercent}}`.
 
-### Admin — employee work log (`/admin`)
+### Time Card — employee work log (`/admin`)
 
-The **Admin** tab (next to Items/Contracts, at `/admin`) is a lightweight log of
+The **Time Card** tab (next to Items/Contracts, at `/admin`) is a lightweight log of
 employee **hours and payouts** — date, employee name, phone, work hours, payout,
 and an optional note. Staff can **Add** entries and **Edit/Delete** existing
 ones. It's backed by the `WorkLog` table (one row per entry, scoped to the

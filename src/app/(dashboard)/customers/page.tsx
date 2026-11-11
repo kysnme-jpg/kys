@@ -9,6 +9,8 @@ import { Modal } from "@/components/ui/modal";
 import { Avatar } from "@/components/ui/avatar";
 import { Tag } from "@/components/ui/tag";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
+import { BulkTagButton } from "@/components/tags/bulk-tag-button";
+import { TagEditor } from "@/components/tags/tag-editor";
 import { formatCurrency } from "@/lib/utils";
 
 const PEOPLE_TABS = [
@@ -223,6 +225,7 @@ export default function CustomersPage() {
         <div className="fixed left-1/2 -translate-x-1/2 bottom-[112px] z-30 flex items-center gap-2 bg-ink text-[var(--panel-ink)] rounded-full px-4 py-2.5 shadow-[0_8px_24px_rgba(60,40,20,.2)] max-[767px]:bottom-[84px]">
           <span className="text-sm font-semibold px-2">{selected.size} selected</span>
           <button onClick={() => setBulkOpen(true)} className="text-sm font-semibold bg-white/15 hover:bg-white/25 rounded-full px-3.5 py-1.5 flex items-center gap-1.5"><Star className="h-3.5 w-3.5" /> Add points</button>
+          <BulkTagButton customerIds={[...selected]} onDone={() => setSelected(new Set())} />
           <button onClick={() => { if (confirm(`Delete ${selected.size} customers?`)) bulk("delete"); }} className="text-sm font-semibold bg-white/15 hover:bg-[var(--danger-ink)] rounded-full px-3.5 py-1.5 flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5" /> Delete</button>
         </div>
       )}
@@ -376,6 +379,7 @@ function DetailSheet({ c, onClose, onChanged, onGivePoints }: { c: Detail; onClo
             <div>
               <h2 className="font-serif text-[34px] leading-none text-ink">{c.firstName} {c.lastName}</h2>
               <p className="text-[14px] font-medium text-[var(--muted)] mt-1.5">Customer since {new Date(c.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</p>
+              <div className="mt-2"><TagEditor customerId={c.id} /></div>
             </div>
           </div>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-chip"><X className="h-5 w-5 text-[var(--muted)]" /></button>

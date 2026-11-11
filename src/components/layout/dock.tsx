@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp, MoreHorizontal,
-  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle, MessagesSquare, Mail,
+  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle, MessagesSquare, Mail, Tag, Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -84,8 +84,10 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
   const [canManageContent, setCanManageContent] = useState(false);
   const [canComms, setCanComms] = useState(false);
   const [canInternal, setCanInternal] = useState(false);
+  const [canSettings, setCanSettings] = useState(false);
   const [unread, setUnread] = useState(0);
   const [unreadTeam, setUnreadTeam] = useState(0);
+  const [feedNew, setFeedNew] = useState(false);
   useEffect(() => {
     try { setDark(document.documentElement.classList.contains("dark")); } catch {}
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -94,8 +96,15 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
       if (d?.permissions?.includes("content_admin")) setCanManageContent(true);
       if (d?.permissions?.includes("external_comms")) setCanComms(true);
       if (d?.permissions?.includes("internal_comms")) setCanInternal(true);
+      if (d?.role === "owner" || d?.role === "manager") setCanSettings(true);
       if (typeof d?.unreadExternal === "number") setUnread(d.unreadExternal);
       if (typeof d?.unreadInternal === "number") setUnreadTeam(d.unreadInternal);
+      if (d?.latestPostAt) {
+        try {
+          const seen = localStorage.getItem("feedSeenAt");
+          if (!seen || new Date(d.latestPostAt).getTime() > new Date(seen).getTime()) setFeedNew(true);
+        } catch {}
+      }
     }).catch(() => {});
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -105,13 +114,15 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
     try { document.documentElement.classList.toggle("dark", next); localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
   };
 
-  const Row = ({ icon: Icon, label, onClick, href, danger, badge }: any) => {
+  const Row = ({ icon: Icon, label, onClick, href, danger, badge, dot }: any) => {
     const cls = cn("flex items-center gap-3.5 w-full h-16 px-4 rounded-2xl text-[17px] font-semibold hover:bg-chip transition-colors", danger ? "text-[var(--danger-ink)]" : "text-ink");
     const inner = <>
       <Icon className="h-6 w-6" strokeWidth={1.75} /> {label}
+      {dot && <span className="h-2.5 w-2.5 rounded-full bg-accent" />}
       {badge > 0 && <span className="ml-auto bg-accent text-[var(--accent-ink)] text-[12px] font-bold rounded-full min-w-6 h-6 px-2 grid place-items-center">{badge}</span>}
     </>;
-    if (href) return <Link href={href} target={href === "/shop" ? "_blank" : undefined} className={cls} onClick={onClose}>{inner}</Link>;
+    const handle = () => { if (href === "/announcements") { try { localStorage.setItem("feedSeenAt", new Date().toISOString()); } catch {} } onClose(); };
+    if (href) return <Link href={href} target={href === "/shop" ? "_blank" : undefined} className={cls} onClick={handle}>{inner}</Link>;
     return <button className={cls} onClick={onClick}>{inner}</button>;
   };
 
@@ -128,9 +139,11 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
         </div>
         {canComms && <Row icon={MessageCircle} label="Messages" href="/messages" badge={unread} />}
         {canInternal && <Row icon={MessagesSquare} label="Team chat" href="/team" badge={unreadTeam} />}
-        <Row icon={Megaphone} label="Announcements" href="/announcements" />
+        <Row icon={Megaphone} label="Announcements" href="/announcements" dot={feedNew} />
         {canManageContent && <Row icon={Megaphone} label="Manage content" href="/content" />}
         {canManageContent && <Row icon={Mail} label="Email blast" href="/email" />}
+        {canManageContent && <Row icon={Tag} label="Tags" href="/tags" />}
+        {canSettings && <Row icon={Bell} label="Notifications" href="/settings/notifications" />}
         <Row icon={Globe} label="Online Shop" href="/shop" />
         <Row icon={Upload} label="Import" href="/import" />
         <Row icon={Settings} label="Settings" href="/settings" />

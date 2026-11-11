@@ -49,7 +49,7 @@ export interface AudienceTarget {
 }
 
 /** Does this post's audience include the given actor? (Used for previews/tests.) */
-export function audienceIncludesActor(target: AudienceTarget, actor: Actor): boolean {
+export function audienceIncludesActor(target: AudienceTarget, actor: Actor, actorTags: string[] = []): boolean {
   switch (target.scope) {
     case "EVERYONE":
       return true;
@@ -62,8 +62,8 @@ export function audienceIncludesActor(target: AudienceTarget, actor: Actor): boo
     case "ALL_CUSTOMERS":
       return actor.class === "EXTERNAL" && actor.role === "customer";
     case "TAG":
-      // Tags not yet implemented (§5); no one matches until they are.
-      return false;
+      // Matches an external person who carries the tag (§5).
+      return actor.class === "EXTERNAL" && !!target.tag && actorTags.includes(target.tag);
     default:
       return false;
   }
@@ -73,7 +73,7 @@ export function audienceIncludesActor(target: AudienceTarget, actor: Actor): boo
  * Build the Prisma `OR` of audience conditions that this actor can see.
  * Combine with the publish-window + status filter from `publishedWindowWhere`.
  */
-export function audienceOrForActor(actor: Actor): Record<string, unknown>[] {
+export function audienceOrForActor(actor: Actor, actorTags: string[] = []): Record<string, unknown>[] {
   const or: Record<string, unknown>[] = [{ audienceScope: "EVERYONE" }];
   if (actor.class === "INTERNAL") {
     or.push({ audienceScope: "ALL_INTERNAL" });
@@ -81,6 +81,7 @@ export function audienceOrForActor(actor: Actor): Record<string, unknown>[] {
   } else if (actor.class === "EXTERNAL") {
     if (actor.role === "consignor") or.push({ audienceScope: "ALL_CONSIGNORS" });
     if (actor.role === "customer") or.push({ audienceScope: "ALL_CUSTOMERS" });
+    if (actorTags.length) or.push({ audienceScope: "TAG", audienceTag: { in: actorTags } });
   }
   return or;
 }
@@ -97,11 +98,11 @@ export function publishedWindowWhere(now: Date = new Date()): Record<string, unk
 }
 
 /** Full feed `where` for an actor, scoped to their store. */
-export function feedWhereForActor(actor: Actor, now: Date = new Date()): Record<string, unknown> {
+export function feedWhereForActor(actor: Actor, actorTags: string[] = [], now: Date = new Date()): Record<string, unknown> {
   return {
     storeId: actor.storeId,
     ...publishedWindowWhere(now),
-    OR: audienceOrForActor(actor),
+    OR: audienceOrForActor(actor, actorTags),
   };
 }
 

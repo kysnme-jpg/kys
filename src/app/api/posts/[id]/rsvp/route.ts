@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolveActor } from "@/lib/authz";
 import { feedWhereForActor } from "@/lib/posts";
+import { getActorTagNames } from "@/lib/tags";
 
 export const runtime = "nodejs";
 
@@ -21,8 +22,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const response = RESPONSES.includes(body.response) ? body.response : "YES";
 
   // The post must be one this actor can actually see, and must accept RSVPs.
+  const actorTags = await getActorTagNames(actor);
   const post = await db.post.findFirst({
-    where: { id, rsvpEnabled: true, ...feedWhereForActor(actor) },
+    where: { id, rsvpEnabled: true, ...feedWhereForActor(actor, actorTags) },
     select: { id: true },
   });
   if (!post) return NextResponse.json({ error: "Post not found." }, { status: 404 });

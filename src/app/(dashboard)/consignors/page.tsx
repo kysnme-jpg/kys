@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { formatCurrency } from "@/lib/utils";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
+import { BulkTagButton } from "@/components/tags/bulk-tag-button";
 import {
   Users, Search, Plus, Trash2, Pencil, X, ExternalLink,
   LayoutGrid, List, Rows3, ArrowUpDown, ArrowUp, ArrowDown, Check, Percent,
@@ -145,6 +146,7 @@ export default function ConsignorsPage() {
           <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="flex-1" />
           <button onClick={() => setBulkSplitOpen(true)} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Percent className="h-3.5 w-3.5" /> Set split</button>
+          <BulkTagButton consignorIds={[...selected]} onDone={clearSel} />
           <button onClick={() => bulk("enablePortal")} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5">Enable portal</button>
           <button onClick={() => bulk("disablePortal")} className="text-sm bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5">Disable portal</button>
           <button onClick={() => { if (confirm(`Delete ${selected.size} consignors?`)) bulk("delete"); }} className="text-sm bg-white/20 hover:bg-red-500 rounded-lg px-3 py-1.5 flex items-center gap-1.5"><Trash2 className="h-3.5 w-3.5" /> Delete</button>

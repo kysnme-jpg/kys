@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requirePermission, PERMISSIONS } from "@/lib/authz";
 import { validateAudience, type AudienceScope } from "@/lib/posts";
+import { notifyNewPost } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -64,5 +65,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  if (post.status === "PUBLISHED") {
+    void notifyNewPost(g.actor.storeId, { title: post.title, body: post.body, audienceScope: post.audienceScope, audienceRole: post.audienceRole, audienceTag: post.audienceTag });
+  }
   return NextResponse.json({ post }, { status: 201 });
 }

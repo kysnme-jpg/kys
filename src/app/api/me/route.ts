@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveActor } from "@/lib/authz";
+import { db } from "@/lib/db";
 import { unreadCountForStaff } from "@/lib/messaging/external";
 import { unreadCountInternal } from "@/lib/messaging/internal";
+import { feedWhereForActor } from "@/lib/posts";
+import { getActorTagNames } from "@/lib/tags";
 
 export const runtime = "nodejs";
 
@@ -26,6 +29,19 @@ export async function GET(req: NextRequest) {
     unreadInternal = await unreadCountInternal(actor);
   }
 
+  // Latest post this actor can see — the client compares against a locally
+  // stored "last seen" to show a "new" dot on the feed.
+  let latestPostAt: Date | null = null;
+  try {
+    const actorTags = await getActorTagNames(actor);
+    const latest = await db.post.findFirst({
+      where: feedWhereForActor(actor, actorTags),
+      orderBy: [{ publishAt: "desc" }, { createdAt: "desc" }],
+      select: { publishAt: true, createdAt: true },
+    });
+    if (latest) latestPostAt = latest.publishAt || latest.createdAt;
+  } catch {}
+
   return NextResponse.json({
     class: actor.class,
     role: actor.role,
@@ -33,5 +49,6 @@ export async function GET(req: NextRequest) {
     permissions,
     unreadExternal,
     unreadInternal,
+    latestPostAt,
   });
 }

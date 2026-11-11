@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolveActor } from "@/lib/authz";
 import { feedWhereForActor } from "@/lib/posts";
+import { getActorTagNames } from "@/lib/tags";
 
 export const runtime = "nodejs";
 
@@ -14,8 +15,9 @@ export async function GET(req: NextRequest) {
   const actor = await resolveActor(req);
   if (!actor) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
+  const actorTags = await getActorTagNames(actor);
   const posts = await db.post.findMany({
-    where: feedWhereForActor(actor),
+    where: feedWhereForActor(actor, actorTags),
     orderBy: [{ publishAt: "desc" }, { createdAt: "desc" }],
     take: 50,
     select: {

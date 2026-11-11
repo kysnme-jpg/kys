@@ -71,6 +71,31 @@ export async function sendBroadcastTest(opts: {
   }
 }
 
+// ─── Notification nudges (§7) ──────────────────────────────────────────────────
+// Content-free prompts to log in — they never include message text (§4a Layer 7).
+
+export async function sendStoreMessageNudge(opts: { to: string; storeName: string; fromName: string }): Promise<void> {
+  const r = getResend();
+  if (!r) return;
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">You have a new message from <strong>${opts.fromName}</strong>.</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Log in to read and reply from your dashboard (People → Messages).</p>`;
+  try {
+    await r.emails.send({ from: FROM, to: opts.to, subject: `New message from ${opts.fromName}`, html: baseHtml("You have a new message", body, opts.storeName) });
+  } catch {}
+}
+
+export async function sendConsignorMessageNudge(opts: { to: string; storeName: string }): Promise<void> {
+  const r = getResend();
+  if (!r) return;
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6">You have a new message from <strong>${opts.storeName}</strong>.</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Log in to your consignor portal to read and reply.</p>`;
+  try {
+    await r.emails.send({ from: FROM, to: opts.to, subject: `New message from ${opts.storeName}`, html: baseHtml("You have a new message", body, opts.storeName) });
+  } catch {}
+}
+
 // ─── Email templates ──────────────────────────────────────────────────────────
 
 function baseHtml(title: string, body: string, storeName: string) {

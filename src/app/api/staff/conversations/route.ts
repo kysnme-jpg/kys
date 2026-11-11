@@ -3,6 +3,7 @@ import { requirePermission, PERMISSIONS } from "@/lib/authz";
 import {
   listThreadsForStaff, getThreadForStaff, postFromStaff, addInternalNote,
 } from "@/lib/messaging/external";
+import { notifyStoreReply } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest) {
       { threadId: body.threadId, consignorId: body.consignorId, customerId: body.customerId },
       String(body.body || "")
     );
-    return NextResponse.json({ message }, { status: 201 });
+    void notifyStoreReply(g.actor.storeId, message.threadId);
+    return NextResponse.json({ message: { id: message.id, sender: message.sender, body: message.body, createdAt: message.createdAt } }, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message || "Could not send." }, { status: 400 });
   }

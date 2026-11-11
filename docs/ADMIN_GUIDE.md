@@ -148,6 +148,21 @@ The **content feed** (announcements/news/events/promotions — see the User Guid
 posts aimed at them. Consignors see consignor-targeted posts in the portal's
 **Updates** tab. No new environment variables are needed.
 
+**Tags** (`/tags`, User Guide §9c): the `Tag` model (per store) and `TagAssignment`
+join (each assignment targets exactly one consignor OR customer — DB
+CHECK-constrained). Managing the tag list requires `content_admin`; applying tags
+to people is any staff (`/api/tags/assign`). A tag is usable as an audience
+everywhere the audience picker appears — resolution lives in `src/lib/tags.ts` and
+flows through the same feed/email audience code.
+
+**Notifications** (`/settings/notifications`, User Guide §9d): owner/manager
+toggles stored in `NotificationSetting` (one row per store). Orchestration is in
+`src/lib/notifications.ts`; email nudges are content-free (§4a Layer 7) and
+throttled to one per conversation per 5 minutes (timestamps on `ExternalThread`).
+Three toggles: email the store on an inbound message (on), nudge the consignor on
+a store reply (on), and auto-email a published post to its audience (off). All run
+through the existing Resend integration — no new environment variables.
+
 The **email blast** (`/email`, User Guide §9b) is also gated on `content_admin`
 and reuses the same audience model, so a feed post and an email to "all
 consignors" reach the identical set. It sends through the existing Resend

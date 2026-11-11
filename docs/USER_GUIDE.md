@@ -520,8 +520,8 @@ each one**.
    - **All staff** — the whole team only.
    - **A specific staff role** — e.g. only managers.
    - **All consignors** — every consignor with portal access.
-   - **All customers** / **Tag** — reserved for later (customer logins and tags
-     aren't live yet).
+   - **A tag / list** — only people carrying a tag you've created (see §9c).
+   - **All customers** — reserved for when customer logins are enabled.
 4. Optionally set **Publish at** (schedule it to go live later) and **Expires at**
    (auto-hide after a date).
 5. Optionally turn on **RSVP** so people can tap to say they're coming.
@@ -545,7 +545,8 @@ will look.
 manager only — same permission as Manage content.)
 
 1. **Pick the audience** — the exact same chooser as the content feed: Everyone,
-   All staff, a specific staff role, All consignors, or All customers. As soon as
+   All staff, a specific staff role, All consignors, a **tag** (§9c), or All
+   customers. As soon as
    you pick, it shows **how many people will receive it** (only those with an
    email on file).
 2. **Write a subject and message.** Plain text — blank lines start new
@@ -559,6 +560,44 @@ manager only — same permission as Manage content.)
 
 Past blasts show under **Recent blasts** (and in the email log). If email isn't
 sending, see the Admin Guide's Resend section.
+
+---
+
+## 9c. Tags (segments)
+
+Tags are labels you stick on **consignors and customers** to group them — like
+`VIP`, `Handbags`, or `Fall-event` — so you can post or email to just that group.
+
+- **Create tags** at **More → Tags** (owner/manager): type a name, pick a color,
+  Add. You'll see how many people carry each tag; delete one anytime (it just
+  removes the label — no one is ever deleted).
+- **Apply a tag to one person:** open a consignor or customer and use the **Tag**
+  button under their name to add/remove tags.
+- **Tag many at once:** on the **Consignors** or **Customers** list, multi-select
+  people and hit **Tag** in the action bar — the tag is applied to everyone
+  selected.
+- **Target a tag:** in the content feed (§9a) or email blast (§9b), choose the
+  **tag** audience and pick your tag. Feed posts show only to tagged people; email
+  goes only to tagged people with an email on file.
+
+---
+
+## 9d. Notifications
+
+By default the app shows **unread badges** on Messages and Team chat, and a
+**dot on Announcements** when there's something new. **More → Notifications**
+(owner/manager) controls which events also send an **email**:
+
+- **A customer/consignor messages the store** → email the store (on). Capped to
+  about one email per conversation every few minutes so a flurry of messages
+  isn't a flurry of emails.
+- **The store replies to a consignor** → email the consignor a nudge to log in (on).
+- **Email the audience when a post is published** → auto-email feed posts to their
+  audience (off by default — use Email Blast for deliberate sends).
+
+Email nudges only say "you have a new message, log in to read" — they never
+include the message text. Set a **store notification email** on that page (or
+leave it blank to use your store email).
 
 ---
 

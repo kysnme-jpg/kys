@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireExternal } from "@/lib/authz";
 import { getMyThread, postFromExternal } from "@/lib/messaging/external";
+import { notifyInboundExternalMessage } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,8 @@ export async function POST(req: NextRequest) {
   const { body } = await req.json().catch(() => ({}));
   try {
     const message = await postFromExternal(g.actor, body);
-    return NextResponse.json({ message }, { status: 201 });
+    void notifyInboundExternalMessage(g.actor.storeId, message.threadId, g.actor.displayName);
+    return NextResponse.json({ message: { id: message.id, sender: message.sender, body: message.body, createdAt: message.createdAt } }, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message || "Could not send." }, { status: 400 });
   }

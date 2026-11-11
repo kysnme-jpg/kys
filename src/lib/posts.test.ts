@@ -43,9 +43,20 @@ describe("audience targeting", () => {
     expect(scopes).not.toContain("ALL_CUSTOMERS");
   });
 
-  it("TAG matches no one until tags are implemented", () => {
-    expect(audienceIncludesActor({ scope: "TAG", tag: "vip" }, owner)).toBe(false);
-    expect(audienceIncludesActor({ scope: "TAG", tag: "vip" }, consignor)).toBe(false);
+  it("TAG matches an external person who carries the tag, and no one else", () => {
+    // Staff never match a tag.
+    expect(audienceIncludesActor({ scope: "TAG", tag: "vip" }, owner, ["vip"])).toBe(false);
+    // Consignor without the tag → no.
+    expect(audienceIncludesActor({ scope: "TAG", tag: "vip" }, consignor, [])).toBe(false);
+    expect(audienceIncludesActor({ scope: "TAG", tag: "vip" }, consignor, ["sale"])).toBe(false);
+    // Consignor WITH the tag → yes.
+    expect(audienceIncludesActor({ scope: "TAG", tag: "vip" }, consignor, ["vip", "sale"])).toBe(true);
+  });
+
+  it("TAG enters the OR builder only for an external actor with tags", () => {
+    expect(audienceOrForActor(consignor, ["vip"]).some((o) => o.audienceScope === "TAG")).toBe(true);
+    expect(audienceOrForActor(consignor, []).some((o) => o.audienceScope === "TAG")).toBe(false);
+    expect(audienceOrForActor(owner, ["vip"]).some((o) => o.audienceScope === "TAG")).toBe(false);
   });
 
   it("validateAudience requires a role for INTERNAL_ROLE and a tag for TAG", () => {

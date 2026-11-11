@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { DB_ROLE_TO_INTERNAL } from "@/lib/authz.permissions";
 import type { AudienceTarget } from "@/lib/posts";
+import { peopleWithTag } from "@/lib/tags";
 
 /**
  * Resolve an audience (§2 targeting) to a de-duplicated list of email
@@ -47,7 +48,18 @@ export async function resolveAudienceRecipients(storeId: string, target: Audienc
     const cs = await db.customer.findMany({ where: { storeId }, select: { email: true, firstName: true, lastName: true } });
     for (const c of cs) add(c.email, `${c.firstName} ${c.lastName}`.trim());
   }
-  // TAG → no recipients until tags are implemented.
+
+  if (scope === "TAG" && target.tag) {
+    const { consignorIds, customerIds } = await peopleWithTag(storeId, target.tag);
+    if (consignorIds.length) {
+      const cs = await db.consignor.findMany({ where: { id: { in: consignorIds }, storeId }, select: { email: true, firstName: true, lastName: true } });
+      for (const c of cs) add(c.email, `${c.firstName} ${c.lastName}`.trim());
+    }
+    if (customerIds.length) {
+      const cs = await db.customer.findMany({ where: { id: { in: customerIds }, storeId }, select: { email: true, firstName: true, lastName: true } });
+      for (const c of cs) add(c.email, `${c.firstName} ${c.lastName}`.trim());
+    }
+  }
 
   return Array.from(out.values());
 }

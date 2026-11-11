@@ -148,7 +148,7 @@ export async function getMyThread(actor: Actor): Promise<{ messages: ThreadMessa
 }
 
 /** The external actor posts a message to their own thread. */
-export async function postFromExternal(actor: Actor, body: string): Promise<ThreadMessage> {
+export async function postFromExternal(actor: Actor, body: string): Promise<ThreadMessage & { threadId: string }> {
   if (actor.class !== "EXTERNAL") throw new Error("External actors only.");
   const text = String(body || "").trim();
   if (!text) throw new Error("Empty message.");
@@ -166,7 +166,7 @@ export async function postFromExternal(actor: Actor, body: string): Promise<Thre
     select: { id: true, senderClass: true, body: true, createdAt: true },
   });
   await db.externalThread.update({ where: { id: threadId }, data: { lastMessageAt: m.createdAt } });
-  return { id: m.id, sender: senderLabel(m.senderClass), body: m.body, createdAt: m.createdAt };
+  return { id: m.id, sender: senderLabel(m.senderClass), body: m.body, createdAt: m.createdAt, threadId };
 }
 
 // ── INTERNAL actor (staff) — unified inbox + per-party threads ───────────────
@@ -278,7 +278,7 @@ export async function postFromStaff(
   actor: Actor,
   ref: { threadId?: string; consignorId?: string; customerId?: string },
   body: string
-): Promise<ThreadMessage> {
+): Promise<ThreadMessage & { threadId: string }> {
   if (actor.class !== "INTERNAL") throw new Error("Staff only.");
   const text = String(body || "").trim();
   if (!text) throw new Error("Empty message.");
@@ -296,7 +296,7 @@ export async function postFromStaff(
     select: { id: true, senderClass: true, body: true, createdAt: true },
   });
   await db.externalThread.update({ where: { id: threadId }, data: { lastMessageAt: m.createdAt } });
-  return { id: m.id, sender: senderLabel(m.senderClass), body: m.body, createdAt: m.createdAt };
+  return { id: m.id, sender: senderLabel(m.senderClass), body: m.body, createdAt: m.createdAt, threadId };
 }
 
 /** Staff attach an internal note to a thread — never shown to the external party. */
@@ -311,6 +311,38 @@ export async function addInternalNote(actor: Actor, threadId: string, body: stri
     select: { id: true, body: true, authorUserId: true, createdAt: true },
   });
   return n;
+}
+
+/**
+ * §7 notification throttle. Atomically checks whether an email nudge is due for
+ * a thread+direction (none sent within `windowMs`) and, if so, stamps the time
+ * and returns the info a nudge needs. Kept here so the external tables are only
+ * ever touched inside this repository.
+ */
+export async function claimNotifySlot(
+  threadId: string,
+  kind: "store" | "external",
+  windowMs: number
+): Promise<{ should: boolean; consignorEmail?: string | null; consignorName?: string }> {
+  const t = await db.externalThread.findUnique({
+    where: { id: threadId },
+    select: {
+      storeNotifiedAt: true, externalNotifiedAt: true,
+      consignor: { select: { email: true, firstName: true, lastName: true } },
+    },
+  });
+  if (!t) return { should: false };
+  const last = kind === "store" ? t.storeNotifiedAt : t.externalNotifiedAt;
+  if (last && Date.now() - last.getTime() < windowMs) return { should: false };
+  await db.externalThread.update({
+    where: { id: threadId },
+    data: kind === "store" ? { storeNotifiedAt: new Date() } : { externalNotifiedAt: new Date() },
+  });
+  return {
+    should: true,
+    consignorEmail: t.consignor?.email,
+    consignorName: t.consignor ? `${t.consignor.firstName} ${t.consignor.lastName}`.trim() : undefined,
+  };
 }
 
 /**

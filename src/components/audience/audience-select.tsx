@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AUDIENCE_SCOPES, INTERNAL_ROLE_OPTIONS, type AudienceScope } from "@/lib/posts";
 
 export interface AudienceValue {
@@ -23,6 +24,13 @@ export function AudienceSelect({
 }) {
   const scope = value.scope;
   const scopeMeta = AUDIENCE_SCOPES.find((s) => s.value === scope);
+  const [tags, setTags] = useState<{ id: string; name: string; count: number }[]>([]);
+
+  useEffect(() => {
+    if (scope === "TAG" && tags.length === 0) {
+      fetch("/api/tags").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setTags(d.tags || []); }).catch(() => {});
+    }
+  }, [scope, tags.length]);
 
   return (
     <div className="space-y-2.5">
@@ -63,16 +71,23 @@ export function AudienceSelect({
       )}
 
       {scope === "TAG" && (
-        <div className="rounded-2xl border-[1.5px] border-dashed border-line px-3.5 py-2.5 text-[13px] text-[var(--muted)]">
-          Tag-based targeting arrives in a later phase. For now, enter a tag name to reserve it — no one matches a tag until tags are enabled.
-          <input
+        tags.length === 0 ? (
+          <div className="rounded-2xl border-[1.5px] border-dashed border-line px-3.5 py-2.5 text-[13px] text-[var(--muted)]">
+            No tags yet. Create tags (More → Tags) and apply them to consignors/customers, then target them here.
+          </div>
+        ) : (
+          <select
             disabled={disabled}
             value={value.tag || ""}
             onChange={(e) => onChange({ scope, role: null, tag: e.target.value })}
-            placeholder="e.g. vip, fall-2026"
-            className="mt-2 w-full rounded-xl border-[1.5px] border-line bg-surface px-3 py-2 text-[15px] text-ink"
-          />
-        </div>
+            className="w-full rounded-2xl border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink"
+          >
+            <option value="">Choose a tag…</option>
+            {tags.map((t) => (
+              <option key={t.id} value={t.name}>{t.name} ({t.count})</option>
+            ))}
+          </select>
+        )
       )}
 
       {scopeMeta && scope !== "INTERNAL_ROLE" && scope !== "TAG" && (

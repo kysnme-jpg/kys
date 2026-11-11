@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TagEditor } from "@/components/tags/tag-editor";
 import { Modal } from "@/components/ui/modal";
 import { PrintKysTagButton, printKysTags } from "@/components/inventory/label-print";
 import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
@@ -318,6 +319,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
               )}
             </div>
             <p className="text-sm text-gray-500">Member since {formatDate(consignor.createdAt)} · {consignor.splitPercent}% split</p>
+            <div className="mt-2"><TagEditor consignorId={consignor.id} /></div>
           </div>
         </div>
         <div className="flex items-center gap-2">

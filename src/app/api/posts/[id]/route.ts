@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requirePermission, PERMISSIONS } from "@/lib/authz";
 import { validateAudience, type AudienceScope } from "@/lib/posts";
+import { notifyNewPost } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!g.ok) return g.res;
   const { id } = await params;
 
-  const existing = await db.post.findFirst({ where: { id, storeId: g.actor.storeId }, select: { id: true } });
+  const existing = await db.post.findFirst({ where: { id, storeId: g.actor.storeId }, select: { id: true, status: true } });
   if (!existing) return NextResponse.json({ error: "Post not found." }, { status: 404 });
 
   const body = await req.json().catch(() => ({}));
@@ -50,6 +51,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const post = await db.post.update({ where: { id }, data });
+
+  // Notify only on a transition INTO published (not on edits of an already-live post).
+  if (post.status === "PUBLISHED" && existing.status !== "PUBLISHED") {
+    void notifyNewPost(g.actor.storeId, { title: post.title, body: post.body, audienceScope: post.audienceScope, audienceRole: post.audienceRole, audienceTag: post.audienceTag });
+  }
   return NextResponse.json({ post });
 }
 

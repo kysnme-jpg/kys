@@ -122,6 +122,15 @@ The **content feed** (announcements/news/events/promotions — see the User Guid
 posts aimed at them. Consignors see consignor-targeted posts in the portal's
 **Updates** tab. No new environment variables are needed.
 
+The **email blast** (`/email`, User Guide §9b) is also gated on `content_admin`
+and reuses the same audience model, so a feed post and an email to "all
+consignors" reach the identical set. It sends through the existing Resend
+integration (`RESEND_API_KEY` / `EMAIL_FROM` — see §7 Integrations); if those
+aren't set, the composer reports that email isn't configured. Recipients are
+de-duplicated by email, each gets a separate message (no shared `to`), and each
+blast writes one summary row to the email log with type `BROADCAST`. Audience
+resolution lives in `src/lib/audience-recipients.ts`.
+
 ### Messaging isolation (how it's built)
 
 Store ↔ customer/consignor messaging (**External**) and any future staff ↔ staff

@@ -533,9 +533,32 @@ count. Use **Publish / Retire** to flip a post on or off, the pencil to edit, or
 the trash to delete. **Preview** (inside the editor) shows exactly how the post
 will look.
 
-> The audience picker here is the same one the email tool will use later, so a
+> The audience picker here is the **same one the email blast uses** (§9b), so a
 > "promotion to all consignors" means the same thing whether it's a feed post or
 > an email.
+
+---
+
+## 9b. Email blast (audience email)
+
+**More → Email blast** sends a **branded email** to a chosen audience. (Owner &
+manager only — same permission as Manage content.)
+
+1. **Pick the audience** — the exact same chooser as the content feed: Everyone,
+   All staff, a specific staff role, All consignors, or All customers. As soon as
+   you pick, it shows **how many people will receive it** (only those with an
+   email on file).
+2. **Write a subject and message.** Plain text — blank lines start new
+   paragraphs — and we wrap it in your store's branded template automatically.
+3. **Preview** to see how it'll look.
+4. **Send test to me** first — it emails a copy to *your* address only, marked
+   `[TEST]`, so you can check it before it goes out.
+5. **Send to N** — a confirmation shows the audience and count; confirm and it
+   goes out. Each person gets their **own** email (recipients never see each
+   other's addresses).
+
+Past blasts show under **Recent blasts** (and in the email log). If email isn't
+sending, see the Admin Guide's Resend section.
 
 ---
 

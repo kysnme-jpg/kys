@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp, MoreHorizontal,
-  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle, MessagesSquare,
+  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle, MessagesSquare, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -130,6 +130,7 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
         {canInternal && <Row icon={MessagesSquare} label="Team chat" href="/team" badge={unreadTeam} />}
         <Row icon={Megaphone} label="Announcements" href="/announcements" />
         {canManageContent && <Row icon={Megaphone} label="Manage content" href="/content" />}
+        {canManageContent && <Row icon={Mail} label="Email blast" href="/email" />}
         <Row icon={Globe} label="Online Shop" href="/shop" />
         <Row icon={Upload} label="Import" href="/import" />
         <Row icon={Settings} label="Settings" href="/settings" />

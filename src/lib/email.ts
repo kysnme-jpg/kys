@@ -10,6 +10,67 @@ function getResend() {
 
 const FROM = process.env.EMAIL_FROM || "Classic Consigns by KYS <kimberly@classicconsigns.com>";
 
+// ─── Audience broadcast (§5) ───────────────────────────────────────────────────
+
+/** Turn a plain-text message body into the branded HTML email body. */
+function broadcastBody(message: string) {
+  const paras = message.trim().split(/\n{2,}/).map((p) =>
+    `<p style="color:#374151;font-size:15px;line-height:1.7">${p.replace(/\n/g, "<br>").replace(/</g, "&lt;")}</p>`
+  ).join("");
+  return paras || `<p style="color:#374151;font-size:15px;line-height:1.7"></p>`;
+}
+
+/** Full branded HTML for a broadcast (exported so the composer can preview it). */
+export function renderBroadcastHtml(subject: string, message: string, storeName: string): string {
+  return baseHtml(subject || storeName, broadcastBody(message), storeName);
+}
+
+/**
+ * Send one broadcast to many recipients. Each person is a SEPARATE email (their
+ * own `to`), so recipients never see each other. Sent in batches via Resend.
+ * Returns how many went out and how many failed.
+ */
+export async function sendBroadcast(opts: {
+  recipients: { email: string; name?: string }[];
+  subject: string;
+  message: string;
+  storeName: string;
+}): Promise<{ sent: number; failed: number; skipped: boolean }> {
+  const r = getResend();
+  if (!r) return { sent: 0, failed: 0, skipped: true };
+  const html = renderBroadcastHtml(opts.subject, opts.message, opts.storeName);
+  const subject = opts.subject || opts.storeName;
+
+  let sent = 0, failed = 0;
+  const CHUNK = 100;
+  for (let i = 0; i < opts.recipients.length; i += CHUNK) {
+    const chunk = opts.recipients.slice(i, i + CHUNK);
+    try {
+      const { error } = await r.batch.send(chunk.map((rec) => ({ from: FROM, to: rec.email, subject, html })));
+      if (error) failed += chunk.length; else sent += chunk.length;
+    } catch {
+      failed += chunk.length;
+    }
+  }
+  return { sent, failed, skipped: false };
+}
+
+/** Send a single test copy of a broadcast to one address. Returns the outcome. */
+export async function sendBroadcastTest(opts: {
+  to: string; subject: string; message: string; storeName: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const r = getResend();
+  if (!r) return { ok: false, error: "RESEND_API_KEY is not set on the server." };
+  const html = renderBroadcastHtml(opts.subject, opts.message, opts.storeName);
+  try {
+    const { error } = await r.emails.send({ from: FROM, to: opts.to, subject: `[TEST] ${opts.subject || opts.storeName}`, html });
+    if (error) return { ok: false, error: (error as any).message || "Send failed." };
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+}
+
 // ─── Email templates ──────────────────────────────────────────────────────────
 
 function baseHtml(title: string, body: string, storeName: string) {

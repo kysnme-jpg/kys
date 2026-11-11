@@ -1,47 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getPortalConsignor } from "../me/route";
+import { requireExternal } from "@/lib/authz";
+import { getMyThread, postFromExternal } from "@/lib/messaging/external";
 
-// Messages between a consignor (via the portal) and the store.
+export const runtime = "nodejs";
+
+// Portal (EXTERNAL): the consignor's own conversation with the store.
+// All table access is inside the messaging repository (§4a Layer 5).
 export async function GET(req: NextRequest) {
-  const session = await getPortalConsignor(req);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const messages = await db.consignorMessage.findMany({
-    where: { consignorId: session.id },
-    orderBy: { createdAt: "asc" },
-    take: 300,
-    select: { id: true, sender: true, body: true, createdAt: true },
-  });
-
-  // Anything the store sent is now seen by the consignor.
-  await db.consignorMessage.updateMany({
-    where: { consignorId: session.id, sender: "STORE", readByConsignor: false },
-    data: { readByConsignor: true },
-  });
-
+  const g = await requireExternal(req);
+  if (!g.ok) return g.res;
+  const { messages } = await getMyThread(g.actor);
   return NextResponse.json({ messages });
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getPortalConsignor(req);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { body } = await req.json();
-  const text = String(body || "").trim();
-  if (!text) return NextResponse.json({ error: "Write a message first" }, { status: 400 });
-
-  const message = await db.consignorMessage.create({
-    data: {
-      storeId: session.storeId,
-      consignorId: session.id,
-      sender: "CONSIGNOR",
-      body: text.slice(0, 4000),
-      readByStore: false,
-      readByConsignor: true,
-    },
-    select: { id: true, sender: true, body: true, createdAt: true },
-  });
-
-  return NextResponse.json({ message }, { status: 201 });
+  const g = await requireExternal(req);
+  if (!g.ok) return g.res;
+  const { body } = await req.json().catch(() => ({}));
+  try {
+    const message = await postFromExternal(g.actor, body);
+    return NextResponse.json({ message }, { status: 201 });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message || "Could not send." }, { status: 400 });
+  }
 }

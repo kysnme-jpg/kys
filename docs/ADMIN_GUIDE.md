@@ -122,6 +122,33 @@ The **content feed** (announcements/news/events/promotions — see the User Guid
 posts aimed at them. Consignors see consignor-targeted posts in the portal's
 **Updates** tab. No new environment variables are needed.
 
+### Messaging isolation (how it's built)
+
+Store ↔ customer/consignor messaging (**External**) and any future staff ↔ staff
+messaging (**Internal**) are kept **physically separate** — different tables,
+different API namespaces, different permission gates. This is a deliberate
+security boundary so the two channels can never cross-contaminate:
+
+- **External** conversations live in `ExternalThread` / `ExternalMessage`, with
+  staff-only notes in `ExternalInternalNote` (never returned to the external
+  party). Staff reach them at `/messages` and `/api/staff/conversations`
+  (requires `external_comms`); consignors reach their own thread through the
+  portal at `/api/portal/messages`.
+- **All** reads/writes go through one repository module,
+  `src/lib/messaging/external.ts` — route handlers never touch the tables
+  directly. This is enforced in CI by `npm run check:messaging-isolation`, which
+  fails the build if a messaging table is accessed from anywhere else.
+- A thread has **exactly one** external party (a consignor *or* a customer), the
+  actor is always resolved on the server (never from the request body), and
+  cross-class recipients are rejected. Database-level CHECK constraints and
+  row-level security are added at the migration cutover (Phase 6); the
+  application enforces the same invariants today.
+- The legacy `ConsignorMessage` table is retired in favour of the above; existing
+  message history is migrated into the new tables automatically the first time a
+  consignor's thread is opened after deploy. No manual step, no data loss.
+
+No new environment variables are needed for messaging.
+
 ### Resetting a password
 1. Add a temporary env var `RESET_TOKEN` = any random string.
 2. Wait for redeploy, then open **your site `/reset`**.

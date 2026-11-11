@@ -1,57 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { requirePermission, PERMISSIONS } from "@/lib/authz";
+import { getConsignorThreadForStaff, postFromStaff } from "@/lib/messaging/external";
 
-// Store-side view of the message thread with one consignor.
+export const runtime = "nodejs";
+
+// Store-side view of one consignor's conversation. Requires external_comms.
+// Goes through the messaging repository (§4a Layer 5) — no direct table access.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const storeId = (session.user as any).storeId;
+  const g = await requirePermission(req, PERMISSIONS.EXTERNAL_COMMS);
+  if (!g.ok) return g.res;
   const { id } = await params;
-
-  const consignor = await db.consignor.findFirst({ where: { id, storeId }, select: { id: true } });
-  if (!consignor) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const messages = await db.consignorMessage.findMany({
-    where: { consignorId: id },
-    orderBy: { createdAt: "asc" },
-    take: 300,
-    select: { id: true, sender: true, body: true, createdAt: true },
-  });
-
-  // Mark the consignor's messages as read by the store.
-  await db.consignorMessage.updateMany({
-    where: { consignorId: id, sender: "CONSIGNOR", readByStore: false },
-    data: { readByStore: true },
-  });
-
-  return NextResponse.json({ messages });
+  const result = await getConsignorThreadForStaff(g.actor, id);
+  if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ messages: result.messages });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const storeId = (session.user as any).storeId;
+  const g = await requirePermission(req, PERMISSIONS.EXTERNAL_COMMS);
+  if (!g.ok) return g.res;
   const { id } = await params;
-
-  const consignor = await db.consignor.findFirst({ where: { id, storeId }, select: { id: true } });
-  if (!consignor) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const { body } = await req.json();
-  const text = String(body || "").trim();
-  if (!text) return NextResponse.json({ error: "Write a message first" }, { status: 400 });
-
-  const message = await db.consignorMessage.create({
-    data: {
-      storeId,
-      consignorId: id,
-      sender: "STORE",
-      body: text.slice(0, 4000),
-      readByStore: true,
-      readByConsignor: false,
-    },
-    select: { id: true, sender: true, body: true, createdAt: true },
-  });
-
-  return NextResponse.json({ message }, { status: 201 });
+  const { body } = await req.json().catch(() => ({}));
+  try {
+    const message = await postFromStaff(g.actor, { consignorId: id }, body);
+    return NextResponse.json({ message }, { status: 201 });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message || "Could not send." }, { status: 400 });
+  }
 }

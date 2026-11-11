@@ -83,6 +83,7 @@ model Store {
   consignorMessages ConsignorMessage[]
   rolePermissions  RolePermission[]
   posts            Post[]
+  externalThreads  ExternalThread[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -156,12 +157,13 @@ model Consignor {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  items         Item[]
-  ledgerEntries LedgerEntry[]
-  payouts       Payout[]
-  contracts     Contract[]
-  emailLogs     EmailLog[]
-  messages      ConsignorMessage[]
+  items          Item[]
+  ledgerEntries  LedgerEntry[]
+  payouts        Payout[]
+  contracts      Contract[]
+  emailLogs      EmailLog[]
+  messages       ConsignorMessage[]
+  externalThread ExternalThread?
 }
 
 // ─── CATEGORIES ───────────────────────────────────────────────────────────────
@@ -250,7 +252,8 @@ model Customer {
   source    String?  // how they heard about us
   createdAt DateTime @default(now())
 
-  sales Sale[]
+  sales          Sale[]
+  externalThread ExternalThread?
 }
 
 // ─── SALES ────────────────────────────────────────────────────────────────────
@@ -431,6 +434,64 @@ model WorkLog {
   note         String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ─── EXTERNAL MESSAGING (§4) ─────────────────────────────────────────────────
+// Store ↔ external party (consignor OR customer). PHYSICALLY SEPARATE from any
+// internal (staff↔staff) messaging — that is the §4a isolation boundary. Every
+// read/write goes through src/lib/messaging/external.ts (Layer 5). A thread has
+// exactly ONE external party (enforced in the repository now; a DB CHECK
+// constraint + RLS land at the migrate cutover / Phase 6). The @unique columns
+// already guarantee at most one thread per consignor and per customer.
+
+model ExternalThread {
+  id            String  @id @default(cuid())
+  storeId       String
+  store         Store   @relation(fields: [storeId], references: [id])
+  externalClass String // "CONSIGNOR" | "CUSTOMER"
+  consignorId   String?    @unique
+  consignor     Consignor? @relation(fields: [consignorId], references: [id])
+  customerId    String?    @unique
+  customer      Customer?  @relation(fields: [customerId], references: [id])
+  subject       String?
+  status        String   @default("OPEN") // OPEN | ARCHIVED
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  messages ExternalMessage[]
+  notes    ExternalInternalNote[]
+
+  @@index([storeId, status, lastMessageAt])
+}
+
+model ExternalMessage {
+  id                String         @id @default(cuid())
+  threadId          String
+  thread            ExternalThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderClass       String // "INTERNAL" | "EXTERNAL"
+  senderUserId      String? // staff author
+  senderConsignorId String?
+  senderCustomerId  String?
+  body              String         @db.Text
+  readByStore       Boolean        @default(false)
+  readByExternal    Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+// Staff-only notes attached to an external thread. NEVER returned to the
+// external party — this is the "internal note on an external conversation"
+// from §4, kept in a separate table so it can never leak through a message read.
+model ExternalInternalNote {
+  id           String         @id @default(cuid())
+  threadId     String
+  thread       ExternalThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorUserId String?
+  body         String         @db.Text
+  createdAt    DateTime       @default(now())
+
+  @@index([threadId, createdAt])
 }
 
 // ─── CONTENT FEED / POSTS (§2) ───────────────────────────────────────────────

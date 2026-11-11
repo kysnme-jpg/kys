@@ -347,6 +347,48 @@ CREATE TABLE "WorkLog" (
 );
 
 -- CreateTable
+CREATE TABLE "ExternalThread" (
+    "id" TEXT NOT NULL,
+    "storeId" TEXT NOT NULL,
+    "externalClass" TEXT NOT NULL,
+    "consignorId" TEXT,
+    "customerId" TEXT,
+    "subject" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "lastMessageAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ExternalThread_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ExternalMessage" (
+    "id" TEXT NOT NULL,
+    "threadId" TEXT NOT NULL,
+    "senderClass" TEXT NOT NULL,
+    "senderUserId" TEXT,
+    "senderConsignorId" TEXT,
+    "senderCustomerId" TEXT,
+    "body" TEXT NOT NULL,
+    "readByStore" BOOLEAN NOT NULL DEFAULT false,
+    "readByExternal" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ExternalMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ExternalInternalNote" (
+    "id" TEXT NOT NULL,
+    "threadId" TEXT NOT NULL,
+    "authorUserId" TEXT,
+    "body" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ExternalInternalNote_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Post" (
     "id" TEXT NOT NULL,
     "storeId" TEXT NOT NULL,
@@ -562,6 +604,21 @@ CREATE UNIQUE INDEX "DiscountRule_code_key" ON "DiscountRule"("code");
 CREATE UNIQUE INDEX "ApiKey_keyHash_key" ON "ApiKey"("keyHash");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ExternalThread_consignorId_key" ON "ExternalThread"("consignorId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ExternalThread_customerId_key" ON "ExternalThread"("customerId");
+
+-- CreateIndex
+CREATE INDEX "ExternalThread_storeId_status_lastMessageAt_idx" ON "ExternalThread"("storeId", "status", "lastMessageAt");
+
+-- CreateIndex
+CREATE INDEX "ExternalMessage_threadId_createdAt_idx" ON "ExternalMessage"("threadId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "ExternalInternalNote_threadId_createdAt_idx" ON "ExternalInternalNote"("threadId", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "Post_storeId_status_idx" ON "Post"("storeId", "status");
 
 -- CreateIndex
@@ -653,6 +710,21 @@ ALTER TABLE "WebhookDelivery" ADD CONSTRAINT "WebhookDelivery_endpointId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "WorkLog" ADD CONSTRAINT "WorkLog_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ExternalThread" ADD CONSTRAINT "ExternalThread_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ExternalThread" ADD CONSTRAINT "ExternalThread_consignorId_fkey" FOREIGN KEY ("consignorId") REFERENCES "Consignor"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ExternalThread" ADD CONSTRAINT "ExternalThread_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ExternalMessage" ADD CONSTRAINT "ExternalMessage_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "ExternalThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ExternalInternalNote" ADD CONSTRAINT "ExternalInternalNote_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "ExternalThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Post" ADD CONSTRAINT "Post_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

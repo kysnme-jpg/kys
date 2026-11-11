@@ -456,6 +456,31 @@ there automatically. Share that link on social media or your website.
 
 ---
 
+## 8a. Messages (unified inbox)
+
+**More → Messages** is your inbox for conversations with **consignors and
+customers**, all in one place. (Needs the "messages/comms" permission — owners,
+managers, and associates have it.)
+
+- The **left list** shows every conversation, newest first, with an **unread
+  badge** when someone has written to you and you haven't replied. The **More**
+  menu also shows a badge with your total unread count.
+- **Click a conversation** to read the full thread and **reply** — your messages
+  land in that consignor's portal (Updates/Messages), and theirs land here.
+- **Internal note** (button top-right of a thread) lets you jot a note **only the
+  team can see** — the consignor/customer never sees it. Great for "called about
+  payout, left voicemail" or "VIP, handle with care." Notes show in an amber
+  band under the messages, clearly separated from the real conversation.
+
+> Consignor conversations also still appear on each **consignor's detail page →
+> Messages tab** — it's the same thread, just reachable two ways. Any history
+> from before this update is carried over automatically.
+
+Customer messaging is wired up for when customer logins arrive; today the inbox
+is mainly consignor conversations.
+
+---
+
 ## 9a. Announcements & the content feed
 
 The platform has a built-in **content feed** — a simple way to post

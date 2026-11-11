@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp, MoreHorizontal,
-  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone,
+  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -82,12 +82,16 @@ function DockItem({ item, active }: { item: (typeof ITEMS)[number]; active: bool
 function MoreSheet({ onClose }: { onClose: () => void }) {
   const [dark, setDark] = useState(false);
   const [canManageContent, setCanManageContent] = useState(false);
+  const [canComms, setCanComms] = useState(false);
+  const [unread, setUnread] = useState(0);
   useEffect(() => {
     try { setDark(document.documentElement.classList.contains("dark")); } catch {}
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     fetch("/api/me").then((r) => (r.ok ? r.json() : null)).then((d) => {
       if (d?.permissions?.includes("content_admin")) setCanManageContent(true);
+      if (d?.permissions?.includes("external_comms")) setCanComms(true);
+      if (typeof d?.unreadExternal === "number") setUnread(d.unreadExternal);
     }).catch(() => {});
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -97,9 +101,12 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
     try { document.documentElement.classList.toggle("dark", next); localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
   };
 
-  const Row = ({ icon: Icon, label, onClick, href, danger }: any) => {
+  const Row = ({ icon: Icon, label, onClick, href, danger, badge }: any) => {
     const cls = cn("flex items-center gap-3.5 w-full h-16 px-4 rounded-2xl text-[17px] font-semibold hover:bg-chip transition-colors", danger ? "text-[var(--danger-ink)]" : "text-ink");
-    const inner = <><Icon className="h-6 w-6" strokeWidth={1.75} /> {label}</>;
+    const inner = <>
+      <Icon className="h-6 w-6" strokeWidth={1.75} /> {label}
+      {badge > 0 && <span className="ml-auto bg-accent text-[var(--accent-ink)] text-[12px] font-bold rounded-full min-w-6 h-6 px-2 grid place-items-center">{badge}</span>}
+    </>;
     if (href) return <Link href={href} target={href === "/shop" ? "_blank" : undefined} className={cls} onClick={onClose}>{inner}</Link>;
     return <button className={cls} onClick={onClick}>{inner}</button>;
   };
@@ -115,6 +122,7 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
           <span className="font-serif text-[22px] text-ink">More</span>
           <button onClick={onClose} className="rounded-full p-2 hover:bg-chip" aria-label="Close"><X className="h-5 w-5 text-[var(--muted)]" /></button>
         </div>
+        {canComms && <Row icon={MessageCircle} label="Messages" href="/messages" badge={unread} />}
         <Row icon={Megaphone} label="Announcements" href="/announcements" />
         {canManageContent && <Row icon={Megaphone} label="Manage content" href="/content" />}
         <Row icon={Globe} label="Online Shop" href="/shop" />

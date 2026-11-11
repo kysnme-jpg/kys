@@ -13,7 +13,7 @@ import { formatCurrency, formatDate, calcConsignorCredit } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowLeft, DollarSign, Package, Receipt, User, Phone, Mail, Plus, Pencil,
-  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText, Camera, Send, KeyRound
+  TrendingUp, CheckCircle, Clock, Banknote, Printer, FileText, Camera, Send, KeyRound, Eye
 } from "lucide-react";
 
 interface ConsignorDetail {
@@ -234,6 +234,14 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  const previewPortal = async () => {
+    const res = await fetch(`/api/consignors/${id}/portal-preview`, { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(d.error || "Couldn't open the portal preview."); return; }
+    // Open the portal in a new tab, signed in as this consignor (read-only).
+    window.open(`/portal?preview=${encodeURIComponent(d.token)}`, "_blank");
+  };
+
   const printReport = () => {
     if (!consignor) return;
     const win = window.open("", "_blank", "width=800,height=900");
@@ -344,6 +352,10 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
           <Button variant="outline" onClick={emailInventory} className="gap-2">
             <Mail className="h-4 w-4" />
             Email inventory
+          </Button>
+          <Button variant="outline" onClick={previewPortal} className="gap-2">
+            <Eye className="h-4 w-4" />
+            Preview portal
           </Button>
           <Button variant="outline" onClick={resendPortalAccess} className="gap-2">
             <KeyRound className="h-4 w-4" />

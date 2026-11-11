@@ -618,6 +618,12 @@ leave it blank to use your store email).
     you hand it over, mark it **Returned** (pencil → Status) as usual.
   - **See store updates** — the **Updates** tab shows any content-feed posts
     aimed at consignors (see §9a).
+- **Preview a consignor's portal** (owner/manager) — on any consignor's page,
+  **Preview portal** opens exactly what that consignor sees (items, earnings,
+  balance, updates) in a new tab, **without knowing or resetting their
+  password**. It's clearly banner-labeled "Staff preview" and is **read-only**
+  (you can't send messages, request payouts or returns as them). Great for
+  helping someone over the phone. Click **Exit preview** when done.
 - **Dealer entry** (`/dealer`) — lets approved dealers submit multiple items at
   once for your review.
 

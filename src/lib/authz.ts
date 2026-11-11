@@ -30,7 +30,7 @@ export type AccountClass = "INTERNAL" | "EXTERNAL";
 
 export type Actor =
   | { class: "INTERNAL"; role: InternalRole; userId: string; storeId: string; displayName: string; permissions: Set<Permission> }
-  | { class: "EXTERNAL"; role: ExternalRole; consignorId: string; storeId: string; displayName: string; permissions: Set<Permission> };
+  | { class: "EXTERNAL"; role: ExternalRole; consignorId: string; storeId: string; displayName: string; permissions: Set<Permission>; preview?: boolean };
 
 const PORTAL_SECRET = new TextEncoder().encode(
   process.env.PORTAL_JWT_SECRET || process.env.NEXTAUTH_SECRET || "portal-secret-change-me"
@@ -64,14 +64,20 @@ async function resolveExternal(req: NextRequest): Promise<Actor | null> {
     || (req.headers.get("authorization")?.startsWith("Bearer ") ? req.headers.get("authorization")!.slice(7) : undefined);
   if (!token) return null;
   let consignorId: string;
+  let preview = false;
   try {
     const { payload } = await jwtVerify(token, PORTAL_SECRET);
     if (payload.type !== "consignor-portal" || !payload.sub) return null;
     consignorId = payload.sub as string;
+    preview = payload.preview === true;
   } catch {
     return null;
   }
-  const c = await db.consignor.findFirst({ where: { id: consignorId, portalEnabled: true }, select: { id: true, storeId: true, firstName: true, lastName: true } });
+  // A real portal session requires portalEnabled; a staff preview token does not.
+  const c = await db.consignor.findFirst({
+    where: { id: consignorId, ...(preview ? {} : { portalEnabled: true }) },
+    select: { id: true, storeId: true, firstName: true, lastName: true },
+  });
   if (!c) return null;
   return {
     class: "EXTERNAL",
@@ -80,6 +86,7 @@ async function resolveExternal(req: NextRequest): Promise<Actor | null> {
     storeId: c.storeId,
     displayName: `${c.firstName} ${c.lastName}`.trim(),
     permissions: new Set(ROLE_PERMISSIONS.consignor),
+    preview,
   };
 }
 

@@ -34,6 +34,7 @@ export default function PortalLoginPage() {
 
     // Store token in localStorage as backup
     localStorage.setItem("portal_token", data.token);
+    try { localStorage.removeItem("portal_preview"); } catch {}
     router.push("/portal");
   }
 

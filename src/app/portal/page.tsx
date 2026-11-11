@@ -20,7 +20,26 @@ export default function PortalPage() {
   const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"items" | "ledger" | "messages" | "updates">("items");
+  const [preview, setPreview] = useState(false);
   const router = useRouter();
+
+  // Staff preview handoff: a ?preview=<token> opens this consignor's portal
+  // read-only. Store the token, flag preview mode, and clean the URL.
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const pv = url.searchParams.get("preview");
+      if (pv) {
+        localStorage.setItem("portal_token", pv);
+        localStorage.setItem("portal_preview", "1");
+        url.searchParams.delete("preview");
+        window.history.replaceState({}, "", url.pathname + url.search);
+        setPreview(true);
+      } else {
+        setPreview(localStorage.getItem("portal_preview") === "1");
+      }
+    } catch {}
+  }, []);
 
   // payout
   const [payoutOpen, setPayoutOpen] = useState(false);
@@ -60,6 +79,7 @@ export default function PortalPage() {
   }, [tab, messages]);
 
   const requestPayout = async () => {
+    if (preview) return;
     setRequesting(true);
     const res = await fetch("/api/portal/payout-request", {
       method: "POST", headers: authHeaders(true),
@@ -70,6 +90,7 @@ export default function PortalPage() {
   };
 
   const toggleReturn = async (item: any) => {
+    if (preview) return;
     setBusyItem(item.id);
     const cancel = !!item.returnRequestedAt;
     const res = await fetch("/api/portal/request-return", {
@@ -84,14 +105,18 @@ export default function PortalPage() {
 
   const send = async () => {
     const text = draft.trim();
-    if (!text || sending) return;
+    if (preview || !text || sending) return;
     setSending(true);
     const res = await fetch("/api/portal/messages", { method: "POST", headers: authHeaders(true), body: JSON.stringify({ body: text }) });
     if (res.ok) { const d = await res.json(); setMessages((m) => [...m, d.message]); setDraft(""); }
     setSending(false);
   };
 
-  const signOut = () => { try { localStorage.removeItem("portal_token"); } catch {} router.push("/portal/login"); };
+  const signOut = () => {
+    try { localStorage.removeItem("portal_token"); localStorage.removeItem("portal_preview"); } catch {}
+    if (preview) { window.close(); return; }
+    router.push("/portal/login");
+  };
 
   // Forced password reset (after the store resends access with a temp password)
   const [newPw, setNewPw] = useState("");
@@ -113,7 +138,7 @@ export default function PortalPage() {
     return <div className="min-h-screen bg-paper flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" /></div>;
   }
 
-  if (data.portalMustReset) {
+  if (data.portalMustReset && !preview) {
     return (
       <div className="min-h-screen bg-paper text-ink flex items-center justify-center p-5">
         <div className="w-full max-w-sm bg-surface border border-line rounded-[24px] p-6">
@@ -145,6 +170,11 @@ export default function PortalPage() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
+      {preview && (
+        <div className="bg-amber-500 text-white text-center text-[13px] font-semibold px-4 py-2">
+          Staff preview — viewing {data.firstName} {data.lastName}&apos;s portal (read only)
+        </div>
+      )}
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-line" style={{ background: "color-mix(in srgb, var(--paper) 88%, transparent)", backdropFilter: "blur(8px)", top: "env(safe-area-inset-top, 0px)" }}>
         <div className="max-w-xl mx-auto px-5 py-3.5 flex items-center gap-3">
@@ -153,7 +183,7 @@ export default function PortalPage() {
             <p className="font-serif text-[15px] font-semibold leading-none truncate">{data.store.name}</p>
             <p className="text-[12px] text-[var(--muted)] mt-0.5 truncate">{data.firstName} {data.lastName}</p>
           </div>
-          <button onClick={signOut} className="ml-auto flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--muted)] hover:text-ink"><LogOut className="h-4 w-4" />Sign out</button>
+          <button onClick={signOut} className="ml-auto flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--muted)] hover:text-ink"><LogOut className="h-4 w-4" />{preview ? "Exit preview" : "Sign out"}</button>
         </div>
       </header>
 
@@ -164,7 +194,7 @@ export default function PortalPage() {
           <p className="font-serif text-[44px] font-semibold leading-none mt-1.5 tabular-nums">{formatCurrency(data.balance)}</p>
           {payoutRequested ? (
             <p className="text-[12px] mt-3" style={{ color: "var(--panel-muted)" }}>Payout request submitted — the store will process it shortly.</p>
-          ) : (
+          ) : preview ? null : (
             <button onClick={() => setPayoutOpen((v) => !v)} className="mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-full bg-accent text-[var(--accent-ink)] text-[14px] font-bold"><Send className="h-4 w-4" />Request payout</button>
           )}
           <p className="text-[12px] mt-2.5" style={{ color: "var(--panel-muted)" }}>Hi {data.firstName} — here's everything you've got with us.</p>
@@ -246,10 +276,10 @@ export default function PortalPage() {
                     {item.returnRequestedAt ? (
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[12.5px] font-semibold text-accent inline-flex items-center gap-1.5"><Check className="h-4 w-4" />Return requested — the store will be in touch</span>
-                        <button onClick={() => toggleReturn(item)} disabled={busyItem === item.id} className="text-[12.5px] font-semibold text-[var(--muted)] inline-flex items-center gap-1 disabled:opacity-50"><Undo2 className="h-3.5 w-3.5" />Undo</button>
+                        <button onClick={() => toggleReturn(item)} disabled={busyItem === item.id || preview} className="text-[12.5px] font-semibold text-[var(--muted)] inline-flex items-center gap-1 disabled:opacity-50"><Undo2 className="h-3.5 w-3.5" />Undo</button>
                       </div>
                     ) : (
-                      <button onClick={() => toggleReturn(item)} disabled={busyItem === item.id} className="w-full h-10 rounded-full border-[1.5px] border-line text-[13.5px] font-semibold text-ink inline-flex items-center justify-center gap-2 hover:border-accent disabled:opacity-50">
+                      <button onClick={() => toggleReturn(item)} disabled={busyItem === item.id || preview} className="w-full h-10 rounded-full border-[1.5px] border-line text-[13.5px] font-semibold text-ink inline-flex items-center justify-center gap-2 hover:border-accent disabled:opacity-50">
                         <RotateCcw className="h-4 w-4" />{busyItem === item.id ? "…" : "Request this item back"}
                       </button>
                     )}
@@ -303,12 +333,18 @@ export default function PortalPage() {
                 );
               })}
             </div>
-            <div className="border-t border-line p-3 flex items-end gap-2" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}>
-              <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                rows={1} placeholder="Write a message…" className="flex-1 max-h-28 rounded-2xl border-[1.5px] border-line bg-paper px-3.5 py-2.5 text-[14px] text-ink focus:outline-none focus:border-accent resize-none" />
-              <button onClick={send} disabled={!draft.trim() || sending} className="h-11 w-11 rounded-full bg-accent text-[var(--accent-ink)] grid place-items-center shrink-0 disabled:opacity-40"><Send className="h-4.5 w-4.5" /></button>
-            </div>
+            {preview ? (
+              <div className="border-t border-line p-3 text-center text-[13px] text-[var(--muted)]" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}>
+                Messaging is disabled in staff preview.
+              </div>
+            ) : (
+              <div className="border-t border-line p-3 flex items-end gap-2" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}>
+                <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  rows={1} placeholder="Write a message…" className="flex-1 max-h-28 rounded-2xl border-[1.5px] border-line bg-paper px-3.5 py-2.5 text-[14px] text-ink focus:outline-none focus:border-accent resize-none" />
+                <button onClick={send} disabled={!draft.trim() || sending} className="h-11 w-11 rounded-full bg-accent text-[var(--accent-ink)] grid place-items-center shrink-0 disabled:opacity-40"><Send className="h-4.5 w-4.5" /></button>
+              </div>
+            )}
           </section>
         )}
 

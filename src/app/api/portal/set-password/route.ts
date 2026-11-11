@@ -8,6 +8,7 @@ import { getPortalConsignor } from "../me/route";
 export async function POST(req: NextRequest) {
   const session = await getPortalConsignor(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.preview) return NextResponse.json({ error: "This is a staff preview — read only." }, { status: 403 });
 
   const { password } = await req.json();
   const pw = String(password || "");

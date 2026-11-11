@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const g = await requireExternal(req);
   if (!g.ok) return g.res;
+  if (g.actor.preview) return NextResponse.json({ error: "This is a staff preview — read only." }, { status: 403 });
   const { body } = await req.json().catch(() => ({}));
   try {
     const message = await postFromExternal(g.actor, body);

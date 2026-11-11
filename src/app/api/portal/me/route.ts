@@ -15,7 +15,7 @@ export async function getPortalConsignor(req: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, PORTAL_SECRET);
     if (payload.type !== "consignor-portal" || !payload.sub) return null;
-    return { id: payload.sub as string, storeId: payload.storeId as string };
+    return { id: payload.sub as string, storeId: payload.storeId as string, preview: payload.preview === true };
   } catch {
     return null;
   }

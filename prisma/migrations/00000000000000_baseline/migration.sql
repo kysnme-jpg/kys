@@ -2,7 +2,7 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('OWNER', 'MANAGER', 'EMPLOYEE');
+CREATE TYPE "UserRole" AS ENUM ('OWNER', 'MANAGER', 'EMPLOYEE', 'ASSOCIATE', 'INVENTORY_CLERK');
 
 -- CreateEnum
 CREATE TYPE "ItemType" AS ENUM ('CONSIGNED', 'OWNED');
@@ -94,9 +94,23 @@ CREATE TABLE "User" (
     "passwordHash" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'EMPLOYEE',
     "storeId" TEXT,
+    "phone" TEXT,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "lastLoginAt" TIMESTAMP(3),
+    "staffNotes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RolePermission" (
+    "id" TEXT NOT NULL,
+    "storeId" TEXT NOT NULL,
+    "role" TEXT NOT NULL,
+    "permission" TEXT NOT NULL,
+
+    CONSTRAINT "RolePermission_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -484,6 +498,12 @@ CREATE UNIQUE INDEX "Store_slug_key" ON "Store"("slug");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "RolePermission_storeId_role_idx" ON "RolePermission"("storeId", "role");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RolePermission_storeId_role_permission_key" ON "RolePermission"("storeId", "role", "permission");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Category_storeId_slug_key" ON "Category"("storeId", "slug");
 
 -- CreateIndex
@@ -512,6 +532,9 @@ ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Consignor" ADD CONSTRAINT "Consignor_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

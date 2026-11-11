@@ -81,6 +81,7 @@ model Store {
   sipShopEvents    SipShopEvent[]
   emailLogs        EmailLog[]
   consignorMessages ConsignorMessage[]
+  rolePermissions  RolePermission[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -88,7 +89,9 @@ model Store {
 enum UserRole {
   OWNER
   MANAGER
-  EMPLOYEE
+  EMPLOYEE // legacy alias → "associate"
+  ASSOCIATE
+  INVENTORY_CLERK
 }
 
 model User {
@@ -101,9 +104,28 @@ model User {
   role          UserRole  @default(EMPLOYEE)
   storeId       String?
   store         Store?    @relation(fields: [storeId], references: [id])
+  // Staff profile (§1)
+  phone         String?
+  active        Boolean   @default(true)
+  lastLoginAt   DateTime?
+  staffNotes    String?   @db.Text // internal-only notes about this staff member
   accounts      Account[]
   sessions      Session[]
   createdAt     DateTime  @default(now())
+}
+
+// Database-backed RBAC (§1): one row per (role, permission). Seeded from
+// DEFAULT_ROLE_PERMISSIONS; editable later by an admin UI. The authorization
+// helper reads these instead of hardcoded role checks.
+model RolePermission {
+  id         String @id @default(cuid())
+  storeId    String
+  store      Store  @relation(fields: [storeId], references: [id])
+  role       String // UserRole value, as text
+  permission String // permission code (see src/lib/authz.permissions)
+
+  @@unique([storeId, role, permission])
+  @@index([storeId, role])
 }
 
 // ─── CONSIGNORS ───────────────────────────────────────────────────────────────

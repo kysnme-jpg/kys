@@ -7,6 +7,7 @@ import {
   PERMISSIONS, ROLE_PERMISSIONS, DB_ROLE_TO_INTERNAL,
   type Permission, type InternalRole, type ExternalRole, type Role,
 } from "@/lib/authz.permissions";
+import { getPermissionsForRole } from "@/lib/rbac";
 
 export { PERMISSIONS };
 export type { Permission, InternalRole, ExternalRole, Role };
@@ -44,13 +45,16 @@ async function resolveInternal(): Promise<Actor | null> {
   const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true, storeId: true, name: true, email: true } });
   if (!user || !user.storeId) return null;
   const role = DB_ROLE_TO_INTERNAL[String(user.role)] || "associate";
+  // Permissions come from the database RBAC table (editable), falling back to
+  // the static defaults when unseeded/unavailable.
+  const permissions = await getPermissionsForRole(user.storeId, role);
   return {
     class: "INTERNAL",
     role,
     userId: user.id,
     storeId: user.storeId,
     displayName: user.name || user.email || "Staff",
-    permissions: new Set(ROLE_PERMISSIONS[role]),
+    permissions,
   };
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveActor } from "@/lib/authz";
 import { unreadCountForStaff } from "@/lib/messaging/external";
+import { unreadCountInternal } from "@/lib/messaging/internal";
 
 export const runtime = "nodejs";
 
@@ -17,8 +18,12 @@ export async function GET(req: NextRequest) {
 
   const permissions = Array.from(actor.permissions);
   let unreadExternal = 0;
+  let unreadInternal = 0;
   if (actor.class === "INTERNAL" && permissions.includes("external_comms")) {
     unreadExternal = await unreadCountForStaff(actor);
+  }
+  if (actor.class === "INTERNAL" && permissions.includes("internal_comms")) {
+    unreadInternal = await unreadCountInternal(actor);
   }
 
   return NextResponse.json({
@@ -27,5 +32,6 @@ export async function GET(req: NextRequest) {
     displayName: actor.displayName,
     permissions,
     unreadExternal,
+    unreadInternal,
   });
 }

@@ -84,6 +84,8 @@ model Store {
   rolePermissions  RolePermission[]
   posts            Post[]
   externalThreads  ExternalThread[]
+  internalChannels InternalChannel[]
+  internalThreads  InternalThread[]
 }
 
 // ─── USERS (store staff) ──────────────────────────────────────────────────────
@@ -491,6 +493,74 @@ model ExternalInternalNote {
   body         String         @db.Text
   createdAt    DateTime       @default(now())
 
+  @@index([threadId, createdAt])
+}
+
+// ─── INTERNAL MESSAGING (§3) ─────────────────────────────────────────────────
+// Staff ↔ staff only. PHYSICALLY SEPARATE from external messaging — these tables
+// reference staff (userId) exclusively and never a consignor/customer, which is
+// the §4a isolation boundary from the other side. Every read/write goes through
+// src/lib/messaging/internal.ts (Layer 5). Two shapes share the message table:
+// group CHANNELS (open to all staff in the store) and DIRECT threads (explicit
+// participants). A message belongs to exactly one of them.
+
+model InternalChannel {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id])
+  name            String
+  description     String?
+  createdByUserId String?
+  lastMessageAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  messages     InternalMessage[]
+  participants InternalParticipant[]
+
+  @@index([storeId, lastMessageAt])
+}
+
+model InternalThread {
+  id              String   @id @default(cuid())
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id])
+  createdByUserId String?
+  lastMessageAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  messages     InternalMessage[]
+  participants InternalParticipant[]
+
+  @@index([storeId, lastMessageAt])
+}
+
+// Membership + per-user read state for a channel OR a direct thread.
+model InternalParticipant {
+  id         String           @id @default(cuid())
+  userId     String
+  channelId  String?
+  channel    InternalChannel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  threadId   String?
+  thread     InternalThread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@unique([channelId, userId])
+  @@unique([threadId, userId])
+  @@index([userId])
+}
+
+model InternalMessage {
+  id           String           @id @default(cuid())
+  channelId    String?
+  channel      InternalChannel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  threadId     String?
+  thread       InternalThread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderUserId String
+  body         String           @db.Text
+  createdAt    DateTime         @default(now())
+
+  @@index([channelId, createdAt])
   @@index([threadId, createdAt])
 }
 

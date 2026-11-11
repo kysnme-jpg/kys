@@ -479,6 +479,23 @@ managers, and associates have it.)
 Customer messaging is wired up for when customer logins arrive; today the inbox
 is mainly consignor conversations.
 
+## 8b. Team chat (staff only)
+
+**More → Team chat** is private messaging **between staff** — completely separate
+from customer/consignor messages. (Every staff member has access.)
+
+- **Channels** — group spaces for the whole team (there's a **General** channel
+  to start). Tap **+** next to "Channels" to make more, like `store-floor` or
+  `markdowns`. Everyone on staff can read and post in a channel.
+- **Direct messages** — tap **+** next to "Direct messages" to pick one or more
+  teammates and start a private conversation. One-on-one or a small group.
+- **Unread badges** show new messages per channel/DM, and the **More** menu shows
+  your total team-chat unread count.
+
+> Team chat and the customer/consignor inbox (§8a) are kept **completely
+> separate** on purpose — a staff message can never accidentally land in a
+> customer thread, or the other way around.
+
 ---
 
 ## 9a. Announcements & the content feed

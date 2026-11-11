@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp, MoreHorizontal,
-  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle,
+  Globe, Upload, Settings, LogOut, Sun, Moon, X, Megaphone, MessageCircle, MessagesSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -83,7 +83,9 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
   const [dark, setDark] = useState(false);
   const [canManageContent, setCanManageContent] = useState(false);
   const [canComms, setCanComms] = useState(false);
+  const [canInternal, setCanInternal] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [unreadTeam, setUnreadTeam] = useState(0);
   useEffect(() => {
     try { setDark(document.documentElement.classList.contains("dark")); } catch {}
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -91,7 +93,9 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
     fetch("/api/me").then((r) => (r.ok ? r.json() : null)).then((d) => {
       if (d?.permissions?.includes("content_admin")) setCanManageContent(true);
       if (d?.permissions?.includes("external_comms")) setCanComms(true);
+      if (d?.permissions?.includes("internal_comms")) setCanInternal(true);
       if (typeof d?.unreadExternal === "number") setUnread(d.unreadExternal);
+      if (typeof d?.unreadInternal === "number") setUnreadTeam(d.unreadInternal);
     }).catch(() => {});
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -123,6 +127,7 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="rounded-full p-2 hover:bg-chip" aria-label="Close"><X className="h-5 w-5 text-[var(--muted)]" /></button>
         </div>
         {canComms && <Row icon={MessageCircle} label="Messages" href="/messages" badge={unread} />}
+        {canInternal && <Row icon={MessagesSquare} label="Team chat" href="/team" badge={unreadTeam} />}
         <Row icon={Megaphone} label="Announcements" href="/announcements" />
         {canManageContent && <Row icon={Megaphone} label="Manage content" href="/content" />}
         <Row icon={Globe} label="Online Shop" href="/shop" />

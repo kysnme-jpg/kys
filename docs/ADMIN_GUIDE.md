@@ -134,6 +134,15 @@ security boundary so the two channels can never cross-contaminate:
   party). Staff reach them at `/messages` and `/api/staff/conversations`
   (requires `external_comms`); consignors reach their own thread through the
   portal at `/api/portal/messages`.
+- **Internal** (staff↔staff) messaging lives in `InternalChannel` /
+  `InternalThread` / `InternalParticipant` / `InternalMessage` — these tables
+  reference staff `userId`s only and never a consignor/customer, so the two
+  channels are structurally incapable of crossing. Staff reach it at `/team` and
+  `/api/internal/*` (requires `internal_comms`, which every staff role has). It
+  has its own repository, `src/lib/messaging/internal.ts`, under the same CI
+  isolation check. Channels are open to all staff in the store; direct threads
+  have explicit participants, and a new direct thread's recipients are validated
+  to be active staff in the same store.
 - **All** reads/writes go through one repository module,
   `src/lib/messaging/external.ts` — route handlers never touch the tables
   directly. This is enforced in CI by `npm run check:messaging-isolation`, which

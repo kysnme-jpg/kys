@@ -389,6 +389,54 @@ CREATE TABLE "ExternalInternalNote" (
 );
 
 -- CreateTable
+CREATE TABLE "InternalChannel" (
+    "id" TEXT NOT NULL,
+    "storeId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "createdByUserId" TEXT,
+    "lastMessageAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "InternalChannel_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InternalThread" (
+    "id" TEXT NOT NULL,
+    "storeId" TEXT NOT NULL,
+    "createdByUserId" TEXT,
+    "lastMessageAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "InternalThread_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InternalParticipant" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "channelId" TEXT,
+    "threadId" TEXT,
+    "lastReadAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "InternalParticipant_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InternalMessage" (
+    "id" TEXT NOT NULL,
+    "channelId" TEXT,
+    "threadId" TEXT,
+    "senderUserId" TEXT NOT NULL,
+    "body" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "InternalMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Post" (
     "id" TEXT NOT NULL,
     "storeId" TEXT NOT NULL,
@@ -619,6 +667,27 @@ CREATE INDEX "ExternalMessage_threadId_createdAt_idx" ON "ExternalMessage"("thre
 CREATE INDEX "ExternalInternalNote_threadId_createdAt_idx" ON "ExternalInternalNote"("threadId", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "InternalChannel_storeId_lastMessageAt_idx" ON "InternalChannel"("storeId", "lastMessageAt");
+
+-- CreateIndex
+CREATE INDEX "InternalThread_storeId_lastMessageAt_idx" ON "InternalThread"("storeId", "lastMessageAt");
+
+-- CreateIndex
+CREATE INDEX "InternalParticipant_userId_idx" ON "InternalParticipant"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "InternalParticipant_channelId_userId_key" ON "InternalParticipant"("channelId", "userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "InternalParticipant_threadId_userId_key" ON "InternalParticipant"("threadId", "userId");
+
+-- CreateIndex
+CREATE INDEX "InternalMessage_channelId_createdAt_idx" ON "InternalMessage"("channelId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "InternalMessage_threadId_createdAt_idx" ON "InternalMessage"("threadId", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "Post_storeId_status_idx" ON "Post"("storeId", "status");
 
 -- CreateIndex
@@ -725,6 +794,24 @@ ALTER TABLE "ExternalMessage" ADD CONSTRAINT "ExternalMessage_threadId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "ExternalInternalNote" ADD CONSTRAINT "ExternalInternalNote_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "ExternalThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalChannel" ADD CONSTRAINT "InternalChannel_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalThread" ADD CONSTRAINT "InternalThread_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalParticipant" ADD CONSTRAINT "InternalParticipant_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "InternalChannel"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalParticipant" ADD CONSTRAINT "InternalParticipant_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "InternalThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalMessage" ADD CONSTRAINT "InternalMessage_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "InternalChannel"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalMessage" ADD CONSTRAINT "InternalMessage_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "InternalThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Post" ADD CONSTRAINT "Post_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

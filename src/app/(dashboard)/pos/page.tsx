@@ -64,17 +64,28 @@ export default function POSPage() {
   };
 
   const handleScanEnter = async () => {
-    const code = search.trim();
+    // Read the live DOM value — a barcode scanner types faster than React state
+    // updates, so `search` can be stale when Enter fires.
+    const code = (searchRef.current?.value ?? search).trim();
     if (!code) return;
+    // Clear immediately so a rapid follow-up scan isn't clobbered by this lookup.
+    setSearch(""); setResults([]);
+    if (searchRef.current) searchRef.current.value = "";
+
     let item = results.find((i) => i.barcode === code || i.sku === code);
     if (!item) {
       const res = await fetch(`/api/items?search=${encodeURIComponent(code)}&status=ACTIVE&limit=5`);
       const data = await res.json();
-      item = (data.items || []).find((i: any) => i.barcode === code || i.sku === code);
-      if (!item && (data.items || []).length === 1) item = data.items[0];
+      const list: any[] = data.items || [];
+      item = list.find((i: any) => i.barcode === code || i.sku === code) || (list.length === 1 ? list[0] : undefined);
     }
-    if (item) { addToCart(item); setScanFlash(`Added: ${item.title}`); setTimeout(() => setScanFlash(""), 1500); }
-    else { setScanFlash(`No active item for "${code}"`); setTimeout(() => setScanFlash(""), 1800); }
+    if (item) {
+      setCart((prev) => [...prev, { ...item!, cartId: Math.random().toString(36) }]);
+      searchRef.current?.focus();
+      setScanFlash(`Added: ${item.title}`); setTimeout(() => setScanFlash(""), 1500);
+    } else {
+      setScanFlash(`No active item for "${code}"`); setTimeout(() => setScanFlash(""), 1800);
+    }
   };
 
   const removeFromCart = (cartId: string) => setCart((prev) => prev.filter((i) => i.cartId !== cartId));

@@ -34,8 +34,8 @@ The project (e.g. "patient-dream") contains two services:
 
 **Build/run config** lives in `railway.json`:
 - Build: Nixpacks, `npm run build`.
-- Start: `npx prisma db push --accept-data-loss && npm run start`
-  (syncs the database schema, then starts the server).
+- Start: `bash scripts/deploy-migrate.sh` (applies database migrations, then
+  starts the server — see **Database migrations** below).
 - Healthcheck path: `/login`.
 
 > The app binds to Railway's `$PORT` automatically. The Prisma client is created
@@ -45,6 +45,32 @@ The project (e.g. "patient-dream") contains two services:
 ### Deploying changes
 Push to the connected branch → Railway rebuilds and redeploys automatically.
 Watch the **Deployments** tab; a healthy deploy ends **Active / green**.
+
+### Database migrations
+
+As of Phase 6 the database is managed with **Prisma migrations** (files in
+`prisma/migrations/`), not ad-hoc `db push`. On each deploy,
+`scripts/deploy-migrate.sh` runs:
+
+1. If the database already has tables but no migration history (the original
+   `db push` state), it **adopts the baseline** — marks it applied without
+   re-creating tables. A brand-new empty database skips this.
+2. `prisma migrate deploy` applies any pending migrations.
+3. **Safety net:** if migrations fail for any reason, it falls back to
+   `prisma db push` so the app still boots exactly as it did before. The worst
+   case is never worse than the old behaviour.
+
+**To roll back** the whole mechanism, set the Railway start command back to
+`npx prisma db push --accept-data-loss && npm run start`.
+
+**Changing the schema going forward:** edit `prisma/schema.prisma`, then generate
+a migration locally against a scratch Postgres —
+`prisma migrate dev --name <change>` — and commit the new folder under
+`prisma/migrations/`. Deploy applies it automatically. Avoid `db push` for schema
+changes now that migrations are the source of truth (it would drift from
+history). CHECK constraints and other things Prisma can't express in the schema
+are written as hand-authored `.sql` inside a migration folder (see
+`20261111000001_messaging_isolation_constraints`).
 
 ---
 
@@ -158,9 +184,29 @@ security boundary so the two channels can never cross-contaminate:
   fails the build if a messaging table is accessed from anywhere else.
 - A thread has **exactly one** external party (a consignor *or* a customer), the
   actor is always resolved on the server (never from the request body), and
-  cross-class recipients are rejected. Database-level CHECK constraints and
-  row-level security are added at the migration cutover (Phase 6); the
-  application enforces the same invariants today.
+  cross-class recipients are rejected.
+- **Database CHECK constraints (Phase 6)** now physically enforce these shapes:
+  an external thread must reference exactly one party consistent with its class;
+  an internal message/participant must belong to exactly one of a channel or a
+  direct thread. See `prisma/migrations/20261111000001_messaging_isolation_constraints`.
+  They were added `NOT VALID`, so they enforce every new write without risking
+  existing rows.
+- **Row-level security (RLS) is intentionally deferred.** Real RLS needs the app
+  to connect as a non-superuser role and set a per-request identity (session
+  GUCs) so policies can scope rows. The app currently uses a single service-role
+  connection with no per-request DB identity, so enabling RLS today would either
+  do nothing (the owning role bypasses it) or lock the app out of its own data.
+  Until the connection architecture carries per-request identity, isolation is
+  enforced at the **application layer** (every repository query is store- and
+  actor-scoped) and by the **CHECK constraints** above. This is the one piece of
+  §4a Layer 3 not yet active, and it is tracked as future hardening.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push/PR: the messaging-isolation guard
+(`npm run check:messaging-isolation`), the unit tests (`npm test`), and a
+production build. A change that reaches a messaging table outside
+`src/lib/messaging/` fails CI.
 - The legacy `ConsignorMessage` table is retired in favour of the above; existing
   message history is migrated into the new tables automatically the first time a
   consignor's thread is opened after deploy. No manual step, no data loss.

@@ -1,0 +1,40 @@
+name: CI
+
+# Runs the test suite, the §4a messaging-isolation guard, and a production
+# build on every push and pull request. The isolation check fails the build if
+# any messaging table is accessed outside src/lib/messaging/ (Layer 5).
+on:
+  push:
+    branches: ["**"]
+  pull_request: {}
+  workflow_dispatch: {}
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Messaging isolation guard (§4a Layer 5)
+        run: npm run check:messaging-isolation
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+        env:
+          # Build only needs these to exist; no real services are contacted.
+          DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
+          NEXTAUTH_SECRET: "ci-build-placeholder-secret"

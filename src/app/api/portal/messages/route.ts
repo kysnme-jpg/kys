@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireExternal } from "@/lib/authz";
+import { requirePortal } from "@/lib/authz";
 import { getMyThread, postFromExternal } from "@/lib/messaging/external";
 import { notifyInboundExternalMessage } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
 // Portal (EXTERNAL): the consignor's own conversation with the store.
-// All table access is inside the messaging repository (§4a Layer 5).
+// requirePortal resolves purely from the portal token, so it works even when the
+// same browser also has a staff session. All table access is inside the
+// messaging repository (§4a Layer 5).
 export async function GET(req: NextRequest) {
-  const g = await requireExternal(req);
+  const g = await requirePortal(req);
   if (!g.ok) return g.res;
   const { messages } = await getMyThread(g.actor);
   return NextResponse.json({ messages });
 }
 
 export async function POST(req: NextRequest) {
-  const g = await requireExternal(req);
+  const g = await requirePortal(req);
   if (!g.ok) return g.res;
   if (g.actor.preview) return NextResponse.json({ error: "This is a staff preview — read only." }, { status: 403 });
   const { body } = await req.json().catch(() => ({}));

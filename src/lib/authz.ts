@@ -59,7 +59,7 @@ async function resolveInternal(): Promise<Actor | null> {
 }
 
 // Resolve the EXTERNAL (consignor portal) actor from the portal JWT + fresh DB read.
-async function resolveExternal(req: NextRequest): Promise<Actor | null> {
+async function resolveExternal(req: NextRequest): Promise<Extract<Actor, { class: "EXTERNAL" }> | null> {
   const token = req.cookies.get("portal_token")?.value
     || (req.headers.get("authorization")?.startsWith("Bearer ") ? req.headers.get("authorization")!.slice(7) : undefined);
   if (!token) return null;
@@ -95,6 +95,21 @@ export async function resolveActor(req: NextRequest): Promise<Actor | null> {
   return (await resolveInternal()) ?? (await resolveExternal(req));
 }
 
+/**
+ * Like resolveActor, but when the request carries a portal Bearer token it
+ * resolves that FIRST — so shared endpoints (content feed, RSVP) called from the
+ * consignor portal aren't mistaken for staff when the same browser also has a
+ * staff session. Staff requests (cookie-based, no Bearer) are unaffected.
+ */
+export async function resolveActorPreferPortal(req: NextRequest): Promise<Actor | null> {
+  const hasBearer = req.headers.get("authorization")?.startsWith("Bearer ");
+  if (hasBearer) {
+    const ext = await resolveExternal(req);
+    if (ext) return ext;
+  }
+  return resolveActor(req);
+}
+
 export function authorize(actor: Actor | null, permission: Permission): boolean {
   return !!actor && actor.permissions.has(permission);
 }
@@ -116,6 +131,19 @@ export async function requireExternal(req: NextRequest): Promise<GuardResult<Ext
   const actor = await resolveActor(req);
   if (!actor) return deny(401, "Not signed in.");
   if (actor.class !== "EXTERNAL") return deny(403, "Portal access only.");
+  return { ok: true, actor };
+}
+
+/**
+ * Portal-only guard. Resolves the consignor from the PORTAL token alone,
+ * ignoring any staff session in the same browser. Use this for the portal's own
+ * endpoints so an owner (or a staffer who is also a consignor) testing the
+ * portal in a browser where they're also signed in as staff isn't mistaken for
+ * internal and rejected.
+ */
+export async function requirePortal(req: NextRequest): Promise<GuardResult<Extract<Actor, { class: "EXTERNAL" }>>> {
+  const actor = await resolveExternal(req);
+  if (!actor) return deny(401, "Not signed in to the portal.");
   return { ok: true, actor };
 }
 

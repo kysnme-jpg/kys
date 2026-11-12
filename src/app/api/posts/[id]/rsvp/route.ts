@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { resolveActor } from "@/lib/authz";
+import { resolveActorPreferPortal } from "@/lib/authz";
 import { feedWhereForActor } from "@/lib/posts";
 import { getActorTagNames } from "@/lib/tags";
 
@@ -14,7 +14,7 @@ const RESPONSES = ["YES", "NO", "MAYBE"];
  * one response.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const actor = await resolveActor(req);
+  const actor = await resolveActorPreferPortal(req);
   if (!actor) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const { id } = await params;
 

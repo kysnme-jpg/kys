@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { resolveActor } from "@/lib/authz";
+import { resolveActorPreferPortal } from "@/lib/authz";
 import { feedWhereForActor } from "@/lib/posts";
 import { getActorTagNames } from "@/lib/tags";
 
@@ -12,7 +12,7 @@ export const runtime = "nodejs";
  * audience includes that actor, inside their publish window, are returned.
  */
 export async function GET(req: NextRequest) {
-  const actor = await resolveActor(req);
+  const actor = await resolveActorPreferPortal(req);
   if (!actor) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const actorTags = await getActorTagNames(actor);

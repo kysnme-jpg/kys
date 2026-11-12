@@ -55,6 +55,10 @@ export default function PortalLoginPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <Input
                 type="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
@@ -65,6 +69,9 @@ export default function PortalLoginPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <Input
                 type="password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

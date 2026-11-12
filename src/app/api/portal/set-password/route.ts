@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (session.preview) return NextResponse.json({ error: "This is a staff preview — read only." }, { status: 403 });
 
   const { password } = await req.json();
-  const pw = String(password || "");
+  const pw = String(password || "").trim();
   if (pw.length < 6) {
     return NextResponse.json({ error: "Choose a password of at least 6 characters." }, { status: 400 });
   }

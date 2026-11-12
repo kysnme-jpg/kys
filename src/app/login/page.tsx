@@ -41,7 +41,7 @@ export default function LoginPage() {
             <Store className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">Classic Consigns by KYS</h1>
-          <p className="text-gray-400 text-sm mt-1">Sign in to your store</p>
+          <p className="text-gray-400 text-sm mt-1">Staff sign in</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -76,6 +76,10 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
+        <p className="text-center text-sm text-gray-400 mt-6">
+          Are you a consignor?{" "}
+          <a href="/portal/login" className="font-semibold text-indigo-300 hover:text-indigo-200">Sign in to your portal →</a>
+        </p>
       </div>
     </div>
   );

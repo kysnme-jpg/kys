@@ -89,7 +89,11 @@ export default function PortalLoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-sm text-gray-500 mt-5">
+          Store staff?{" "}
+          <a href="/login" className="font-semibold text-indigo-600 hover:text-indigo-700">Sign in here →</a>
+        </p>
+        <p className="text-center text-xs text-gray-400 mt-3">
           Contact your consignment store if you need access
         </p>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { splitName } from "@/lib/names";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ const PEOPLE_TABS = [
 ];
 
 interface Layaway {
-  id: string; buyerName: string; address?: string; cityStateZip?: string; phone?: string; email?: string;
+  id: string; buyerName: string; firstName?: string | null; lastName?: string | null; address?: string; cityStateZip?: string; phone?: string; email?: string;
   items: string; totalPrice: number; serviceFee: number;
   deposit: number; payment2: number; payment3: number; finalPayment: number;
   amountPaid: number; startDate: string; status: string;
@@ -31,7 +32,7 @@ const todayLocal = () => { const d = new Date(); const p = (n: number) => String
 const fmtDay = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
 const blankForm = () => ({
-  id: "", buyerName: "", address: "", cityStateZip: "", phone: "", email: "",
+  id: "", firstName: "", lastName: "", address: "", cityStateZip: "", phone: "", email: "",
   items: "", totalPrice: "", serviceFee: "5",
   deposit: "", payment2: "", payment3: "", finalPayment: "",
   startDate: todayLocal(), amountPaid: "0", status: "ACTIVE", addPayment: "",
@@ -74,7 +75,7 @@ export default function LayawayPage() {
   const openEdit = (l: Layaway) => {
     setError("");
     setForm({
-      id: l.id, buyerName: l.buyerName, address: l.address || "", cityStateZip: l.cityStateZip || "", phone: l.phone || "", email: l.email || "",
+      id: l.id, ...(l.firstName || l.lastName ? { firstName: l.firstName || "", lastName: l.lastName || "" } : splitName(l.buyerName)), address: l.address || "", cityStateZip: l.cityStateZip || "", phone: l.phone || "", email: l.email || "",
       items: l.items, totalPrice: String(l.totalPrice), serviceFee: String(l.serviceFee),
       deposit: String(l.deposit), payment2: String(l.payment2), payment3: String(l.payment3), finalPayment: String(l.finalPayment),
       startDate: l.startDate.slice(0, 10), amountPaid: String(l.amountPaid), status: l.status, addPayment: "",
@@ -82,11 +83,11 @@ export default function LayawayPage() {
   };
 
   const save = async () => {
-    if (!form.buyerName.trim()) { setError("Buyer name is required"); return; }
+    if (!form.firstName.trim()) { setError("First name is required"); return; }
     if (!form.items.trim()) { setError("Please list the item(s)"); return; }
     setSaving(true); setError("");
     const payload: any = {
-      buyerName: form.buyerName, address: form.address, cityStateZip: form.cityStateZip, phone: form.phone, email: form.email,
+      firstName: form.firstName, lastName: form.lastName, address: form.address, cityStateZip: form.cityStateZip, phone: form.phone, email: form.email,
       items: form.items, totalPrice: form.totalPrice, serviceFee: form.serviceFee,
       deposit: form.deposit, payment2: form.payment2, payment3: form.payment3, finalPayment: form.finalPayment,
       startDate: form.startDate, status: form.status,
@@ -185,7 +186,10 @@ export default function LayawayPage() {
         <Modal open={!!form} onClose={() => setForm(null)} title={form.id ? "Edit Layaway" : "New Layaway"} className="max-w-xl">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Buyer name</label><Input value={form.buyerName} onChange={(e) => setForm({ ...form, buyerName: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">First name</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} autoComplete="off" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Last name</label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} autoComplete="off" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Start date</label><Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">

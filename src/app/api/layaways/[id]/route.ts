@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { resolveName } from "@/lib/names";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -15,6 +16,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const data: Record<string, any> = {};
   for (const k of ["buyerName", "address", "cityStateZip", "phone", "email", "items"] as const) {
     if (body[k] !== undefined) data[k] = body[k] || (k === "buyerName" || k === "items" ? existing[k] : null);
+  }
+
+  // Name: separate first/last fields (or a single full name from older callers).
+  // The full name is always kept in sync for lists and emails.
+  if (body.firstName !== undefined || body.lastName !== undefined) {
+    const name = resolveName({ firstName: body.firstName ?? existing.firstName, lastName: body.lastName ?? existing.lastName });
+    if (!name.firstName) return NextResponse.json({ error: "First name is required" }, { status: 400 });
+    data.firstName = name.firstName; data.lastName = name.lastName || null; data.buyerName = name.full;
+  } else if (typeof body.buyerName === "string" && body.buyerName.trim()) {
+    const name = resolveName({ full: body.buyerName });
+    data.firstName = name.firstName; data.lastName = name.lastName || null; data.buyerName = name.full;
   }
   for (const k of ["totalPrice", "serviceFee", "deposit", "payment2", "payment3", "finalPayment"] as const) {
     if (body[k] !== undefined) data[k] = Math.max(0, Number(body[k]) || 0);

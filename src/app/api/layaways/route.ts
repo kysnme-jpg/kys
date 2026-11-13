@@ -4,12 +4,16 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { sendLayawayAgreementEmail } from "@/lib/email";
 import { processDueReminders } from "@/lib/reminders";
+import { resolveName } from "@/lib/names";
 
 const emptyToUndef = (v: unknown) => (v === "" || v == null ? undefined : v);
 const num = (def = 0) => z.preprocess((v) => (v === "" || v == null ? def : Number(v)), z.number().min(0));
 
 const schema = z.object({
-  buyerName: z.string().min(1, "Buyer name is required"),
+  // First + last name (the form sends these); a single full name is still accepted.
+  firstName: z.preprocess(emptyToUndef, z.string().optional()),
+  lastName: z.preprocess(emptyToUndef, z.string().optional()),
+  buyerName: z.preprocess(emptyToUndef, z.string().optional()),
   address: z.preprocess(emptyToUndef, z.string().optional()),
   cityStateZip: z.preprocess(emptyToUndef, z.string().optional()),
   phone: z.preprocess(emptyToUndef, z.string().optional()),
@@ -47,12 +51,14 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid data" }, { status: 400 });
   const d = parsed.data;
+  const name = resolveName({ firstName: d.firstName, lastName: d.lastName, full: d.buyerName });
+  if (!name.firstName) return NextResponse.json({ error: "First name is required" }, { status: 400 });
   const startDate = d.startDate ? new Date(`${d.startDate}T00:00:00.000Z`) : new Date();
 
   const layaway = await db.layaway.create({
     data: {
       storeId,
-      buyerName: d.buyerName.trim(),
+      buyerName: name.full, firstName: name.firstName, lastName: name.lastName || null,
       address: d.address, cityStateZip: d.cityStateZip, phone: d.phone, email: d.email,
       items: d.items,
       totalPrice: d.totalPrice, serviceFee: d.serviceFee,
@@ -67,7 +73,7 @@ export async function POST(req: NextRequest) {
     try {
       await sendLayawayAgreementEmail({
         to: d.email,
-        buyerName: d.buyerName.trim(),
+        buyerName: name.full,
         storeName: store?.name || "Classic Consigns by KYS",
         items: d.items,
         totalPrice: d.totalPrice,

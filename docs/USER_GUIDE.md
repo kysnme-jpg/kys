@@ -252,7 +252,8 @@ booking **new/prospective consignors** into drop-off slots.
 
 The **Layaway** tab (next to Appointments) tracks layaway agreements.
 
-- **New Layaway:** enter the buyer's info, the item(s), total price, the $5
+- **New Layaway:** enter the buyer's **first name** and **last name** (first
+  name is required), their contact info, the item(s), total price, the $5
   layaway fee, and the four payments (deposit today, then day 15, day 30, and the
   final at day 45). If you enter the buyer's **email**, they're automatically sent
   their **layaway agreement with the full payment schedule** when you save.
@@ -280,7 +281,8 @@ The **Layaway** tab (next to Appointments) tracks layaway agreements.
 
 The **Borrowed** tab tracks items lent out (e.g. for events).
 
-- **New Agreement:** enter the borrower's name, ID, phone, email, the dates
+- **New Agreement:** enter the borrower's **first name** and **last name**
+  (first name is required), ID, phone, email, the dates
   borrowed/return, the item list, condition notes, and who's responsible for dry
   cleaning. If you enter the borrower's **email**, they're automatically sent the
   **agreement listing the items** and the terms.

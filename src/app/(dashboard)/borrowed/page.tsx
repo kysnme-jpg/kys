@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { splitName } from "@/lib/names";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ const PEOPLE_TABS = [
 ];
 
 interface Borrowed {
-  id: string; borrowerName: string; phone?: string; email?: string; idNumber?: string;
+  id: string; borrowerName: string; firstName?: string | null; lastName?: string | null; phone?: string; email?: string; idNumber?: string;
   dateBorrowed: string; returnDate?: string; items: string;
   conditionPickup?: string; conditionDropoff?: string; dryCleaning?: string; status: string;
   lastReminderAt?: string;
@@ -29,7 +30,7 @@ const todayLocal = () => { const d = new Date(); const p = (n: number) => String
 const fmtDay = (d?: string) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "—";
 
 const blankForm = () => ({
-  id: "", borrowerName: "", phone: "", email: "", idNumber: "",
+  id: "", firstName: "", lastName: "", phone: "", email: "", idNumber: "",
   dateBorrowed: todayLocal(), returnDate: "",
   items: "", conditionPickup: "", conditionDropoff: "", dryCleaning: "", status: "OUT",
 });
@@ -97,14 +98,14 @@ export default function BorrowedPage() {
     setScanMsg(""); setScanCode(""); setShowAi(false);
     setError("");
     setForm({
-      id: b.id, borrowerName: b.borrowerName, phone: b.phone || "", email: b.email || "", idNumber: b.idNumber || "",
+      id: b.id, ...(b.firstName || b.lastName ? { firstName: b.firstName || "", lastName: b.lastName || "" } : splitName(b.borrowerName)), phone: b.phone || "", email: b.email || "", idNumber: b.idNumber || "",
       dateBorrowed: b.dateBorrowed.slice(0, 10), returnDate: b.returnDate ? b.returnDate.slice(0, 10) : "",
       items: b.items, conditionPickup: b.conditionPickup || "", conditionDropoff: b.conditionDropoff || "", dryCleaning: b.dryCleaning || "", status: b.status,
     });
   };
 
   const save = async () => {
-    if (!form.borrowerName.trim()) { setError("Borrower name is required"); return; }
+    if (!form.firstName.trim()) { setError("First name is required"); return; }
     if (!form.items.trim()) { setError("Please list the item(s)"); return; }
     setSaving(true); setError("");
     const payload = { ...form };
@@ -188,7 +189,10 @@ export default function BorrowedPage() {
         <Modal open={!!form} onClose={() => setForm(null)} title={form.id ? "Edit Borrowed Agreement" : "New Borrowed Agreement"} className="max-w-xl">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Borrower name</label><Input value={form.borrowerName} onChange={(e) => setForm({ ...form, borrowerName: e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">First name</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} autoComplete="off" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Last name</label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} autoComplete="off" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">ID / Driver’s License #</label><Input value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} placeholder="Optional" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">

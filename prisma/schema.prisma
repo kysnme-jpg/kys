@@ -716,7 +716,9 @@ model Layaway {
   id           String    @id @default(cuid())
   storeId      String
   store        Store     @relation(fields: [storeId], references: [id])
-  buyerName    String
+  buyerName    String // full name, kept in sync with firstName + lastName
+  firstName    String?
+  lastName     String?
   address      String?
   cityStateZip String?
   phone        String?
@@ -748,7 +750,9 @@ model BorrowedGarment {
   id               String    @id @default(cuid())
   storeId          String
   store            Store     @relation(fields: [storeId], references: [id])
-  borrowerName     String
+  borrowerName     String // full name, kept in sync with firstName + lastName
+  firstName        String?
+  lastName         String?
   phone            String?
   email            String?
   idNumber         String?

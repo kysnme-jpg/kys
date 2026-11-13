@@ -4,11 +4,15 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { sendBorrowedAgreementEmail } from "@/lib/email";
 import { processDueReminders } from "@/lib/reminders";
+import { resolveName } from "@/lib/names";
 
 const emptyToUndef = (v: unknown) => (v === "" || v == null ? undefined : v);
 
 const schema = z.object({
-  borrowerName: z.string().min(1, "Borrower name is required"),
+  // First + last name (the form sends these); a single full name is still accepted.
+  firstName: z.preprocess(emptyToUndef, z.string().optional()),
+  lastName: z.preprocess(emptyToUndef, z.string().optional()),
+  borrowerName: z.preprocess(emptyToUndef, z.string().optional()),
   phone: z.preprocess(emptyToUndef, z.string().optional()),
   email: z.preprocess(emptyToUndef, z.string().email("Enter a valid email").optional()),
   idNumber: z.preprocess(emptyToUndef, z.string().optional()),
@@ -42,13 +46,15 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid data" }, { status: 400 });
   const d = parsed.data;
+  const name = resolveName({ firstName: d.firstName, lastName: d.lastName, full: d.borrowerName });
+  if (!name.firstName) return NextResponse.json({ error: "First name is required" }, { status: 400 });
   const dateBorrowed = parseDate(d.dateBorrowed) || new Date();
   const returnDate = parseDate(d.returnDate) || null;
 
   const record = await db.borrowedGarment.create({
     data: {
       storeId,
-      borrowerName: d.borrowerName.trim(),
+      borrowerName: name.full, firstName: name.firstName, lastName: name.lastName || null,
       phone: d.phone, email: d.email, idNumber: d.idNumber,
       dateBorrowed, returnDate,
       items: d.items,
@@ -62,7 +68,7 @@ export async function POST(req: NextRequest) {
     try {
       await sendBorrowedAgreementEmail({
         to: d.email,
-        borrowerName: d.borrowerName.trim(),
+        borrowerName: name.full,
         storeName: store?.name || "Classic Consigns by KYS",
         items: d.items,
         dateBorrowed: fmt(dateBorrowed) || "",

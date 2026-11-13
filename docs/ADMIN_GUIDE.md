@@ -305,16 +305,28 @@ Two more People tabs: **Layaway** (`/layaway`) and **Borrowed** (`/borrowed`).
 - On creation, the customer/borrower is emailed the agreement if an email is
   provided (layaway → agreement + payment schedule; borrowed → item list +
   terms).
-- **Reminders:** layaway payment reminders fire at **15 / 30 / 45 days** from the
-  start date; borrowed-garment **return reminders** fire on/after the return
-  date. Logic lives in `src/lib/reminders.ts` and is idempotent (each reminder is
-  timestamped once sent).
-- Reminders run two ways:
-  1. **Opportunistically** whenever staff open the Layaway/Borrowed pages (the
-     list endpoints call the processor). Good enough if staff visit regularly.
-  2. **Daily** via `POST /api/cron/reminders`, protected by the `CRON_SECRET`
-     env var (send `Authorization: Bearer <CRON_SECRET>` or `?secret=`). If
-     `CRON_SECRET` is unset the endpoint is disabled (503).
+- **Reminders** (`src/lib/reminders.ts`):
+  - **Layaway:** one email every **14 days** from the start date until paid
+    (`Layaway.reminderCount` = periods already reminded; a long-overdue layaway
+    gets one catch-up email, never a backlog).
+  - **Borrowed:** one email **3 days** after `dateBorrowed` if still out
+    (`day3ReminderAt`), plus one on the return date if set (`returnReminderAt`).
+  - Each reminder is **claimed in the database before sending**, so overlapping
+    runs can't double-send. Automatic emails only go out 8am–8pm in the store's
+    timezone. Every reminder is written to the email log (`LAYAWAY` / `BORROWED`,
+    SENT or FAILED).
+  - **Manual:** `POST /api/layaways/[id]/remind` and `/api/borrowed/[id]/remind`
+    (the **Send reminder** buttons) send immediately and return the provider's
+    error if delivery fails.
+- Reminders run **automatically** — no setup needed:
+  1. An **in-process scheduler** (`src/instrumentation.ts`) checks ~90 seconds
+     after the server starts and every 30 minutes after. Set
+     `DISABLE_REMINDER_SCHEDULER=1` to turn it off.
+  2. Also whenever staff open the Layaway/Borrowed/Sip & Shop pages.
+  3. Optionally via `POST /api/cron/reminders`, protected by `CRON_SECRET`
+     (send `Authorization: Bearer <CRON_SECRET>` or `?secret=`). If
+     `CRON_SECRET` is unset the endpoint is disabled (503). With the built-in
+     scheduler this is no longer required.
 
 ### Sip & Shop events
 

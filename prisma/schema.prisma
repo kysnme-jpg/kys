@@ -734,6 +734,10 @@ model Layaway {
   reminder15At DateTime?
   reminder30At DateTime?
   reminder45At DateTime?
+  // Recurring reminders: one every 14 days from startDate until paid.
+  // reminderCount = how many 14-day periods have been reminded for.
+  reminderCount  Int       @default(0)
+  lastReminderAt DateTime? // most recent reminder of any kind (automatic or manual)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -756,6 +760,8 @@ model BorrowedGarment {
   dryCleaning      String?   // BORROWER | NOT_BORROWER | UPON_RETURN
   status           String    @default("OUT") // OUT | RETURNED
   returnReminderAt DateTime?
+  day3ReminderAt   DateTime? // automatic reminder 3 days after borrowing
+  lastReminderAt   DateTime? // most recent reminder of any kind (automatic or manual)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }

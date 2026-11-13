@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Pencil, CreditCard, DollarSign, Clock, Trash2 } from "lucide-react";
+import { Plus, Pencil, CreditCard, DollarSign, Clock, Trash2, Mail } from "lucide-react";
 
 const PEOPLE_TABS = [
   { label: "Customers", href: "/customers" },
@@ -24,6 +24,7 @@ interface Layaway {
   deposit: number; payment2: number; payment3: number; finalPayment: number;
   amountPaid: number; startDate: string; status: string;
   reminder15At?: string; reminder30At?: string; reminder45At?: string;
+  lastReminderAt?: string; reminderCount?: number;
 }
 
 const todayLocal = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
@@ -58,6 +59,18 @@ export default function LayawayPage() {
   useEffect(() => { load(); }, []);
 
   const openAdd = () => { setError(""); setForm(blankForm()); };
+  const [remindingId, setRemindingId] = useState<string | null>(null);
+  const sendReminder = async (l: Layaway) => {
+    if (!l.email) { alert("There's no email address on this layaway. Add one (pencil icon) to send a reminder."); return; }
+    if (!confirm(`Email a payment reminder to ${l.buyerName} at ${l.email} now?`)) return;
+    setRemindingId(l.id);
+    const res = await fetch(`/api/layaways/${l.id}/remind`, { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    setRemindingId(null);
+    if (res.ok) { alert(`Reminder sent to ${d.to}.`); load(); }
+    else alert(`The reminder was not sent.\n\n${d.error || "Please try again."}`);
+  };
+
   const openEdit = (l: Layaway) => {
     setError("");
     setForm({
@@ -148,8 +161,18 @@ export default function LayawayPage() {
                     <td className="p-4 text-right text-gray-900">{formatCurrency(l.totalPrice)}</td>
                     <td className="p-4 text-right text-gray-900">{formatCurrency(l.amountPaid)}</td>
                     <td className="p-4 text-right font-semibold text-gray-900">{formatCurrency(bal)}</td>
-                    <td className="p-4"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor[l.status]}`}>{l.status}</span></td>
-                    <td className="p-4 text-right"><button onClick={() => openEdit(l)} className="text-indigo-600 hover:text-indigo-800"><Pencil className="h-4 w-4" /></button></td>
+                    <td className="p-4">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor[l.status]}`}>{l.status}</span>
+                      {l.lastReminderAt && <p className="text-[11px] text-gray-400 mt-1.5 whitespace-nowrap">Reminded {fmtDay(l.lastReminderAt)}</p>}
+                    </td>
+                    <td className="p-4 text-right whitespace-nowrap">
+                      {l.status === "ACTIVE" && bal > 0 && (
+                        <button onClick={() => sendReminder(l)} disabled={remindingId === l.id} title="Send a payment reminder email now" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 mr-3 disabled:opacity-50">
+                          <Mail className="h-4 w-4" /> {remindingId === l.id ? "Sending…" : "Send reminder"}
+                        </button>
+                      )}
+                      <button onClick={() => openEdit(l)} className="text-indigo-600 hover:text-indigo-800 align-middle"><Pencil className="h-4 w-4" /></button>
+                    </td>
                   </tr>
                 );
               })}

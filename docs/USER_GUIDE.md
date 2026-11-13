@@ -246,9 +246,15 @@ The **Layaway** tab (next to Appointments) tracks layaway agreements.
   layaway fee, and the four payments (deposit today, then day 15, day 30, and the
   final at day 45). If you enter the buyer's **email**, they're automatically sent
   their **layaway agreement with the full payment schedule** when you save.
-- **Automatic reminders:** the buyer gets an email reminder at **15, 30, and 45
-  days** for the next payment due (and the balance remaining). Reminders stop once
-  the layaway is fully paid.
+- **Automatic reminders:** the buyer gets an email reminder **every 2 weeks**
+  from the start date until the layaway is paid off (it names the next payment
+  due and the balance remaining). Reminders stop on their own once it's fully
+  paid, completed or cancelled. They are sent during the day (8am–8pm), never
+  overnight, and need an email address on the layaway.
+- **Send reminder (manual):** each active layaway row has a **Send reminder**
+  button — click it to email the payment reminder right now, whenever you need
+  to. It doesn't change the automatic 2-week schedule. The row shows
+  "Reminded <date>" for the most recent reminder of either kind.
 - **Recording payments:** open a layaway (pencil). Two separate controls:
   - **Record a payment (+$)** — the normal flow: type what the buyer just handed
     you and it's **added** to their running total.
@@ -276,8 +282,13 @@ The **Borrowed** tab tracks items lent out (e.g. for events).
   photo (AI)**, snap/upload a picture, and it fills in a line (title, brand, size,
   suggested price) for you to tweak.
 - You can still type or edit any line by hand in the box.
-- **Return reminder:** if a return date and email are set, the borrower gets a
-  reminder email when the item is due back.
+- **Automatic reminders:** the borrower gets a reminder email **3 days after
+  borrowing** if the items are still out, and — if you set a return date —
+  another on that date. Sent during the day (8am–8pm); an email address is
+  required. Reminders stop once the agreement is marked Returned.
+- **Send reminder (manual):** each agreement that's still out has a **Send
+  reminder** button to email the borrower right now. The row shows
+  "Reminded <date>" for the most recent reminder.
 - Mark an agreement **Returned** (pencil → Status) when the items come back.
 
 ### Sip & Shop

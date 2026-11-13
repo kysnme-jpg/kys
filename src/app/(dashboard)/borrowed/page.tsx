@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Pencil, Shirt, Clock, Trash2, ScanLine } from "lucide-react";
+import { Plus, Pencil, Shirt, Clock, Trash2, ScanLine, Mail } from "lucide-react";
 import { AIEntry } from "@/components/inventory/ai-entry";
 
 const PEOPLE_TABS = [
@@ -22,6 +22,7 @@ interface Borrowed {
   id: string; borrowerName: string; phone?: string; email?: string; idNumber?: string;
   dateBorrowed: string; returnDate?: string; items: string;
   conditionPickup?: string; conditionDropoff?: string; dryCleaning?: string; status: string;
+  lastReminderAt?: string;
 }
 
 const todayLocal = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
@@ -80,6 +81,18 @@ export default function BorrowedPage() {
   useEffect(() => { load(); }, []);
 
   const openAdd = () => { setError(""); setScanMsg(""); setScanCode(""); setShowAi(false); setForm(blankForm()); };
+  const [remindingId, setRemindingId] = useState<string | null>(null);
+  const sendReminder = async (b: Borrowed) => {
+    if (!b.email) { alert("There's no email address on this agreement. Add one (pencil icon) to send a reminder."); return; }
+    if (!confirm(`Email a return reminder to ${b.borrowerName} at ${b.email} now?`)) return;
+    setRemindingId(b.id);
+    const res = await fetch(`/api/borrowed/${b.id}/remind`, { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    setRemindingId(null);
+    if (res.ok) { alert(`Reminder sent to ${d.to}.`); load(); }
+    else alert(`The reminder was not sent.\n\n${d.error || "Please try again."}`);
+  };
+
   const openEdit = (b: Borrowed) => {
     setScanMsg(""); setScanCode(""); setShowAi(false);
     setError("");
@@ -152,8 +165,18 @@ export default function BorrowedPage() {
                   <td className="p-4 text-gray-700 max-w-[240px]"><p className="line-clamp-2 whitespace-pre-wrap">{b.items}</p></td>
                   <td className="p-4 text-gray-500 text-xs">{fmtDay(b.dateBorrowed)}</td>
                   <td className="p-4 text-gray-700 text-xs">{fmtDay(b.returnDate)}</td>
-                  <td className="p-4"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${b.status === "RETURNED" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>{b.status === "RETURNED" ? "Returned" : "Out"}</span></td>
-                  <td className="p-4 text-right"><button onClick={() => openEdit(b)} className="text-indigo-600 hover:text-indigo-800"><Pencil className="h-4 w-4" /></button></td>
+                  <td className="p-4">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${b.status === "RETURNED" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>{b.status === "RETURNED" ? "Returned" : "Out"}</span>
+                    {b.lastReminderAt && <p className="text-[11px] text-gray-400 mt-1.5 whitespace-nowrap">Reminded {fmtDay(b.lastReminderAt)}</p>}
+                  </td>
+                  <td className="p-4 text-right whitespace-nowrap">
+                    {b.status !== "RETURNED" && (
+                      <button onClick={() => sendReminder(b)} disabled={remindingId === b.id} title="Send a return reminder email now" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 mr-3 disabled:opacity-50">
+                        <Mail className="h-4 w-4" /> {remindingId === b.id ? "Sending…" : "Send reminder"}
+                      </button>
+                    )}
+                    <button onClick={() => openEdit(b)} className="text-indigo-600 hover:text-indigo-800 align-middle"><Pencil className="h-4 w-4" /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -21,5 +21,11 @@ consignors, sales, refunds and payouts.
    node scripts/qa/05-roles-money.mjs    # report: what the lowest role is allowed to do
    ```
 
+`06-reminders.mjs` checks the layaway (every 14 days) and borrowed (3 days)
+reminder rules. It needs the app started with `EMAIL_DRY_RUN=1` (records sends
+without emailing anyone), `CRON_SECRET=qa-cron` and
+`DISABLE_REMINDER_SCHEDULER=1`, and `psql` access to the scratch database
+(override with `QA_PSQL`).
+
 Set `QA_BASE_URL` to use a different port. Every script prints `PASS`/`FAIL`
 lines and a summary; `05` is informational (it reports, it does not assert).

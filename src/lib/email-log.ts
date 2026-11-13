@@ -5,7 +5,7 @@ export async function logEmail(data: {
   storeId: string;
   consignorId?: string | null;
   to: string;
-  type: "INVENTORY" | "CONTRACT" | "APPOINTMENT" | "SIPSHOP" | "MESSAGE_ALERT" | "OTHER";
+  type: "INVENTORY" | "CONTRACT" | "APPOINTMENT" | "SIPSHOP" | "MESSAGE_ALERT" | "LAYAWAY" | "BORROWED" | "OTHER";
   subject?: string;
   status?: "SENT" | "TEST" | "FAILED";
 }) {

@@ -74,7 +74,23 @@ export async function sendBroadcastTest(opts: {
 // ─── Notification nudges (§7) ──────────────────────────────────────────────────
 // Content-free prompts to log in — they never include message text (§4a Layer 7).
 
-type SendResult = { ok: boolean; error?: string };
+export type SendResult = { ok: boolean; error?: string };
+
+/** Send one email and report what happened (Resend returns most failures in `error`). */
+async function deliver(to: string, subject: string, html: string): Promise<SendResult> {
+  // QA only: EMAIL_DRY_RUN=1 records the send as successful without emailing
+  // anyone, so the regression suite can exercise reminder logic safely.
+  if (process.env.EMAIL_DRY_RUN === "1") { console.log(`[email dry-run] to=${to} subject=${subject}`); return { ok: true }; }
+  const r = getResend();
+  if (!r) return { ok: false, error: "RESEND_API_KEY is not set on the server." };
+  try {
+    const { error } = await r.emails.send({ from: FROM, to, subject, html });
+    if (error) return { ok: false, error: (error as any).message || JSON.stringify(error) };
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+}
 
 async function sendNudge(to: string, subject: string, title: string, body: string, storeName: string): Promise<SendResult> {
   const r = getResend();
@@ -231,29 +247,22 @@ export async function sendLayawayReminderEmail(opts: {
   to: string;
   buyerName: string;
   storeName: string;
-  which: string; // "Payment 2 (due in 15 days)" etc.
+  items?: string;
+  which: string; // e.g. "Payment 2 — due Nov 20"
   amountDue: number;
   balanceRemaining: number;
-}) {
-  const r = getResend();
-  if (!r) return;
-
+}): Promise<SendResult> {
   const body = `
-    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.buyerName},</p>
-    <p style="color:#374151;font-size:15px;line-height:1.6">This is a friendly reminder about your layaway with ${opts.storeName}.</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${escHtml(opts.buyerName)},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">This is a friendly reminder about your layaway with ${escHtml(opts.storeName)}.</p>
+    ${opts.items ? `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;color:#374151;font-size:14px;line-height:1.6;margin:12px 0">${escHtml(opts.items).replace(/\n/g, "<br>")}</div>` : ""}
     <table width="100%" style="background:#f3f4f6;border-radius:8px;padding:16px;margin:16px 0;border-collapse:collapse">
-      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Now due</td><td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${opts.which}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Next payment</td><td style="padding:6px 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${escHtml(opts.which)}</td></tr>
       <tr><td style="padding:6px 0;color:#6b7280;font-size:14px">Amount</td><td style="padding:6px 0;color:#b4532a;font-weight:700;font-size:18px;text-align:right">${fmtMoney(opts.amountDue)}</td></tr>
       <tr style="border-top:1px solid #d1d5db"><td style="padding:10px 0 0;color:#6b7280;font-size:14px">Balance remaining</td><td style="padding:10px 0 0;color:#111827;font-weight:600;font-size:14px;text-align:right">${fmtMoney(opts.balanceRemaining)}</td></tr>
     </table>
-    <p style="color:#374151;font-size:13px;line-height:1.6">Please stop by or call to make your payment. Thank you!</p>`;
-
-  await r.emails.send({
-    from: FROM,
-    to: opts.to,
-    subject: `Layaway payment reminder — ${opts.storeName}`,
-    html: baseHtml("Layaway Payment Reminder", body, opts.storeName),
-  });
+    <p style="color:#374151;font-size:13px;line-height:1.6">Please stop by or call to make your payment. If you've already paid, thank you — you can ignore this note.</p>`;
+  return deliver(opts.to, `Layaway payment reminder — ${opts.storeName}`, baseHtml("Layaway Payment Reminder", body, opts.storeName));
 }
 
 // ─── Borrowed garment ────────────────────────────────────────────────────────
@@ -303,23 +312,19 @@ export async function sendBorrowedReturnReminderEmail(opts: {
   borrowerName: string;
   storeName: string;
   items: string;
-  returnDate: string;
-}) {
-  const r = getResend();
-  if (!r) return;
-
+  dateBorrowed?: string | null;
+  returnDate?: string | null;
+}): Promise<SendResult> {
+  const due = opts.returnDate
+    ? `are due back on <strong>${escHtml(opts.returnDate)}</strong>`
+    : `are still checked out to you — please return them at your earliest convenience`;
   const body = `
-    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${opts.borrowerName},</p>
-    <p style="color:#374151;font-size:15px;line-height:1.6">This is a reminder that your borrowed item(s) from ${opts.storeName} are due back on <strong>${opts.returnDate}</strong>.</p>
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;color:#374151;font-size:14px;line-height:1.7;white-space:pre-wrap;margin:14px 0">${opts.items.replace(/\n/g, "<br>")}</div>
-    <p style="color:#374151;font-size:13px;line-height:1.6">Please return them in the same condition received. Thank you!</p>`;
-
-  await r.emails.send({
-    from: FROM,
-    to: opts.to,
-    subject: `Reminder: items due back ${opts.returnDate} — ${opts.storeName}`,
-    html: baseHtml("Return Reminder", body, opts.storeName),
-  });
+    <p style="color:#374151;font-size:15px;line-height:1.6">Hi ${escHtml(opts.borrowerName)},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">This is a friendly reminder that the item(s) you borrowed from ${escHtml(opts.storeName)}${opts.dateBorrowed ? ` on ${escHtml(opts.dateBorrowed)}` : ""} ${due}.</p>
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;color:#374151;font-size:14px;line-height:1.7;margin:14px 0">${escHtml(opts.items).replace(/\n/g, "<br>")}</div>
+    <p style="color:#374151;font-size:13px;line-height:1.6">Please return them in the same condition received. If you've already returned them, thank you — you can ignore this note.</p>`;
+  const subject = opts.returnDate ? `Reminder: items due back ${opts.returnDate} — ${opts.storeName}` : `Reminder: borrowed items — ${opts.storeName}`;
+  return deliver(opts.to, subject, baseHtml("Borrowed Items Reminder", body, opts.storeName));
 }
 
 // ─── Sip & Shop ──────────────────────────────────────────────────────────────

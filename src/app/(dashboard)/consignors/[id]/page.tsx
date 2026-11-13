@@ -27,6 +27,7 @@ interface ConsignorDetail {
   balance: number;
   notes?: string;
   portalEnabled?: boolean;
+  portalLoginSet?: boolean;
   createdAt: string;
   items: any[];
   ledgerEntries: any[];
@@ -320,10 +321,12 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
               <h1 className="text-2xl font-bold text-gray-900">
                 {consignor.firstName} {consignor.lastName}
               </h1>
-              {consignor.portalEnabled ? (
+              {consignor.portalEnabled && consignor.portalLoginSet ? (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full"><CheckCircle className="h-3 w-3" /> Portal active</span>
+              ) : consignor.portalEnabled ? (
+                <span title="Use Email inventory or Resend portal access to send their login" className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full"><Clock className="h-3 w-3" /> Portal on — login not sent yet</span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full"><Clock className="h-3 w-3" /> Portal not set</span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full"><Clock className="h-3 w-3" /> Portal off</span>
               )}
             </div>
             <p className="text-sm text-gray-500">Member since {formatDate(consignor.createdAt)} · {consignor.splitPercent}% split</p>

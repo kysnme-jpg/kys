@@ -188,6 +188,16 @@ The people who bring you items to sell. Open **Consignors** from the sidebar.
 - **Click a consignor** to edit their name, contact, **split %**, and **portal
   access**, or open **Details** for their full items / earnings / payout history.
 - **Bulk actions:** set split %, enable/disable portal access, delete.
+- **Portal access is on by default.** Every consignor has the portal switched
+  on, and the **Enable Consignor Portal** box is pre-ticked when you add a new
+  one (untick it if you don't want it). Having the portal *on* isn't the same as
+  having a *login*: a consignor can sign in only once they've been sent one.
+  - In the list, a green **portal** tag means they have a login; an amber
+    **no login sent** tag means the portal is on but they haven't been sent one.
+  - On their page the badge reads **Portal active**, **Portal on — login not
+    sent yet**, or **Portal off**.
+  - To send a login, open the consignor and use **Email inventory** (their item
+    list plus login) or **Resend portal access** (login only).
 - **Balance** is what you currently owe each consignor. It goes up whenever one
   of their items **sells** — either through the POS or by **marking an item
   SOLD** from the Edit window. Once a consignor's balance is above $0 they appear

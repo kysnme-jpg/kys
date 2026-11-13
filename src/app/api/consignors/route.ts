@@ -15,7 +15,7 @@ const createConsignorSchema = z.object({
   address: z.preprocess(emptyToUndef, z.string().optional()),
   splitPercent: z.number().min(0).max(100).default(50),
   notes: z.preprocess(emptyToUndef, z.string().optional()),
-  portalEnabled: z.boolean().default(false),
+  portalEnabled: z.boolean().default(true),
   payoutMethod: z.preprocess(emptyToUndef, z.enum(["CHECK", "CASH", "ACH", "ZELLE", "CASHAPP"]).optional()),
   zelleHandle: z.preprocess(emptyToUndef, z.string().optional()),
   cashAppHandle: z.preprocess(emptyToUndef, z.string().optional()),
@@ -44,10 +44,13 @@ export async function GET(req: NextRequest) {
     include: {
       _count: { select: { items: true } },
     },
+    omit: { portalPassword: false }, // read only to report whether a login exists
     orderBy: { lastName: "asc" },
   });
+  // Never send the hash — only whether a portal login has been set up.
+  const safeConsignors = consignors.map(({ portalPassword, ...c }) => ({ ...c, portalLoginSet: !!portalPassword }));
 
-  return NextResponse.json({ consignors });
+  return NextResponse.json({ consignors: safeConsignors });
 }
 
 export async function POST(req: NextRequest) {

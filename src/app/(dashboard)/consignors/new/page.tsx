@@ -25,7 +25,7 @@ export default function NewConsignorPage() {
     cashAppHandle: "",
     unsoldPreference: "",
     notes: "",
-    portalEnabled: false,
+    portalEnabled: true,
   });
 
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
@@ -171,7 +171,7 @@ export default function NewConsignorPage() {
               />
               <div>
                 <span className="text-sm font-medium text-gray-700">Enable Consignor Portal</span>
-                <p className="text-xs text-gray-500">Consignor can log in to view their balance and items</p>
+                <p className="text-xs text-gray-500">Lets the consignor log in to view their balance and items. They get their login when you use “Email inventory” or “Resend portal access” on their page.</p>
               </div>
             </label>
           </CardContent>

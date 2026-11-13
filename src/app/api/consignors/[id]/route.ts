@@ -11,6 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const consignor = await db.consignor.findFirst({
     where: { id, storeId },
+    omit: { portalPassword: false }, // read only to report whether a login exists
     include: {
       items: {
         orderBy: { createdAt: "desc" },
@@ -33,7 +34,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (!consignor) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json(consignor);
+  // Never send the hash — only whether a portal login has been set up.
+  const { portalPassword, ...safe } = consignor;
+  return NextResponse.json({ ...safe, portalLoginSet: !!portalPassword });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -32,6 +32,7 @@ interface Consignor {
   balance: number;
   notes?: string | null;
   portalEnabled: boolean;
+  portalLoginSet?: boolean;
   payoutMethod?: string | null;
   zelleHandle?: string | null;
   cashAppHandle?: string | null;
@@ -174,7 +175,9 @@ export default function ConsignorsPage() {
               {filtered.map((c) => (
                 <tr key={c.id} className={`hover:bg-gray-50 cursor-pointer ${selected.has(c.id) ? "bg-indigo-50/50" : ""}`} onClick={() => setEditing({ ...c })}>
                   <td className="p-3" onClick={(e) => e.stopPropagation()}><Checkbox checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} /></td>
-                  <td className="p-3 font-medium text-gray-900">{c.firstName} {c.lastName}{c.portalEnabled && <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">portal</span>}</td>
+                  <td className="p-3 font-medium text-gray-900">{c.firstName} {c.lastName}{c.portalEnabled && (c.portalLoginSet
+                    ? <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">portal</span>
+                    : <span className="ml-2 text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded" title="Portal is on, but this consignor hasn't been sent a login yet">no login sent</span>)}</td>
                   <td className="p-3 text-gray-600">{c.email || <span className="text-gray-300">—</span>}</td>
                   <td className="p-3"><span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-medium">{c.splitPercent}%</span></td>
                   <td className="p-3 font-medium text-gray-900">{formatCurrency(c.balance)}</td>

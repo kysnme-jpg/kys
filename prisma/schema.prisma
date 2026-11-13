@@ -150,7 +150,7 @@ model Consignor {
   notes            String?
   contractSignedAt DateTime?
   portalPassword   String?
-  portalEnabled    Boolean   @default(false)
+  portalEnabled    Boolean   @default(true) // on by default; they can sign in once a login has been sent
   portalMustReset  Boolean   @default(false) // force a password reset on next portal login
   bankAccountMask  String?
   achEnabled       Boolean   @default(false)

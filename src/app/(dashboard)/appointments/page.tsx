@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useOrigin } from "@/lib/use-origin";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,7 +116,8 @@ export default function AppointmentsPage() {
     load();
   };
 
-  const bookingUrl = typeof window !== "undefined" ? `${window.location.origin}/book` : "/book";
+  const origin = useOrigin();
+  const bookingUrl = `${origin}/book`;
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(bookingUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ }
   };

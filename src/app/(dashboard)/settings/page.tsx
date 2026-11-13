@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useOrigin } from "@/lib/use-origin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Save, Store, CreditCard, Globe, Tag, Key, Webhook, Copy, Trash2, Plus, Percent, FileText } from "lucide-react";
 
 export default function SettingsPage() {
+  const origin = useOrigin();
   const [saved, setSaved] = useState(false);
   const [categoryName, setCategoryName] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
@@ -301,7 +303,7 @@ export default function SettingsPage() {
           <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-4">
             <p className="text-sm font-medium text-indigo-800">Shop URL</p>
             <p className="text-indigo-700 font-mono text-sm mt-0.5">
-              {typeof window !== "undefined" ? window.location.origin : ""}/shop
+              {origin}/shop
             </p>
           </div>
         </CardContent>

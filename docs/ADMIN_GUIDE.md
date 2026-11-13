@@ -494,6 +494,36 @@ for a local Postgres, `npm run db:push`, `npm run db:seed`, `npm run dev`).
 - [ ] The owner password was changed from any initial value.
 - [ ] Secrets are only in Railway Variables (never committed to git).
 - [ ] API keys are rotated if exposed.
+- [ ] The **tax rate** in Settings is your correct rate (the POS and every
+      recorded sale use it).
+
+### How access is enforced (for reference)
+
+- **Public vs. staff pages.** `src/middleware.ts` sends anyone without a staff
+  session to `/login`, except an explicit public list: the booking, shop, kiosk
+  and Sip & Shop pages, and the **consignor/dealer portal** (`/portal`,
+  `/api/portal`, `/dealer`, `/api/dealer`), which has its own login and verifies
+  its own token on every request. If you add a page consignors or the public must
+  reach, it has to be added to that list — otherwise they are bounced to the
+  staff login.
+- **Password hashes never leave the database layer.** The Prisma client is
+  configured to omit `User.passwordHash` and `Consignor.portalPassword` from
+  every query unless the query explicitly opts in (only the two login checks do).
+  The portal's own data endpoint returns a fixed list of fields — never the
+  store's private notes about a consignor.
+- **Sessions are re-checked.** A deactivated staff account is signed out of any
+  open session, and a role change applies without re-login.
+- **Shopify webhook** (`/api/webhooks/shopify`) is fail-closed: it does nothing
+  unless `SHOPIFY_WEBHOOK_SECRET` is set and the request carries a valid
+  signature.
+- **Refunds** are recorded on the sale (`Sale.refundedAmount` / `refundedTax`,
+  `SaleItem.refundedAt`); reports use net figures.
+
+### QA regression suite
+
+`scripts/qa/` holds the end-to-end checks used to verify the platform (money
+flow, portal, messaging isolation, roles, content, every page). See
+`scripts/qa/README.md` to run them against a scratch database before a release.
 
 ---
 

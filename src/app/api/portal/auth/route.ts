@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
   const candidates = await db.consignor.findMany({
     where: { email: { equals: String(email).trim(), mode: "insensitive" }, portalEnabled: true },
     include: { store: { select: { name: true, slug: true } } },
+    omit: { portalPassword: false }, // needed to verify the password
   });
 
   // Trim the password (kills a trailing space/newline from copy-pasting the

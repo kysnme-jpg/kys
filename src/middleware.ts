@@ -12,13 +12,31 @@ const SESSION_COOKIES = [
   "__Secure-next-auth.session-token",
 ];
 
-const PUBLIC_PATHS = ["/api/auth", "/login", "/setup", "/api/setup", "/reset", "/api/reset-password", "/shop", "/api/shop", "/api/photos", "/book", "/api/book", "/api/cron", "/sip-and-shop", "/api/sip-and-shop", "/welcome", "/api/checkin", "/portal/sign", "/api/contracts/"];
+// The consignor/dealer portal has its OWN login (a portal token, not a staff
+// session), so its pages and API must be reachable without a staff cookie —
+// each portal route verifies the portal token itself.
+const PUBLIC_PATHS = [
+  "/api/auth", "/login", "/setup", "/api/setup", "/reset", "/api/reset-password",
+  "/shop", "/api/shop", "/api/photos", "/book", "/api/book", "/api/cron",
+  "/sip-and-shop", "/api/sip-and-shop", "/welcome", "/api/checkin", "/api/contracts/",
+  "/portal", "/api/portal", "/dealer", "/api/dealer",
+  "/api/webhooks/shopify", // verifies Shopify's signature itself (fail-closed)
+];
+
+// Shared endpoints the portal also calls with its Bearer token. They resolve and
+// verify the caller themselves; only let them past the cookie check when a
+// Bearer token is actually presented.
+const BEARER_PATHS = [/^\/api\/posts\/feed$/, /^\/api\/posts\/[^/]+\/rsvp$/];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p.endsWith("/") ? p : p + "/"));
   if (isPublic) return NextResponse.next();
+
+  if (req.headers.get("authorization")?.startsWith("Bearer ") && BEARER_PATHS.some((re) => re.test(pathname))) {
+    return NextResponse.next();
+  }
 
   const hasSession = SESSION_COOKIES.some((name) => req.cookies.has(name));
   if (!hasSession) {

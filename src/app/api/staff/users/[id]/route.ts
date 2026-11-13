@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireOwner } from "@/lib/authz";
+import { invalidateAccountCache } from "@/lib/auth";
 import { UI_ROLE_TO_ENUM, enumToUiRole } from "../route";
 
 export const runtime = "nodejs";
@@ -57,6 +58,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     where: { id }, data,
     select: { id: true, name: true, email: true, phone: true, role: true, active: true, lastLoginAt: true },
   });
+  invalidateAccountCache(id);
   return NextResponse.json({
     user: { ...updated, role: enumToUiRole(String(updated.role)), isSelf: id === g.actor.userId },
   });
@@ -75,5 +77,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: "You can't remove the last owner." }, { status: 400 });
   }
   await db.user.update({ where: { id }, data: { active: false } });
+  invalidateAccountCache(id);
   return NextResponse.json({ ok: true });
 }

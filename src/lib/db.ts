@@ -10,6 +10,13 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    // Password hashes are never returned by a query unless it explicitly opts
+    // in with `omit: { ...: false }` — so no API response can leak one by
+    // accident, including routes written later.
+    omit: {
+      user: { passwordHash: true },
+      consignor: { portalPassword: true },
+    },
   });
 }
 

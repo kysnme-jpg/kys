@@ -42,8 +42,8 @@ async function resolveInternal(): Promise<Actor | null> {
   const userId = (session?.user as any)?.id;
   if (!userId) return null;
   // Fresh lookup — role/storeId come from the DB now, not stale token claims.
-  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true, storeId: true, name: true, email: true } });
-  if (!user || !user.storeId) return null;
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true, storeId: true, name: true, email: true, active: true } });
+  if (!user || !user.storeId || user.active === false) return null;
   const role = DB_ROLE_TO_INTERNAL[String(user.role)] || "associate";
   // Permissions come from the database RBAC table (editable), falling back to
   // the static defaults when unseeded/unavailable.

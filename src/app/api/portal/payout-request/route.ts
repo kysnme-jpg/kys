@@ -1,29 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
 import { db } from "@/lib/db";
-
-async function getPortalConsignor(req: NextRequest) {
-  const token =
-    req.cookies.get("portal_token")?.value ||
-    req.headers.get("authorization")?.replace("Bearer ", "");
-
-  if (!token) return null;
-
-  try {
-    const { payload } = await jwtVerify(
-      token,
-      new TextEncoder().encode(process.env.PORTAL_JWT_SECRET || "dev-secret")
-    );
-    if (payload.type !== "consignor-portal") return null;
-    return payload.consignorId as string;
-  } catch {
-    return null;
-  }
-}
+import { getPortalConsignor } from "../me/route";
 
 export async function POST(req: NextRequest) {
-  const consignorId = await getPortalConsignor(req);
-  if (!consignorId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Shared portal resolver (same token + secret as the rest of the portal).
+  const session = await getPortalConsignor(req);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.preview) return NextResponse.json({ error: "This is a staff preview — read only." }, { status: 403 });
+  const consignorId = session.id;
 
   const consignor = await db.consignor.findUnique({ where: { id: consignorId } });
   if (!consignor) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -32,7 +16,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No balance available to request" }, { status: 400 });
   }
 
-  const { method, notes } = await req.json();
+  const { method, notes } = await req.json().catch(() => ({}));
+
+  // One open request at a time — a second tap shouldn't create a duplicate.
+  const open = await db.payout.findFirst({ where: { consignorId, status: "PENDING" }, select: { id: true, amount: true } });
+  if (open) return NextResponse.json({ requested: true, amount: open.amount, payoutId: open.id, alreadyRequested: true });
 
   // Create a pending payout record (store staff will approve/process it)
   const payout = await db.payout.create({

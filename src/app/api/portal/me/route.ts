@@ -50,5 +50,19 @@ export async function GET(req: NextRequest) {
 
   if (!consignor) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json(consignor);
+  // Send ONLY what the portal displays. Never the password hash, the store's
+  // private notes about this consignor, or payout account details.
+  return NextResponse.json({
+    id: consignor.id,
+    firstName: consignor.firstName,
+    lastName: consignor.lastName,
+    email: consignor.email,
+    balance: consignor.balance,
+    splitPercent: consignor.splitPercent,
+    portalMustReset: consignor.portalMustReset,
+    createdAt: consignor.createdAt,
+    store: consignor.store,
+    items: consignor.items,
+    ledgerEntries: consignor.ledgerEntries,
+  });
 }

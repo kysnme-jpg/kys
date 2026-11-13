@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Sale" ADD COLUMN     "refundedAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "refundedTax" DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "SaleItem" ADD COLUMN     "refundedAt" TIMESTAMP(3);

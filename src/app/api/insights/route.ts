@@ -23,15 +23,15 @@ export async function GET(req: NextRequest) {
   ] = await Promise.all([
     // All-time totals
     db.sale.aggregate({
-      where: { storeId, status: "COMPLETED" },
-      _sum: { total: true, taxAmount: true },
+      where: { storeId, status: { in: ["COMPLETED", "REFUNDED"] } },
+      _sum: { total: true, taxAmount: true, refundedAmount: true, refundedTax: true },
       _count: true,
     }),
 
     // Last 30 days sales
     db.sale.aggregate({
-      where: { storeId, status: "COMPLETED", createdAt: { gte: thirtyDaysAgo } },
-      _sum: { total: true },
+      where: { storeId, status: { in: ["COMPLETED", "REFUNDED"] }, createdAt: { gte: thirtyDaysAgo } },
+      _sum: { total: true, refundedAmount: true },
       _count: true,
     }),
 
@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
     db.saleItem.groupBy({
       by: ["itemId"],
       where: {
+        refundedAt: null,
         sale: { storeId, status: "COMPLETED", createdAt: { gte: thirtyDaysAgo } },
       },
       _sum: { price: true },
@@ -72,8 +73,8 @@ export async function GET(req: NextRequest) {
 
     // Sales by day for last 30 days (raw)
     db.sale.findMany({
-      where: { storeId, status: "COMPLETED", createdAt: { gte: thirtyDaysAgo } },
-      select: { total: true, createdAt: true },
+      where: { storeId, status: { in: ["COMPLETED", "REFUNDED"] }, createdAt: { gte: thirtyDaysAgo } },
+      select: { total: true, refundedAmount: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     }),
   ]);
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
   }
   for (const s of salesByDay) {
     const key = s.createdAt.toISOString().slice(0, 10);
-    if (key in dailyMap) dailyMap[key] += s.total;
+    if (key in dailyMap) dailyMap[key] += s.total - (s.refundedAmount || 0);
   }
   const revenueByDay = Object.entries(dailyMap).map(([date, revenue]) => ({
     date: date.slice(5), // MM-DD
@@ -116,11 +117,13 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     allTime: {
-      revenue: allSales._sum.total || 0,
+      revenue: parseFloat(((allSales._sum.total || 0) - (allSales._sum.refundedAmount || 0)).toFixed(2)), // net of refunds
+      refunded: allSales._sum.refundedAmount || 0,
+      taxCollected: parseFloat(((allSales._sum.taxAmount || 0) - (allSales._sum.refundedTax || 0)).toFixed(2)),
       transactions: allSales._count,
     },
     last30Days: {
-      revenue: recentSales._sum.total || 0,
+      revenue: parseFloat(((recentSales._sum.total || 0) - (recentSales._sum.refundedAmount || 0)).toFixed(2)),
       transactions: recentSales._count,
     },
     inventory: {

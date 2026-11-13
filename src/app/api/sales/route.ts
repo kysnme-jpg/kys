@@ -53,8 +53,12 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
-  const data = createSaleSchema.parse(body);
+  const body = await req.json().catch(() => null);
+  const parsed = createSaleSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid sale: " + parsed.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ") }, { status: 400 });
+  }
+  const data = parsed.data;
   const storeId = (session.user as any).storeId;
 
   const store = await db.store.findUnique({ where: { id: storeId } });
@@ -75,11 +79,29 @@ export async function POST(req: NextRequest) {
   }
 
   const subtotal = data.items.reduce((sum, i) => sum + i.price, 0);
+
+  // A discount can never exceed what's being sold.
+  if (data.discountAmount > subtotal + 0.001) {
+    return NextResponse.json({ error: "Discount is larger than the sale subtotal." }, { status: 400 });
+  }
+
+  // The customer must belong to this store and actually hold the points redeemed.
+  if (data.customerId) {
+    const customer = await db.customer.findFirst({ where: { id: data.customerId, storeId }, select: { points: true } });
+    if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 400 });
+    if (data.pointsRedeemed > customer.points) {
+      return NextResponse.json({ error: `Customer only has ${customer.points} points to redeem.` }, { status: 400 });
+    }
+  } else if (data.pointsRedeemed > 0) {
+    return NextResponse.json({ error: "Attach a customer to redeem points." }, { status: 400 });
+  }
   const taxAmount = parseFloat(((subtotal - data.discountAmount) * store.taxRate).toFixed(2));
   const total = parseFloat((subtotal - data.discountAmount + taxAmount).toFixed(2));
 
   // Create sale + update items + create ledger entries in a transaction
-  const sale = await db.$transaction(async (tx: any) => {
+  let sale: any;
+  try {
+  sale = await db.$transaction(async (tx: any) => {
     const sale = await tx.sale.create({
       data: {
         storeId,
@@ -112,10 +134,13 @@ export async function POST(req: NextRequest) {
       const split = item.splitPercent ?? item.consignor?.splitPercent ?? 50;
       const credit = calcConsignorCredit(saleItem.price, split);
 
-      await tx.item.update({
-        where: { id: saleItem.itemId },
+      // Only flip ACTIVE → SOLD; if another register sold it a moment ago this
+      // matches nothing and the whole sale rolls back (no double-selling).
+      const flipped = await tx.item.updateMany({
+        where: { id: saleItem.itemId, status: "ACTIVE" },
         data: { status: "SOLD", soldAt: new Date() },
       });
+      if (flipped.count !== 1) throw new Error("ITEM_UNAVAILABLE");
 
       if (item.consignorId && item.type === "CONSIGNED") {
         await tx.ledgerEntry.create({
@@ -141,12 +166,19 @@ export async function POST(req: NextRequest) {
       const pointsEarned = Math.floor(total);
       await tx.customer.update({
         where: { id: data.customerId },
-        data: { points: { decrement: data.pointsRedeemed, increment: pointsEarned } },
+        // One atomic change (Prisma allows a single operation per field).
+        data: { points: { increment: pointsEarned - data.pointsRedeemed } },
       });
     }
 
     return sale;
   });
+  } catch (e) {
+    if ((e as Error).message === "ITEM_UNAVAILABLE") {
+      return NextResponse.json({ error: "One or more items were just sold or are no longer available." }, { status: 409 });
+    }
+    throw e;
+  }
 
   // Post-sale: fire emails + webhooks (non-blocking)
   const notifyPromises: Promise<any>[] = [];

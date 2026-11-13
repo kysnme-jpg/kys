@@ -54,9 +54,14 @@ export async function GET(req: NextRequest) {
         item_title: si.item.title,
         item_sku: si.item.sku,
         item_price: si.price.toFixed(2),
+        item_refunded: si.refundedAt ? si.refundedAt.toISOString() : "",
         discount: s.discountAmount.toFixed(2),
         tax: s.taxAmount.toFixed(2),
         sale_total: s.total.toFixed(2),
+        sale_refunded_amount: s.refundedAmount.toFixed(2),
+        sale_refunded_tax: s.refundedTax.toFixed(2),
+        sale_net_total: (s.total - s.refundedAmount).toFixed(2),
+        sale_status: s.status,
       }))
     );
 

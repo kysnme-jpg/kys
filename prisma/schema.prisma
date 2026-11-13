@@ -288,6 +288,10 @@ model Sale {
   taxAmount      Float         @default(0)
   discountAmount Float         @default(0)
   total          Float
+  // Refunds recorded against this sale (tax-inclusive amount given back, and the
+  // tax portion of it). Net revenue = total − refundedAmount.
+  refundedAmount Float         @default(0)
+  refundedTax    Float         @default(0)
   status         SaleStatus    @default(COMPLETED)
   paymentMethod  PaymentMethod @default(CARD_CLOVER)
   cloverOrderId  String?
@@ -307,6 +311,7 @@ model SaleItem {
   item         Item   @relation(fields: [itemId], references: [id])
   price        Float
   splitPercent Float
+  refundedAt   DateTime? // set when this line was refunded
 }
 
 // ─── CONSIGNOR LEDGER ─────────────────────────────────────────────────────────

@@ -20,7 +20,8 @@ export default function ReportsPage() {
     fetch("/api/email-log").then((r) => r.json()).then((d) => setEmailLogs(d.logs || [])).catch(() => {});
   }, []);
 
-  const totalRevenue = sales.reduce((s, sale) => s + sale.total, 0);
+  // Net of refunds.
+  const totalRevenue = sales.reduce((s, sale) => s + sale.total - (sale.refundedAmount || 0), 0);
   const totalItems = sales.reduce((s, sale) => s + sale.items.length, 0);
 
   const exportFull = async () => {
@@ -161,7 +162,10 @@ export default function ReportsPage() {
                       {sale.customer ? `${sale.customer.firstName} ${sale.customer.lastName}` : "Walk-in"}
                     </td>
                     <td className="p-4 text-center text-gray-700">{sale.items.length}</td>
-                    <td className="p-4 text-right font-semibold text-gray-900">{formatCurrency(sale.total)}</td>
+                    <td className="p-4 text-right font-semibold text-gray-900">
+                      {formatCurrency(sale.total - (sale.refundedAmount || 0))}
+                      {sale.refundedAmount > 0 && <span className="block text-[11px] font-medium text-red-600">{formatCurrency(sale.refundedAmount)} refunded</span>}
+                    </td>
                     <td className="p-4">
                       <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
                         {sale.paymentMethod.replace("_", " ")}

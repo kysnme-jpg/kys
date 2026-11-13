@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useOrigin } from "@/lib/use-origin";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +44,8 @@ export default function SipShopPage() {
   const [error, setError] = useState("");
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [copied, setCopied] = useState(false);
-  const bookingUrl = typeof window !== "undefined" ? `${window.location.origin}/sip-and-shop` : "/sip-and-shop";
+  const origin = useOrigin();
+  const bookingUrl = `${origin}/sip-and-shop`;
   const copyLink = async () => { try { await navigator.clipboard.writeText(bookingUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ } };
 
   const load = async () => {

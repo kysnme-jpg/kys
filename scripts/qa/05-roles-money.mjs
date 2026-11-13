@@ -1,0 +1,16 @@
+import { Session } from "./lib.mjs";
+import fs from "node:fs";
+const state = JSON.parse(fs.readFileSync(new URL("./state.json", import.meta.url)));
+const owner = new Session("o"); owner.jar = new Map(state.ownerJar);
+let r = await owner.post("/api/staff/users", { name: "Probe Clerk", email: "probe@qa.test", role: "inventory_clerk" });
+const clerk = new Session("c"); await clerk.staffLogin("probe@qa.test", r.json.tempPassword);
+const tryIt = async (label, p) => { const x = await p; console.log(`${x.status >= 200 && x.status < 300 ? "ALLOWED" : "denied "}  inventory clerk → ${label}  (${x.status})`); };
+await tryIt("issue a payout", clerk.post("/api/payouts", { consignorId: state.cid, amount: 1, method: "CASH" }));
+await tryIt("refund an item", clerk.post("/api/refunds", { itemId: state.item1.id, returnTo: "ACTIVE" }));
+await tryIt("change store settings / tax rate", clerk.patch("/api/store", { taxRate: 0.01 }));
+await tryIt("delete a consignor (bulk)", clerk.post("/api/consignors/bulk", { action: "delete", ids: ["nope"] }));
+await tryIt("view sales report data", clerk.get("/api/sales?limit=5"));
+await tryIt("add loyalty points in bulk", clerk.post("/api/customers/bulk", { action: "addPoints", ids: [state.customer.id], value: "1000" }));
+await tryIt("create a discount rule", clerk.post("/api/discount-rules", { name: "x", type: "PERCENT", value: 99 }));
+await tryIt("manage API keys", clerk.get("/api/keys"));
+await tryIt("import data", clerk.post("/api/import", { customers: [{ firstName: "Z", lastName: "Z" }] }));

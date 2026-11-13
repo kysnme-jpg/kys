@@ -58,6 +58,21 @@ At the top of the POS screen, switch from **Sell** to **Refund** to undo a sale.
 3. Either way, the consignor's **Ledger** gets a matching **debit** (a red
    `ADJUSTMENT`) that **reverses the sale credit**, and their balance drops by the
    same amount.
+4. The refund card shows **"Refund to customer (incl. tax)"** — the exact amount
+   to hand back (the item's price, less its share of any discount, plus the
+   sales tax charged on it). The refund is recorded against the original sale,
+   so **Insights, Reports and exports show revenue and tax net of refunds**, and
+   any **loyalty points** the customer earned on the refunded amount are taken
+   back. An item can only be refunded once per sale.
+
+### Sales tax
+The register uses the **tax rate saved in Settings** (Settings → Store → Tax
+rate), and that same rate is what gets recorded on every sale — the POS label
+shows it, e.g. "Tax (6%)". **Check that this is set to your correct rate.** If no
+rate is saved, the POS shows a warning.
+
+If a sale can't be completed (for example an item was just sold at another
+register), the POS now tells you so and nothing is recorded.
 
 Notes:
 - Only a **Sold** item can be refunded; scanning anything else shows why it can't.
@@ -383,8 +398,9 @@ Pay your consignors. Open **Payouts** from the sidebar.
 - You can **edit a past payout** (amount, method, destination, status, note) from
   the **Payouts** tab on a consignor's page — changing the amount automatically
   re-adjusts their balance and ledger.
-- Consignors with portal access can also **request a payout** themselves; those
-  requests appear as pending payouts for you to process.
+- Consignors with portal access can also **request a payout** themselves. A
+  consignor who has asked shows a **"Payout requested"** badge on the Payouts
+  page; issuing their payout fulfils the request automatically.
 
 ---
 

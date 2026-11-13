@@ -20,6 +20,7 @@ interface ConsignorBalance {
 
 interface Payout {
   id: string;
+  consignorId?: string;
   amount: number;
   method: string;
   status: string;
@@ -75,6 +76,8 @@ export default function PayoutsPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Consignors who asked for a payout from their portal (open requests).
+  const requestedIds = new Set(payouts.filter((p) => p.status === "PENDING" && p.consignorId).map((p) => p.consignorId as string));
   const totalOwed = consignors.reduce((s, c) => s + c.balance, 0);
   const selectedConsignors = consignors.filter((c) => selected.has(c.id));
   const selectedTotal = selectedConsignors.reduce((s, c) => s + c.balance, 0);
@@ -244,7 +247,10 @@ export default function PayoutsPage() {
                       />
                     </td>
                     <td className="p-4">
-                      <p className="font-medium text-gray-900">{c.firstName} {c.lastName}</p>
+                      <p className="font-medium text-gray-900">
+                        {c.firstName} {c.lastName}
+                        {requestedIds.has(c.id) && <span className="ml-2 align-middle text-[11px] font-bold uppercase tracking-wide bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Payout requested</span>}
+                      </p>
                       {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
                     </td>
                     <td className="p-4 text-center">

@@ -24,6 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const consignor = await db.consignor.findFirst({
     where: { id, storeId },
     include: { items: { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" }, select: { title: true, sku: true, size: true, brand: true, price: true } } },
+    omit: { portalPassword: false }, // read only to tell whether a password already exists
   });
   if (!consignor) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

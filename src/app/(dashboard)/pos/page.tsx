@@ -43,6 +43,10 @@ export default function POSPage() {
   const POINTS_PER_DOLLAR = 100;
 
   useEffect(() => { searchRef.current?.focus(); }, []);
+  const [storeTaxRate, setStoreTaxRate] = useState<number | null>(null);
+  useEffect(() => {
+    fetch("/api/store").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setStoreTaxRate(typeof d.taxRate === "number" ? d.taxRate : 0); }).catch(() => {});
+  }, []);
 
   // Attach a customer passed from /pos?customerId=…
   useEffect(() => {
@@ -165,7 +169,12 @@ export default function POSPage() {
 
   const pointsDiscount = pointsToRedeem / POINTS_PER_DOLLAR;
   const subtotal = cart.reduce((sum, i) => sum + i.price, 0);
-  const taxRate = 0.08;
+  // Use the store's tax rate (Settings) so the register shows exactly what the
+  // server records. If none is set yet, keep the long-standing 8% on screen and
+  // flag it, rather than silently dropping tax at the register.
+  const taxRate = storeTaxRate && storeTaxRate > 0 ? storeTaxRate : 0.08;
+  const taxRateUnset = storeTaxRate !== null && !(storeTaxRate > 0);
+  const taxLabel = `${parseFloat((taxRate * 100).toFixed(3))}%`;
   const taxAmount = (subtotal - discount - pointsDiscount) * taxRate;
   const total = subtotal - discount - pointsDiscount + taxAmount;
 
@@ -185,7 +194,12 @@ export default function POSPage() {
       if (res.ok) {
         const sale = await res.json();
         setLastSale(sale); setReceiptSale(sale); setCart([]); setDiscount(0); clearCustomer(); searchRef.current?.focus();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        alert(`The sale did not go through — nothing was recorded.\n\n${d.error || "Please try again."}`);
       }
+    } catch {
+      alert("The sale did not go through — check the connection and try again. Nothing was recorded.");
     } finally { setProcessing(false); }
   };
 
@@ -232,7 +246,7 @@ export default function POSPage() {
               <div className="h-10 w-10 bg-[var(--ok-ink)] rounded-full flex items-center justify-center shrink-0"><Check className="h-5 w-5 text-white" /></div>
               <div className="flex-1">
                 <p className="font-semibold text-[var(--ok-ink)]">Refund complete</p>
-                <p className="text-sm text-[var(--ok-ink)]">{refundDone.title} · {refundDone.returnTo === "RETURNED" ? "returned to consignor" : "relisted"}{refundDone.reversed > 0 ? ` · reversed ${formatCurrency(refundDone.reversed)}${refundDone.consignor ? ` from ${refundDone.consignor}` : ""}` : ""}</p>
+                <p className="text-sm text-[var(--ok-ink)]">{refundDone.title} · {refundDone.returnTo === "RETURNED" ? "returned to consignor" : "relisted"}{refundDone.refundAmount > 0 ? ` · refund ${formatCurrency(refundDone.refundAmount)} to the customer` : ""}{refundDone.reversed > 0 ? ` · reversed ${formatCurrency(refundDone.reversed)}${refundDone.consignor ? ` from ${refundDone.consignor}` : ""}` : ""}</p>
               </div>
               <button onClick={() => setRefundDone(null)}><X className="h-5 w-5 text-[var(--ok-ink)]" /></button>
             </div>
@@ -314,7 +328,8 @@ export default function POSPage() {
                 <div className="flex justify-between items-center text-[var(--panel-muted)]"><span>Discount</span>
                   <input type="number" min={0} value={discount || ""} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} placeholder="0.00" className="w-20 h-8 rounded-lg bg-[var(--panel-key)] px-2 text-right text-[14px] text-[var(--panel-ink)] focus:outline-none" />
                 </div>
-                <div className="flex justify-between text-[var(--panel-muted)]"><span>Tax (8%)</span><span>{formatCurrency(taxAmount)}</span></div>
+                <div className="flex justify-between text-[var(--panel-muted)]"><span>Tax ({taxLabel})</span><span>{formatCurrency(taxAmount)}</span></div>
+                {taxRateUnset && <div className="text-[12px] text-amber-300">No tax rate is saved in Settings — showing 8%, but sales are being recorded with $0 tax. Set it under Settings.</div>}
                 <div className="flex justify-between font-bold text-[18px] pt-2 border-t border-[var(--panel-key)]"><span>Total</span><span>{formatCurrency(total)}</span></div>
               </div>
 
@@ -352,6 +367,9 @@ export default function POSPage() {
                   </div>
                   <div className="space-y-1.5 text-[15px]">
                     <div className="flex justify-between text-[var(--panel-muted)]"><span>Sold for</span><span>{formatCurrency(refundPreview.item.price)}</span></div>
+                    {refundPreview.refundAmount > 0 && (
+                      <div className="flex justify-between font-semibold"><span>Refund to customer (incl. tax)</span><span>{formatCurrency(refundPreview.refundAmount)}</span></div>
+                    )}
                     {refundPreview.item.consignor && (
                       <div className="flex justify-between text-[var(--panel-muted)]"><span>Consignor</span><span className="truncate max-w-[55%]">{refundPreview.item.consignor}</span></div>
                     )}

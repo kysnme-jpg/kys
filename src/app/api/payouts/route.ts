@@ -19,8 +19,12 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const storeId = (session.user as any).storeId;
-  const body = await req.json();
-  const data = createPayoutSchema.parse(body);
+  const body = await req.json().catch(() => null);
+  const parsed = createPayoutSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid payout: " + parsed.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ") }, { status: 400 });
+  }
+  const data = parsed.data;
 
   const consignor = await db.consignor.findFirst({
     where: { id: data.consignorId, storeId },
@@ -39,19 +43,26 @@ export async function POST(req: NextRequest) {
     null;
 
   const payout = await db.$transaction(async (tx: any) => {
-    const payout = await tx.payout.create({
-      data: {
-        storeId,
-        consignorId: data.consignorId,
-        amount: data.amount,
-        method: data.method,
-        checkNumber: data.checkNumber,
-        destination,
-        note: data.note,
-        status: data.method === "ACH" ? "PROCESSING" : "COMPLETED",
-        completedAt: data.method !== "ACH" ? new Date() : undefined,
-      },
+    // If the consignor asked for this payout from their portal, fulfil that
+    // request rather than leaving a stray PENDING row next to a new payout.
+    const requested = await tx.payout.findFirst({
+      where: { storeId, consignorId: data.consignorId, status: "PENDING" },
+      orderBy: { createdAt: "asc" },
     });
+    const fields = {
+      amount: data.amount,
+      method: data.method,
+      checkNumber: data.checkNumber,
+      destination,
+      note: [requested?.note, data.note].filter(Boolean).join(" — ") || null,
+      status: (data.method === "ACH" ? "PROCESSING" : "COMPLETED") as any,
+      completedAt: data.method !== "ACH" ? new Date() : undefined,
+    };
+    const payout = requested
+      ? await tx.payout.update({ where: { id: requested.id }, data: fields })
+      : await tx.payout.create({ data: { storeId, consignorId: data.consignorId, ...fields } });
+    // Any further stale requests for this consignor are closed out too.
+    await tx.payout.deleteMany({ where: { storeId, consignorId: data.consignorId, status: "PENDING", id: { not: payout.id } } });
 
     await tx.ledgerEntry.create({
       data: {

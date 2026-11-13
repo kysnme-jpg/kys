@@ -16,12 +16,17 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text();
 
   // Verify webhook authenticity
+  // Fail closed: this endpoint records sales, so it must never act on an
+  // unsigned request. No secret configured → disabled; missing/invalid
+  // signature → rejected.
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-  if (secret && hmac && !verifyShopifyWebhook(rawBody, hmac, secret)) {
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-  }
+  if (!secret) return NextResponse.json({ error: "Shopify webhook not configured" }, { status: 503 });
+  let signed = false;
+  try { signed = !!hmac && verifyShopifyWebhook(rawBody, hmac, secret); } catch { signed = false; }
+  if (!signed) return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
 
-  const payload = JSON.parse(rawBody);
+  let payload: any;
+  try { payload = JSON.parse(rawBody); } catch { return NextResponse.json({ error: "Invalid body" }, { status: 400 }); }
 
   if (topic === "orders/create" || topic === "orders/paid") {
     await handleOrderCreate(payload);

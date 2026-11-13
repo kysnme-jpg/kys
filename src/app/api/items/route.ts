@@ -75,7 +75,11 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const data = createItemSchema.parse(body);
+  const parsed = createItemSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid item: " + parsed.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ") }, { status: 400 });
+  }
+  const data = parsed.data;
   const storeId = (session.user as any).storeId;
 
   const consignor = data.consignorId

@@ -74,26 +74,44 @@ export async function sendBroadcastTest(opts: {
 // ─── Notification nudges (§7) ──────────────────────────────────────────────────
 // Content-free prompts to log in — they never include message text (§4a Layer 7).
 
-export async function sendStoreMessageNudge(opts: { to: string; storeName: string; fromName: string }): Promise<void> {
+type SendResult = { ok: boolean; error?: string };
+
+async function sendNudge(to: string, subject: string, title: string, body: string, storeName: string): Promise<SendResult> {
   const r = getResend();
-  if (!r) return;
-  const body = `
-    <p style="color:#374151;font-size:15px;line-height:1.6">You have a new message from <strong>${opts.fromName}</strong>.</p>
-    <p style="color:#374151;font-size:15px;line-height:1.6">Log in to read and reply from your dashboard (People → Messages).</p>`;
+  if (!r) return { ok: false, error: "RESEND_API_KEY is not set on the server." };
   try {
-    await r.emails.send({ from: FROM, to: opts.to, subject: `New message from ${opts.fromName}`, html: baseHtml("You have a new message", body, opts.storeName) });
-  } catch {}
+    // Resend reports most failures in `error` rather than throwing.
+    const { error } = await r.emails.send({ from: FROM, to, subject, html: baseHtml(title, body, storeName) });
+    if (error) return { ok: false, error: (error as any).message || JSON.stringify(error) };
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || String(err) };
+  }
 }
 
-export async function sendConsignorMessageNudge(opts: { to: string; storeName: string }): Promise<void> {
-  const r = getResend();
-  if (!r) return;
+const escHtml = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const nudgeButton = (url: string, label: string) =>
+  `<p style="margin:22px 0 6px"><a href="${url}" style="background:#b4532a;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;display:inline-block">${label}</a></p>`;
+
+/** Tell the store a consignor/customer wrote in. Content-free; links to the inbox. */
+export async function sendStoreMessageNudge(opts: { to: string; storeName: string; fromName: string; inboxUrl?: string; isTest?: boolean }): Promise<SendResult> {
+  const body = `
+    ${opts.isTest ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:16px;color:#9a3412;font-size:13px"><strong>TEST ALERT</strong> — this is what you'll receive when someone messages the store.</div>` : ""}
+    <p style="color:#374151;font-size:15px;line-height:1.6">You have a new message from <strong>${escHtml(opts.fromName)}</strong>.</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6">Open your Messages inbox to read it and reply.</p>
+    ${opts.inboxUrl ? nudgeButton(opts.inboxUrl, "Open Messages →") : ""}
+    <p style="color:#9ca3af;font-size:12px;line-height:1.6">In the app: More → Messages. For privacy, the message itself isn't included in this email.</p>`;
+  return sendNudge(opts.to, `${opts.isTest ? "[TEST] " : ""}New message from ${opts.fromName}`, "You have a new message", body, opts.storeName);
+}
+
+/** Tell a consignor the store replied. Content-free; links to their portal. */
+export async function sendConsignorMessageNudge(opts: { to: string; storeName: string; portalUrl?: string }): Promise<SendResult> {
   const body = `
     <p style="color:#374151;font-size:15px;line-height:1.6">You have a new message from <strong>${opts.storeName}</strong>.</p>
-    <p style="color:#374151;font-size:15px;line-height:1.6">Log in to your consignor portal to read and reply.</p>`;
-  try {
-    await r.emails.send({ from: FROM, to: opts.to, subject: `New message from ${opts.storeName}`, html: baseHtml("You have a new message", body, opts.storeName) });
-  } catch {}
+    <p style="color:#374151;font-size:15px;line-height:1.6">Log in to your consignor portal to read and reply.</p>
+    ${opts.portalUrl ? nudgeButton(opts.portalUrl, "Open your portal →") : ""}`;
+  return sendNudge(opts.to, `New message from ${opts.storeName}`, "You have a new message", body, opts.storeName);
 }
 
 // ─── Email templates ──────────────────────────────────────────────────────────

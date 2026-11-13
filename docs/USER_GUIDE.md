@@ -614,6 +614,13 @@ By default the app shows **unread badges** on Messages and Team chat, and a
 - **Email the audience when a post is published** → auto-email feed posts to their
   audience (off by default — use Email Blast for deliberate sends).
 
+**Checking that alerts reach you:** the Notifications page shows the address
+alerts currently go to and has a **Send a test alert** button — it emails a
+sample right away and tells you if it failed and why. Every alert (real or
+test) is also listed under **Insights → Reports → email activity** as sent or
+failed. Alerts include an **Open Messages** button that takes you straight to
+the inbox.
+
 Email nudges only say "you have a new message, log in to read" — they never
 include the message text. Set a **store notification email** on that page (or
 leave it blank to use your store email).

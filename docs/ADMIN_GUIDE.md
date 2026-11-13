@@ -167,7 +167,11 @@ toggles stored in `NotificationSetting` (one row per store). Orchestration is in
 `src/lib/notifications.ts`; email nudges are content-free (§4a Layer 7) and
 throttled to one per conversation per 5 minutes (timestamps on `ExternalThread`).
 Three toggles: email the store on an inbound message (on), nudge the consignor on
-a store reply (on), and auto-email a published post to its audience (off). All run
+a store reply (on), and auto-email a published post to its audience (off). Store
+alerts go to the Notifications override address, else the store email in
+Settings. Each alert is written to the email log as type `MESSAGE_ALERT` with
+status SENT/FAILED, and `POST /api/notifications/test` (the "Send a test alert"
+button) sends a sample immediately and returns the provider's error if any. All run
 through the existing Resend integration — no new environment variables.
 
 The **email blast** (`/email`, User Guide §9b) is also gated on `content_admin`

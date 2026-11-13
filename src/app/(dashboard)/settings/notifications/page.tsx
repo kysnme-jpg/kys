@@ -16,6 +16,18 @@ export default function NotificationSettingsPage() {
   const [storeEmail, setStoreEmail] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const sendTest = async () => {
+    setTesting(true); setTestResult(null);
+    const res = await fetch("/api/notifications/test", { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    setTesting(false);
+    setTestResult(d.ok
+      ? { ok: true, text: `Test alert sent to ${d.to}. Check that inbox (and its spam/junk folder).` }
+      : { ok: false, text: `Couldn't send${d.to ? ` to ${d.to}` : ""}: ${d.error || "unknown error"}` });
+  };
 
   useEffect(() => {
     fetch("/api/notifications").then((r) => {
@@ -81,6 +93,20 @@ export default function NotificationSettingsPage() {
           className="w-full rounded-2xl border-[1.5px] border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink"
         />
         <p className="text-[12.5px] text-[var(--muted)] mt-1.5">Leave blank to use the store email{storeEmail ? ` (${storeEmail})` : ""}.</p>
+
+        <div className="mt-4 pt-4 border-t border-line-soft">
+          <p className="text-[14px] text-ink">
+            New-message alerts currently go to{" "}
+            <b>{(s.notifyEmail && s.notifyEmail.trim()) || storeEmail || "— no address set —"}</b>
+          </p>
+          <button onClick={sendTest} disabled={testing} className="mt-2.5 rounded-full border-[1.5px] border-line px-4 py-2 text-[14px] font-semibold text-ink hover:bg-chip disabled:opacity-50">
+            {testing ? "Sending…" : "Send a test alert"}
+          </button>
+          {testResult && (
+            <p className={`mt-2.5 text-[13.5px] ${testResult.ok ? "text-green-700" : "text-[var(--danger-ink)]"}`}>{testResult.text}</p>
+          )}
+          <p className="text-[12.5px] text-[var(--muted)] mt-2">Every alert is also listed under Insights → Reports → email activity, marked sent or failed.</p>
+        </div>
       </div>
 
       {saved && <div className="flex items-center gap-2 text-[14px] text-green-700"><CheckCircle2 className="h-4 w-4" /> Saved</div>}

@@ -3,6 +3,8 @@ import { claimNotifySlot } from "@/lib/messaging/external";
 import { sendStoreMessageNudge, sendConsignorMessageNudge, sendBroadcast } from "@/lib/email";
 import { resolveAudienceRecipients } from "@/lib/audience-recipients";
 import type { AudienceScope } from "@/lib/posts";
+import { logEmail } from "@/lib/email-log";
+import { getBaseUrl } from "@/lib/base-url";
 
 /**
  * Notification orchestration (§7). Owner-controlled toggles decide which events
@@ -52,7 +54,9 @@ export async function notifyInboundExternalMessage(storeId: string, threadId: st
     const store = await db.store.findUnique({ where: { id: storeId }, select: { name: true, email: true } });
     const to = settings.notifyEmail || store?.email;
     if (!to) return;
-    await sendStoreMessageNudge({ to, storeName: store?.name || "Your store", fromName });
+    const res = await sendStoreMessageNudge({ to, storeName: store?.name || "Your store", fromName, inboxUrl: `${getBaseUrl()}/messages` });
+    // Recorded in the email log so the store can see alerts going out (or failing).
+    await logEmail({ storeId, to, type: "MESSAGE_ALERT", subject: `New message from ${fromName}`, status: res.ok ? "SENT" : "FAILED" });
   } catch {
     // never let a notification break the message send
   }
@@ -66,7 +70,8 @@ export async function notifyStoreReply(storeId: string, threadId: string): Promi
     const slot = await claimNotifySlot(threadId, "external", THROTTLE_MS);
     if (!slot.should || !slot.consignorEmail) return;
     const store = await db.store.findUnique({ where: { id: storeId }, select: { name: true } });
-    await sendConsignorMessageNudge({ to: slot.consignorEmail, storeName: store?.name || "Your store" });
+    const res = await sendConsignorMessageNudge({ to: slot.consignorEmail, storeName: store?.name || "Your store", portalUrl: `${getBaseUrl()}/portal/login` });
+    await logEmail({ storeId, to: slot.consignorEmail, type: "MESSAGE_ALERT", subject: "New message from the store", status: res.ok ? "SENT" : "FAILED" });
   } catch {
     // swallow
   }
@@ -91,4 +96,21 @@ export async function notifyNewPost(storeId: string, post: {
   } catch {
     // swallow
   }
+}
+
+/** Where store alerts are delivered (the Notifications override, else the store email). */
+export async function resolveStoreAlertEmail(storeId: string): Promise<string | null> {
+  const settings = await getNotificationSettings(storeId);
+  const store = await db.store.findUnique({ where: { id: storeId }, select: { email: true } });
+  return settings.notifyEmail || store?.email || null;
+}
+
+/** Send a sample new-message alert right now (ignores the throttle) and report the outcome. */
+export async function sendTestStoreAlert(storeId: string): Promise<{ ok: boolean; to: string | null; error?: string }> {
+  const to = await resolveStoreAlertEmail(storeId);
+  if (!to) return { ok: false, to: null, error: "No email address is set. Add a store email in Settings, or a notification email here." };
+  const store = await db.store.findUnique({ where: { id: storeId }, select: { name: true } });
+  const res = await sendStoreMessageNudge({ to, storeName: store?.name || "Your store", fromName: "a consignor (sample)", inboxUrl: `${getBaseUrl()}/messages`, isTest: true });
+  await logEmail({ storeId, to, type: "MESSAGE_ALERT", subject: "[TEST] New message alert", status: res.ok ? "TEST" : "FAILED" });
+  return { ok: res.ok, to, error: res.error };
 }

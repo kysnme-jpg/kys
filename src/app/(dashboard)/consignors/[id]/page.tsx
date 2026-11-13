@@ -76,6 +76,9 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
   const [tagBlankPrice, setTagBlankPrice] = useState(false);
+  // Items ticked for tag printing (Items tab).
+  const [tagSel, setTagSel] = useState<Set<string>>(new Set());
+  const toggleTagSel = (itemId: string) => setTagSel((prev) => { const n = new Set(prev); if (n.has(itemId)) n.delete(itemId); else n.add(itemId); return n; });
 
   const load = () => {
     setLoading(true);
@@ -502,15 +505,49 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
         </div>
 
         {/* Items tab */}
-        {activeTab === "items" && (
+        {activeTab === "items" && (() => {
+          // Tags can only be printed for items still on the floor.
+          const printable = consignor.items.filter((i: any) => i.status === "ACTIVE");
+          const selected = printable.filter((i: any) => tagSel.has(i.id));
+          const allSelected = printable.length > 0 && selected.length === printable.length;
+          const printSelected = () => {
+            if (!selected.length) return;
+            printKysTags(
+              selected.map((i: any) => ({ title: i.title, sku: i.sku, barcode: i.barcode, price: i.price, size: i.size || undefined, brand: i.brand || undefined, condition: i.condition || undefined, consignor: `${consignor.firstName} ${consignor.lastName}` })),
+              { blankPrice: tagBlankPrice }
+            );
+          };
+          return (
           <div className="space-y-2">
-            <div className="flex justify-end gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
+                {printable.length > 0 && (
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={(el) => { if (el) el.indeterminate = selected.length > 0 && !allSelected; }}
+                      onChange={() => setTagSel(allSelected ? new Set() : new Set(printable.map((i: any) => i.id)))}
+                      className="h-5 w-5 rounded border-gray-300"
+                    />
+                    Select all ({printable.length})
+                  </label>
+                )}
+                {selected.length > 0 && (
+                  <>
+                    <Button size="sm" onClick={printSelected} className="gap-1.5"><Printer className="h-4 w-4" /> Print {selected.length} selected tag{selected.length === 1 ? "" : "s"}</Button>
+                    <button onClick={() => setTagSel(new Set())} className="text-sm font-medium text-[var(--muted)] hover:text-ink">Clear</button>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
               <Link href={`/inventory/intake?consignorId=${consignor.id}`}>
                 <Button size="sm" variant="outline" className="gap-1.5"><Camera className="h-4 w-4" /> Quick intake</Button>
               </Link>
               <Link href={`/inventory/new?consignorId=${consignor.id}&from=${encodeURIComponent(`/consignors/${id}`)}`}>
                 <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Add item</Button>
               </Link>
+              </div>
             </div>
             {consignor.items.length === 0 ? (
               <div className="py-8 text-center">
@@ -522,7 +559,16 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
               </div>
             ) : (
               consignor.items.map((item: any) => (
-                <div key={item.id} className="flex items-center gap-4 p-3 bg-white rounded-lg border border-gray-200">
+                <div key={item.id} className={`flex items-center gap-4 p-3 bg-white rounded-lg border ${tagSel.has(item.id) && item.status === "ACTIVE" ? "border-accent" : "border-gray-200"}`}>
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${item.title} for tag printing`}
+                    title={item.status === "ACTIVE" ? "Select for tag printing" : "Tags print only for active items"}
+                    disabled={item.status !== "ACTIVE"}
+                    checked={item.status === "ACTIVE" && tagSel.has(item.id)}
+                    onChange={() => toggleTagSel(item.id)}
+                    className="h-5 w-5 shrink-0 rounded border-gray-300 disabled:opacity-30"
+                  />
                   {item.photoUrls?.[0] ? (
                     <img src={item.photoUrls[0]} className="h-12 w-12 rounded object-cover" alt="" />
                   ) : (
@@ -549,7 +595,8 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
               ))
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* Ledger tab */}
         {activeTab === "ledger" && (

@@ -165,6 +165,10 @@ or its SKU):
   the inventory bulk bar (**Print KYS tags**), or a consignor's page (**Print all
   tags** prints a sheet of tags for all their active items). Bulk printing lays
   the tags out in a grid with faint cut guides.
+  - **Print only the tags you pick:** on a consignor's page, the **Items** tab
+    has a **checkbox on every item**. Tick the ones you want (or **Select all**),
+    then click **Print N selected tags**. Only active items can be ticked; **Clear**
+    unticks everything. The "Blank price" option applies here too.
   - **Blank price option:** tick **"Blank price"** (on a consignor's page) or
     **"Blank $"** (in the inventory bulk bar) before printing to leave the price
     as a **write-in line** (`$______`) instead of printing the value — handy for

@@ -133,9 +133,20 @@ them pre-selected).
    (saffiano or pebbled leather, suede), hardware tone, silhouette (crossbody,
    pump, block heel, pointed toe), and visible wear in resale terms. If it isn't
    sure of a style it describes the item instead of guessing, and it never calls
-   an item "authentic" — authentication stays with you. It works from the photo
-   alone (it doesn't search the web), so a clear, well-lit shot with the logo or
-   label visible gives the most exact result. Allow about 10–20 seconds.
+   an item "authentic" — authentication stays with you. A clear, well-lit shot
+   with the logo or label visible gives the most exact result. Allow about
+   10–20 seconds.
+   - **Look it up online (optional):** tick **Look it up online** under the
+     camera button before you snap. The AI then searches the web (the brand's
+     site and resale listings like The RealReal and Fashionphile) to confirm the
+     exact style, materials and original retail price, and uses what it finds
+     for the description and suggested price. The review screen lists the pages
+     it **Checked online** so you can tap through and double-check. It takes
+     about **30–60 seconds** and costs a bit more per item, so turn it on for
+     designer pieces and leave it off for everyday items. The tablet remembers
+     your choice. If the search finds nothing, the details come from the photo
+     alone and the screen says so. The same checkbox appears in the AI Item
+     Entry box on Add Item and Edit.
 4. **Glance and adjust** (mainly the price), then **Save & next item** — it saves
    to that consignor and instantly resets for the next piece.
 5. Everything you add shows in **Added this session** with a **Print KYS tag**

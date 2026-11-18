@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PrintKysTagButton } from "@/components/inventory/label-print";
 import { formatCurrency } from "@/lib/utils";
-import { Camera, Check, Loader2, X, Sparkles, RotateCcw, ImagePlus, ArrowLeft } from "lucide-react";
+import { Camera, Check, Loader2, X, Sparkles, RotateCcw, ImagePlus, ArrowLeft, Globe, ExternalLink } from "lucide-react";
 
 interface Consignor { id: string; firstName: string; lastName: string; splitPercent: number; }
 
@@ -35,6 +35,11 @@ export default function IntakePage() {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [draft, setDraft] = useState({ ...EMPTY });
   const [aiNote, setAiNote] = useState("");
+  // Online lookup: slower and costs more, so it's a per-device choice, remembered.
+  const [lookupOnline, setLookupOnline] = useState(false);
+  const [lookupSources, setLookupSources] = useState<{ title: string; url: string }[]>([]);
+  useEffect(() => { try { setLookupOnline(localStorage.getItem("intake.lookupOnline") === "1"); } catch {} }, []);
+  const toggleLookup = (on: boolean) => { setLookupOnline(on); try { localStorage.setItem("intake.lookupOnline", on ? "1" : "0"); } catch {} };
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState<any[]>([]);
 
@@ -69,7 +74,7 @@ export default function IntakePage() {
     ? consignors.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(q)).slice(0, 12)
     : [];
 
-  const resetDraft = () => { setPhase("idle"); setPreview(null); setPhotoUrls([]); setDraft({ ...EMPTY }); setAiNote(""); };
+  const resetDraft = () => { setPhase("idle"); setPreview(null); setPhotoUrls([]); setDraft({ ...EMPTY }); setAiNote(""); setLookupSources([]); };
 
   async function uploadPhoto(file: File): Promise<void> {
     try {
@@ -87,14 +92,14 @@ export default function IntakePage() {
     rd.onload = (e) => setPreview(e.target?.result as string);
     rd.readAsDataURL(file);
 
-    setPhase("working"); setAiNote("");
+    setPhase("working"); setAiNote(""); setLookupSources([]);
     await uploadPhoto(file);
 
     try {
       const imageBase64 = await fileToBase64(file);
       const res = await fetch("/api/ai/analyze", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64, mimeType: file.type }),
+        body: JSON.stringify({ imageBase64, mimeType: file.type, lookup: lookupOnline }),
       });
       const data = await res.json();
       if (res.ok && data.result) {
@@ -109,6 +114,8 @@ export default function IntakePage() {
           description: r.description || "",
           price: r.suggestedPrice != null ? String(r.suggestedPrice) : "",
         }));
+        if (data.lookup?.sources?.length) setLookupSources(data.lookup.sources);
+        if (data.lookup?.failed) setAiNote("The online lookup didn't find anything to go on, so these details are from the photo alone.");
       } else {
         setAiNote(data.error === "Anthropic API key not configured"
           ? "AI isn't configured yet — enter the details by hand."
@@ -235,12 +242,23 @@ export default function IntakePage() {
                 </div>
               </button>
             )}
+            {phase === "idle" && (
+              <label className="flex items-start gap-3 border-t-[1.5px] border-line px-5 py-4 cursor-pointer select-none hover:bg-chip transition-colors">
+                <input type="checkbox" checked={lookupOnline} onChange={(e) => toggleLookup(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300" />
+                <span>
+                  <span className="flex items-center gap-1.5 text-[15px] font-semibold text-ink"><Globe className="h-4 w-4 text-accent" /> Look it up online</span>
+                  <span className="block text-[13px] text-[var(--muted)] mt-0.5">Searches the web to confirm the exact style, materials and retail price. More exact, but slower (about 30–60 seconds) and costs a little more per item.</span>
+                </span>
+              </label>
+            )}
 
             {phase === "working" && (
               <div className="flex flex-col items-center justify-center gap-4 py-20 px-6 text-center">
                 {preview && <img src={preview} alt="" className="h-40 w-40 rounded-2xl object-cover" />}
-                <div className="flex items-center gap-2 text-ink"><Loader2 className="h-5 w-5 animate-spin text-accent" /><span className="text-[16px] font-semibold">Reading the item…</span></div>
-                <p className="text-[13px] text-[var(--muted)]">Uploading the photo and identifying the brand, style and materials — usually 10–20 seconds.</p>
+                <div className="flex items-center gap-2 text-ink"><Loader2 className="h-5 w-5 animate-spin text-accent" /><span className="text-[16px] font-semibold">{lookupOnline ? "Looking it up online…" : "Reading the item…"}</span></div>
+                <p className="text-[13px] text-[var(--muted)]">{lookupOnline
+                  ? "Identifying the item and checking it against listings online — usually 30–60 seconds."
+                  : "Uploading the photo and identifying the brand, style and materials — usually 10–20 seconds."}</p>
               </div>
             )}
 
@@ -257,6 +275,20 @@ export default function IntakePage() {
                 </div>
 
                 {aiNote && <div className="rounded-xl bg-[var(--chip)] text-[var(--muted)] text-[13px] px-3 py-2 mb-4">{aiNote}</div>}
+                {lookupSources.length > 0 && (
+                  <div className="rounded-xl bg-[var(--chip)] px-3 py-2.5 mb-4">
+                    <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink"><Globe className="h-3.5 w-3.5 text-accent" /> Checked online</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {lookupSources.map((src) => (
+                        <li key={src.url}>
+                          <a href={src.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[13px] text-accent hover:underline break-all">
+                            {src.title} <ExternalLink className="h-3 w-3 shrink-0" />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>

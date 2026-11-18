@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, CheckCircle, AlertCircle, Upload } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle, AlertCircle, Upload, Globe, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AIResult {
@@ -26,12 +26,20 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
   const [state, setState] = useState<"idle" | "uploading" | "analyzing" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  // Online lookup is a per-device choice shared with Quick Intake.
+  const [lookupOnline, setLookupOnline] = useState(false);
+  const [sources, setSources] = useState<{ title: string; url: string }[]>([]);
+  const [lookupMissed, setLookupMissed] = useState(false);
+  useEffect(() => { try { setLookupOnline(localStorage.getItem("intake.lookupOnline") === "1"); } catch {} }, []);
+  const toggleLookup = (on: boolean) => { setLookupOnline(on); try { localStorage.setItem("intake.lookupOnline", on ? "1" : "0"); } catch {} };
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
 
     setState("uploading");
     setErrorMsg("");
+    setSources([]);
+    setLookupMissed(false);
 
     // Show local preview immediately
     const reader = new FileReader();
@@ -54,7 +62,7 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
     // Send the raw image as base64 so analysis works regardless of where the
     // photo is stored — volume-served URLs aren't publicly fetchable by the AI provider.
     const base64 = await fileToBase64(file);
-    const body = { imageBase64: base64, mimeType: file.type };
+    const body = { imageBase64: base64, mimeType: file.type, lookup: lookupOnline };
 
     const res = await fetch("/api/ai/analyze", {
       method: "POST",
@@ -71,6 +79,8 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
     }
 
     setState("done");
+    setSources(data.lookup?.sources ?? []);
+    setLookupMissed(!!data.lookup?.failed);
     onResult(data.result);
   };
 
@@ -115,9 +125,9 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
             <>
               <Loader2 className="h-8 w-8 text-indigo-500 animate-spin" />
               <p className="text-sm font-medium text-indigo-700">
-                {state === "uploading" ? "Uploading photo..." : "AI analyzing item..."}
+                {state === "uploading" ? "Uploading photo..." : lookupOnline ? "Looking it up online..." : "AI analyzing item..."}
               </p>
-              <p className="text-xs text-indigo-400">This takes 5–10 seconds</p>
+              <p className="text-xs text-indigo-400">{lookupOnline ? "This takes about 30–60 seconds" : "This takes about 10–20 seconds"}</p>
             </>
           )}
           {state === "done" && (
@@ -128,7 +138,7 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
               <button
                 type="button"
                 className="text-xs text-green-600 underline mt-1"
-                onClick={(e) => { e.stopPropagation(); setState("idle"); setPreview(null); }}
+                onClick={(e) => { e.stopPropagation(); setState("idle"); setPreview(null); setSources([]); setLookupMissed(false); }}
               >
                 Try another photo
               </button>
@@ -158,6 +168,35 @@ export function AIEntry({ onResult, onPhotoUploaded }: AIEntryProps) {
           />
         )}
       </div>
+
+      {state === "idle" && (
+        <label className="flex items-start gap-2.5 text-left cursor-pointer select-none">
+          <input type="checkbox" checked={lookupOnline} onChange={(e) => toggleLookup(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300" />
+          <span>
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-800"><Globe className="h-3.5 w-3.5 text-indigo-600" /> Look it up online</span>
+            <span className="block text-xs text-gray-500">Confirms the exact style, materials and retail price on the web. Slower (about 30–60 seconds) and costs a little more.</span>
+          </span>
+        </label>
+      )}
+
+      {state === "done" && lookupMissed && (
+        <p className="text-xs text-gray-500">The online lookup didn&apos;t find anything to go on, so these details are from the photo alone.</p>
+      )}
+
+      {state === "done" && sources.length > 0 && (
+        <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-700"><Globe className="h-3 w-3 text-indigo-600" /> Checked online</p>
+          <ul className="mt-1 space-y-0.5">
+            {sources.map((src) => (
+              <li key={src.url}>
+                <a href={src.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline break-all">
+                  {src.title} <ExternalLink className="h-3 w-3 shrink-0" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

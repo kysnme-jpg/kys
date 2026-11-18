@@ -420,11 +420,24 @@ used by Quick Intake, Add Item, Edit, Borrowed and Dealer entry) uses
 `claude-opus-5-5` at medium effort, with a resale-industry prompt and
 structured outputs (the reply is guaranteed to match the draft's JSON schema).
 Expect roughly 5¢ per photo (most of it the high-resolution image) and 10–20
-seconds per item. It works from the photo only — no web lookup. Server-side
+seconds per item. Server-side
 refusal fallbacks (`server-side-fallback-2026-07-01`, `fallbacks: "default"`)
 are on, so a photo a safety check declines is retried on a fallback model in
 the same call. If unset, AI entry simply returns a 503 and everything else
 works.
+
+**Online lookup (optional, per item).** When staff tick "Look it up online",
+the route first runs a research request with the server-side web search tool
+(`web_search_20260209`, at most 3 searches, US results) that returns plain-text
+notes and the pages it used; the draft request then gets the photo plus those
+notes. They are separate requests because web search always attaches citations,
+which can't be combined with structured outputs. A paused long search turn
+(`pause_turn`) is resumed automatically. If the lookup fails or finds nothing,
+the draft is still written from the photo and the response says so. Expect
+roughly 10–25¢ and 30–60 seconds per looked-up item (web search is $10 per
+1,000 searches plus the tokens of the pages read). Web search is on for
+Anthropic organizations by default; if an admin has turned it off in the Claude
+Console, the lookup quietly falls back to photo-only.
 
 ### Shopify (webhooks, inbound)
 Set `SHOPIFY_WEBHOOK_SECRET`; point Shopify order webhooks at

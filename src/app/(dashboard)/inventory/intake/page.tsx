@@ -240,7 +240,7 @@ export default function IntakePage() {
               <div className="flex flex-col items-center justify-center gap-4 py-20 px-6 text-center">
                 {preview && <img src={preview} alt="" className="h-40 w-40 rounded-2xl object-cover" />}
                 <div className="flex items-center gap-2 text-ink"><Loader2 className="h-5 w-5 animate-spin text-accent" /><span className="text-[16px] font-semibold">Reading the item…</span></div>
-                <p className="text-[13px] text-[var(--muted)]">Uploading the photo and asking the AI — about 5–10 seconds.</p>
+                <p className="text-[13px] text-[var(--muted)]">Uploading the photo and identifying the brand, style and materials — usually 10–20 seconds.</p>
               </div>
             )}
 

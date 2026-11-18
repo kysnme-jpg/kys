@@ -17,7 +17,7 @@ security, integrations, data import/export, backups, and troubleshooting.
 | Photo storage | Railway Volume (served via `/api/photos`) |
 | Payments | Clover REST API |
 | Email | Resend |
-| AI item entry | Anthropic Claude (`claude-haiku-4-5`) vision |
+| AI item entry | Anthropic Claude (`claude-opus-5-5`) vision |
 | Barcodes | Code128 labels via JsBarcode |
 
 The code lives in the GitHub repo and **auto-deploys to Railway** on every push
@@ -415,9 +415,16 @@ Gmail/Yahoo sender requirements:
 looking up `_dmarc.classicconsigns.com` (TXT).
 
 ### Anthropic / Claude (AI item entry)
-Set `ANTHROPIC_API_KEY`. The add-item photo analysis uses `claude-haiku-4-5`.
-Cost is well under a cent per item. If unset, AI entry simply returns a 503 and
-everything else works.
+Set `ANTHROPIC_API_KEY`. Photo analysis (`src/app/api/ai/analyze/route.ts`,
+used by Quick Intake, Add Item, Edit, Borrowed and Dealer entry) uses
+`claude-opus-5-5` at medium effort, with a resale-industry prompt and
+structured outputs (the reply is guaranteed to match the draft's JSON schema).
+Expect roughly 5¢ per photo (most of it the high-resolution image) and 10–20
+seconds per item. It works from the photo only — no web lookup. Server-side
+refusal fallbacks (`server-side-fallback-2026-07-01`, `fallbacks: "default"`)
+are on, so a photo a safety check declines is retried on a fallback model in
+the same call. If unset, AI entry simply returns a 503 and everything else
+works.
 
 ### Shopify (webhooks, inbound)
 Set `SHOPIFY_WEBHOOK_SECRET`; point Shopify order webhooks at

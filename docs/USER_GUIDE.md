@@ -128,6 +128,14 @@ them pre-selected).
 2. Tap **Photograph the item** → the tablet **camera** opens → snap the item.
 3. The **AI reads the photo** and fills in the title, price, condition, brand,
    size, and description. **Add angle** to attach more photos of the same item.
+   It writes like a resale listing: the exact **style name** when it recognizes
+   it confidently (e.g. "Marc Jacobs The Snapshot"), materials and finish
+   (saffiano or pebbled leather, suede), hardware tone, silhouette (crossbody,
+   pump, block heel, pointed toe), and visible wear in resale terms. If it isn't
+   sure of a style it describes the item instead of guessing, and it never calls
+   an item "authentic" — authentication stays with you. It works from the photo
+   alone (it doesn't search the web), so a clear, well-lit shot with the logo or
+   label visible gives the most exact result. Allow about 10–20 seconds.
 4. **Glance and adjust** (mainly the price), then **Save & next item** — it saves
    to that consignor and instantly resets for the next piece.
 5. Everything you add shows in **Added this session** with a **Print KYS tag**

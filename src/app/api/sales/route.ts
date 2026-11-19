@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { calcConsignorCredit } from "@/lib/utils";
+import { chargeItemFees } from "@/lib/item-fees";
 import { sendItemSoldEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhooks";
 
@@ -100,6 +101,7 @@ export async function POST(req: NextRequest) {
 
   // Create sale + update items + create ledger entries in a transaction
   let sale: any;
+  const feesCharged = new Map<string, number>();
   try {
   sale = await db.$transaction(async (tx: any) => {
     const sale = await tx.sale.create({
@@ -158,6 +160,10 @@ export async function POST(req: NextRequest) {
           where: { id: item.consignorId },
           data: { balance: { increment: credit } },
         });
+
+        // Deduct any charges on the item (dry cleaning, alterations, …).
+        const charged = await chargeItemFees(tx, item, sale.id);
+        if (charged > 0) feesCharged.set(item.id, charged);
       }
     }
 
@@ -197,6 +203,7 @@ export async function POST(req: NextRequest) {
           itemTitle: item.title,
           salePrice: saleItem.price,
           consignorShare: credit,
+          charges: feesCharged.get(item.id) ?? 0,
           newBalance: updatedConsignor?.balance ?? credit,
           storeName: store.name,
         }).catch(() => {})

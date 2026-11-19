@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { calcConsignorCredit } from "@/lib/utils";
+import { chargeItemFees, returnItemFees } from "@/lib/item-fees";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     include: {
       consignor: { select: { id: true, firstName: true, lastName: true, splitPercent: true } },
       category: { select: { id: true, name: true } },
+      fees: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -88,6 +90,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         } else if (resultingStatus !== "SOLD" && manualCredit) {
           await tx.ledgerEntry.delete({ where: { id: manualCredit.id } });
           await tx.consignor.update({ where: { id: existing.consignorId }, data: { balance: { decrement: manualCredit.amount } } });
+        }
+
+        // Item charges follow the manual sold status: deducted when it's marked
+        // sold, given back if that's undone (POS sales handle their own).
+        if (!hasPosSale) {
+          if (resultingStatus === "SOLD") await chargeItemFees(tx, existing);
+          else if (existing.status === "SOLD") await returnItemFees(tx, existing, "no longer marked sold");
         }
       }
 

@@ -474,7 +474,7 @@ new spreadsheet.
 ## 10. Backups & data safety
 
 - **Database:** enable Railway's Postgres **backups/snapshots**. The database
-  holds all consignors, customers, items, sales, ledger, payouts, and contracts.
+  holds all consignors, customers, items (and their consignor charges), sales, ledger, payouts, and contracts.
 - **Photos:** the Railway **Volume** holds item photos — enable volume
   snapshots. Photos are **not** in git or the database.
 - **Deletions are protected:** consignors/items with sales history can't be

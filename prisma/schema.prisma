@@ -240,6 +240,23 @@ model Item {
   updatedAt      DateTime   @updatedAt
 
   saleItems      SaleItem[]
+  fees           ItemFee[]
+}
+
+// A charge the consignor pays out of their share for this item — dry cleaning,
+// alterations, authentication, repairs. Deducted from the consignor's balance
+// when the item sells (chargedAt is set then); a refund gives it back until
+// the item sells again.
+model ItemFee {
+  id        String    @id @default(cuid())
+  itemId    String
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  label     String
+  amount    Float
+  chargedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([itemId])
 }
 
 // ─── CUSTOMERS ────────────────────────────────────────────────────────────────

@@ -58,6 +58,10 @@ At the top of the POS screen, switch from **Sell** to **Refund** to undo a sale.
 3. Either way, the consignor's **Ledger** gets a matching **debit** (a red
    `ADJUSTMENT`) that **reverses the sale credit**, and their balance drops by the
    same amount.
+   If the item had **consignor charges** (dry cleaning, alterations…, see
+   *Consignor charges* below), those are **given back** at the same time, so the
+   card's "Reverses credit" line is followed by "Gives back item charges". The
+   charges stay on the item and come out again if it sells again.
 4. The refund card shows **"Refund to customer (incl. tax)"** — the exact amount
    to hand back (the item's price, less its share of any discount, plus the
    sales tax charged on it). The refund is recorded against the original sale,
@@ -164,6 +168,36 @@ online listing**, etc. — click **Full edit** in that window, or edit from a
 consignor's **Items** tab (the pencil opens the full editor directly). After
 saving, you're returned to wherever you came from (e.g. back to the consignor
 you were reviewing). Deletion is blocked for sold items.
+
+### Consignor charges (dry cleaning, alterations, authentication)
+When you pay for work on a consigned item that the consignor should cover,
+record it on the item so it comes out of their payout. Open the item's **full
+editor** and find the **Consignor charges** card (under **Pricing & Ownership**;
+it appears for consigned items only).
+1. Tap a quick pick (**Dry cleaning**, **Alterations**, **Authentication**,
+   **Repair**) or type what the charge is for.
+2. Enter the amount and click **Add** (or press Enter). Add as many charges as
+   you need; they're saved right away, no need to click Save Item.
+3. The split line above it shows the effect, e.g. *"Consignor gets $108.00 −
+   $50.00 charges = $58.00"*.
+
+**When the money comes out:** charges are deducted **when the item sells**
+(at the POS, online, or when you mark it Sold). The consignor's **Ledger** then
+shows the sale credit plus one **CHARGES** line listing each charge, e.g.
+*Charges for "Wool coat": Dry cleaning $15.00, Alterations $10.00*, and their
+"item sold" email shows the charges and what was added to their balance. The
+consignor sees the same line in their portal.
+- **Unsold items aren't charged.** If an item is returned to the consignor
+  without selling, its charges are never deducted. Collect them at pickup if
+  your agreement says so.
+- **Refunds give charges back**, and they're deducted again if the item resells.
+- **Changing charges after the sale:** a charge added to an already-sold item
+  comes off the balance right away. Removing a charge that was already deducted
+  (the **×**) puts the amount back on the balance.
+- **Splitting a set** shares its charges evenly across the pieces (e.g. $10
+  authentication on 3 pieces → $3.34, $3.33, $3.33).
+- A charge can be more than the consignor's share of the sale; their balance
+  simply goes down by the difference.
 
 ### Splitting a set into pieces
 For a set that can sell piece by piece (for example five pieces of jewelry at

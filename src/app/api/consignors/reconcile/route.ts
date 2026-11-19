@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { calcConsignorCredit } from "@/lib/utils";
+import { chargeItemFees } from "@/lib/item-fees";
 
 // Backfill consignor credits for items that are already marked SOLD but were
 // never credited (e.g. imported sales, or items marked sold before crediting
@@ -14,7 +15,7 @@ export async function POST(_req: NextRequest) {
 
   const items = await db.item.findMany({
     where: { storeId, status: "SOLD", type: "CONSIGNED", consignorId: { not: null } },
-    include: { consignor: true, saleItems: { select: { id: true } } },
+    include: { consignor: true, saleItems: { select: { id: true } }, fees: { where: { chargedAt: null }, select: { id: true } } },
   });
 
   let credited = 0;
@@ -23,6 +24,9 @@ export async function POST(_req: NextRequest) {
   let adjusted = 0;
 
   for (const it of items) {
+    // Any charges on a sold item that weren't deducted yet.
+    if (it.fees.length > 0) await db.$transaction((tx: any) => chargeItemFees(tx, it));
+
     if (it.saleItems.length > 0) continue; // sold through POS — already credited
     const existingCredit = await db.ledgerEntry.findFirst({ where: { itemId: it.id, type: "SALE_CREDIT" } });
 

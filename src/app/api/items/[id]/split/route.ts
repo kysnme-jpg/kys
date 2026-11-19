@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateSKU } from "@/lib/utils";
+import { splitFees } from "@/lib/item-fees";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { pieces } = parsed.data;
   const priceEach = cents(parsed.data.priceEach);
 
-  const item = await db.item.findFirst({ where: { id, storeId }, include: { _count: { select: { saleItems: true } } } });
+  const item = await db.item.findFirst({ where: { id, storeId }, include: { _count: { select: { saleItems: true } }, fees: { orderBy: { createdAt: "asc" } } } });
   if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
   if (item.status !== "ACTIVE") {
     return NextResponse.json({ error: "Only an active (unsold) item can be split into pieces." }, { status: 400 });
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const baseTitle = (parsed.data.title || item.title).trim();
   const costEach = item.costPrice != null ? cents(item.costPrice / pieces) : null;
+  // The set's charges (cleaning, authentication…) are shared across the pieces.
+  const feesPerPiece = splitFees(item.fees.map((f) => ({ label: f.label, amount: f.amount })), pieces);
 
   try {
     const created = await db.$transaction(async (tx) => {
@@ -73,6 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               photoUrls: item.photoUrls,
               listedOnline: item.listedOnline,
               expiresAt: item.expiresAt,
+              ...(feesPerPiece[i - 1].length ? { fees: { create: feesPerPiece[i - 1] } } : {}),
             },
             select: { id: true, sku: true, barcode: true, title: true, price: true, size: true, brand: true, condition: true },
           }),

@@ -373,11 +373,14 @@ export default function POSPage() {
                     {refundPreview.item.consignor && (
                       <div className="flex justify-between text-[var(--panel-muted)]"><span>Consignor</span><span className="truncate max-w-[55%]">{refundPreview.item.consignor}</span></div>
                     )}
-                    {refundPreview.reversal > 0 && (
-                      <div className="flex justify-between font-semibold pt-2 border-t border-[var(--panel-key)]"><span>Reverses credit</span><span>−{formatCurrency(refundPreview.reversal)}</span></div>
+                    {(refundPreview.credit ?? refundPreview.reversal) > 0 && (
+                      <div className="flex justify-between font-semibold pt-2 border-t border-[var(--panel-key)]"><span>Reverses credit</span><span>−{formatCurrency(refundPreview.credit ?? refundPreview.reversal)}</span></div>
+                    )}
+                    {refundPreview.charges > 0 && (
+                      <div className="flex justify-between text-[var(--panel-muted)]"><span>Gives back item charges</span><span>+{formatCurrency(refundPreview.charges)}</span></div>
                     )}
                   </div>
-                  {refundPreview.reversal === 0 && (
+                  {(refundPreview.credit ?? refundPreview.reversal) === 0 && !(refundPreview.charges > 0) && (
                     <p className="text-[13px] text-[var(--panel-muted)]">No consignor credit to reverse (store-owned item).</p>
                   )}
                   <div className="space-y-2 pt-1">

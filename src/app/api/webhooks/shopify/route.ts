@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import crypto from "crypto";
 import { calcConsignorCredit } from "@/lib/utils";
+import { chargeItemFees } from "@/lib/item-fees";
 
 function verifyShopifyWebhook(body: string, hmacHeader: string, secret: string): boolean {
   const digest = crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64");
@@ -102,6 +103,8 @@ async function handleOrderCreate(order: any) {
           where: { id: item.consignorId },
           data: { balance: { increment: credit } },
         });
+
+        await chargeItemFees(tx, item, sale.id);
       }
     });
   }

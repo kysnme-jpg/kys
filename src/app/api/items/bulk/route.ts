@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { calcConsignorCredit } from "@/lib/utils";
+import { chargeItemFees } from "@/lib/item-fees";
 
 // Bulk actions on items: setStatus, listOnline, unlistOnline, delete, markdownPercent.
 export async function POST(req: NextRequest) {
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
                 await tx.consignor.update({ where: { id: it.consignorId }, data: { balance: { increment: credit } } });
               }
             }
+            await chargeItemFees(tx, it);
           }
         });
         affected++;

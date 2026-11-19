@@ -30,5 +30,9 @@ without emailing anyone), `CRON_SECRET=qa-cron` and
 `07-split.mjs` checks splitting an item into pieces (pieces, original removed,
 selling one piece credits the consignor, and the safety rules).
 
+`08-item-fees.mjs` checks consignor charges on items (deducted only when the
+item sells, given back on a refund and charged again on resale, added/removed
+after a sale, manual and bulk "sold", shared across split pieces, and the rules).
+
 Set `QA_BASE_URL` to use a different port. Every script prints `PASS`/`FAIL`
 lines and a summary; `05` is informational (it reports, it does not assert).

@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest) {
   const [
     store, consignors, items, customers, sales, saleItems, ledgerEntries, payouts,
     categories, contracts, workLogs, layaways, borrowedGarments, sipShopEvents,
-    appointments, blockedDates, emailLogs,
+    appointments, blockedDates, emailLogs, itemFees,
   ] = await Promise.all([
     db.store.findUnique({ where: { id: storeId }, select: { id: true, name: true, slug: true, address: true, phone: true, email: true, taxRate: true, currency: true, timezone: true, createdAt: true } }),
     db.consignor.findMany({ where, select: { id: true, firstName: true, lastName: true, email: true, phone: true, address: true, splitPercent: true, balance: true, notes: true, payoutMethod: true, zelleHandle: true, cashAppHandle: true, unsoldPreference: true, portalEnabled: true, createdAt: true } }),
@@ -36,6 +36,7 @@ export async function GET(_req: NextRequest) {
     db.consignAppointment.findMany({ where }),
     db.consignBlockedDate.findMany({ where }),
     db.emailLog.findMany({ where, select: { id: true, consignorId: true, to: true, type: true, subject: true, status: true, createdAt: true } }),
+    db.itemFee.findMany({ where: { item: { storeId } } }),
   ]);
 
   const snapshot = {
@@ -44,7 +45,7 @@ export async function GET(_req: NextRequest) {
     note: "Full data snapshot (secrets excluded). Keep private.",
     store, consignors, items, customers, sales, saleItems, ledgerEntries, payouts,
     categories, contracts, workLogs, layaways, borrowedGarments, sipShopEvents,
-    appointments, blockedDates, emailLogs,
+    appointments, blockedDates, emailLogs, itemFees,
   };
 
   const stamp = new Date().toISOString().slice(0, 10);

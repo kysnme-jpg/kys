@@ -9,10 +9,13 @@ import { PhotoUpload } from "@/components/inventory/photo-upload";
 import { PrintKysTagButton, PrintLabelButton, printKysTags } from "@/components/inventory/label-print";
 import { Modal } from "@/components/ui/modal";
 import { AIEntry } from "@/components/inventory/ai-entry";
-import { ArrowLeft, Save, Trash2, Scissors, Printer, CheckCircle } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Scissors, Printer, CheckCircle, Receipt, X } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { FEE_PRESETS } from "@/lib/item-fees";
 
 interface Consignor { id: string; firstName: string; lastName: string; splitPercent: number; }
 interface Category { id: string; name: string; }
+interface Fee { id: string; label: string; amount: number; chargedAt: string | null; }
 
 const CONDITIONS = ["New", "Like New", "Good", "Fair", "Poor"];
 const STATUSES = ["ACTIVE", "SOLD", "RETURNED", "DONATED", "EXPIRED"];
@@ -39,6 +42,13 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   const [splitError, setSplitError] = useState("");
   const [splitDone, setSplitDone] = useState<any[] | null>(null);
 
+  // Consignor charges (dry cleaning, alterations, authentication…)
+  const [fees, setFees] = useState<Fee[]>([]);
+  const [feeLabel, setFeeLabel] = useState("");
+  const [feeAmount, setFeeAmount] = useState("");
+  const [feeBusy, setFeeBusy] = useState(false);
+  const [feeError, setFeeError] = useState("");
+
   useEffect(() => {
     const f = new URLSearchParams(window.location.search).get("from");
     if (f) setFrom(f);
@@ -61,6 +71,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
           expiresAt: item.expiresAt ? String(item.expiresAt).slice(0, 10) : "",
           photoUrls: item.photoUrls || [],
         });
+        setFees(item.fees || []);
       } else {
         setError("Item not found");
       }
@@ -96,6 +107,33 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     printKysTags(splitDone.map((p: any) => ({ title: p.title, sku: p.sku, barcode: p.barcode, price: p.price, size: p.size || undefined, brand: p.brand || undefined, condition: p.condition || undefined, consignor: consignorName() })));
   };
   const finishSplit = () => { setSplitOpen(false); router.push(from); };
+
+  const addFee = async () => {
+    const amount = parseFloat(feeAmount);
+    if (!feeLabel.trim()) { setFeeError("Enter what the charge is for."); return; }
+    if (!(amount > 0)) { setFeeError("Enter an amount."); return; }
+    setFeeBusy(true); setFeeError("");
+    const res = await fetch(`/api/items/${id}/fees`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: feeLabel.trim(), amount }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setFeeBusy(false);
+    if (!res.ok) { setFeeError(d.error || "Couldn't add the charge."); return; }
+    const r = await fetch(`/api/items/${id}/fees`).then((r) => r.json()).catch(() => null);
+    setFees(r?.fees || [...fees, d.fee]);
+    setFeeLabel(""); setFeeAmount("");
+  };
+  const removeFee = async (fee: Fee) => {
+    const msg = fee.chargedAt
+      ? `Remove "${fee.label}" (${formatCurrency(fee.amount)})? It was already deducted, so ${formatCurrency(fee.amount)} goes back on the consignor's balance.`
+      : `Remove "${fee.label}" (${formatCurrency(fee.amount)})?`;
+    if (!confirm(msg)) return;
+    const res = await fetch(`/api/items/${id}/fees/${fee.id}`, { method: "DELETE" });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(d.error || "Couldn't remove the charge."); return; }
+    setFees((f) => f.filter((x) => x.id !== fee.id));
+  };
 
   const handleConsignorChange = (cid: string) => {
     const c = consignors.find((c) => c.id === cid);
@@ -136,6 +174,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   if (loading) return <div className="p-6 text-gray-500">Loading…</div>;
   if (!form) return <div className="p-6 text-gray-500">{error || "Item not found"}</div>;
 
+  const feeTotal = Math.round(fees.reduce((s, f) => s + f.amount, 0) * 100) / 100;
   const tagItem = { title: form.title, sku: form.sku, barcode: form.barcode, price: parseFloat(form.price) || 0, size: form.size, brand: form.brand, condition: form.condition, consignor: (() => { const c = consignors.find((c) => c.id === form.consignorId); return c ? `${c.firstName} ${c.lastName}` : undefined; })() };
 
   return (
@@ -235,7 +274,12 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consignor Split %</label>
                       <div className="flex items-center gap-2">
                         <Input type="number" min="0" max="100" value={form.splitPercent} onChange={(e) => set("splitPercent", e.target.value)} placeholder="50" className="w-24" />
-                        <span className="text-sm text-gray-500">{form.price && form.splitPercent ? `Consignor gets $${((parseFloat(form.price) * parseFloat(form.splitPercent)) / 100).toFixed(2)}` : "Enter price and split to see payout"}</span>
+                        <span className="text-sm text-gray-500">{form.price && form.splitPercent ? (() => {
+                          const share = Math.round(parseFloat(form.price) * parseFloat(form.splitPercent)) / 100;
+                          return feeTotal > 0
+                            ? `Consignor gets ${formatCurrency(share)} − ${formatCurrency(feeTotal)} charges = ${formatCurrency(share - feeTotal)}`
+                            : `Consignor gets ${formatCurrency(share)}`;
+                        })() : "Enter price and split to see payout"}</span>
                       </div>
                     </div>
                   </>
@@ -250,6 +294,51 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                 </label>
               </CardContent>
             </Card>
+
+            {form.type === "CONSIGNED" && (
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Receipt className="h-5 w-5" /> Consignor charges</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-gray-500">Costs the consignor pays for this item, like dry cleaning, alterations or authentication. They come out of the consignor&apos;s share when the item sells.</p>
+
+                  {fees.length > 0 && (
+                    <div className="divide-y divide-gray-100 rounded-lg border border-gray-200">
+                      {fees.map((f) => (
+                        <div key={f.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{f.label}</p>
+                            <p className="text-xs text-gray-500">{f.chargedAt ? `Deducted ${new Date(f.chargedAt).toLocaleDateString()}` : "Deducted when the item sells"}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900 tabular-nums">{formatCurrency(f.amount)}</span>
+                            <button type="button" onClick={() => removeFee(f)} aria-label={`Remove ${f.label}`} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"><X className="h-4 w-4" /></button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-between px-3 py-2 text-sm font-semibold bg-gray-50"><span>Total charges</span><span className="tabular-nums">{formatCurrency(feeTotal)}</span></div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {FEE_PRESETS.map((p) => (
+                      <button key={p} type="button" onClick={() => { setFeeLabel(p); setFeeError(""); }}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${feeLabel === p ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}`}>{p}</button>
+                    ))}
+                  </div>
+                  <Input value={feeLabel} onChange={(e) => setFeeLabel(e.target.value)} placeholder="What for (e.g. Dry cleaning)" maxLength={60}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFee(); } }} />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1 min-w-0"><span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                      <Input type="number" min="0" step="0.01" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="0.00" className="pl-7"
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFee(); } }} />
+                    </div>
+                    <Button type="button" variant="outline" onClick={addFee} disabled={feeBusy}>{feeBusy ? "Adding…" : "Add"}</Button>
+                  </div>
+                  {feeError && <p className="text-sm text-red-600">{feeError}</p>}
+                  {form.status === "SOLD" && <p className="text-xs text-gray-500">This item has sold, so a charge you add now comes off the consignor&apos;s balance right away.</p>}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div className="space-y-6">

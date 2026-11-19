@@ -573,11 +573,14 @@ export async function sendItemSoldEmail(opts: {
   itemTitle: string;
   salePrice: number;
   consignorShare: number;
+  /** Charges deducted for this item (dry cleaning, alterations, …). */
+  charges?: number;
   newBalance: number;
   storeName: string;
 }) {
   const r = getResend();
   if (!r) return;
+  const charges = opts.charges && opts.charges > 0 ? opts.charges : 0;
 
   const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 
@@ -600,7 +603,15 @@ export async function sendItemSoldEmail(opts: {
       <tr>
         <td style="padding:6px 0;color:#6b7280;font-size:14px">Your Earnings</td>
         <td style="padding:6px 0;color:#059669;font-weight:700;font-size:16px;text-align:right">${fmt(opts.consignorShare)}</td>
+      </tr>${charges > 0 ? `
+      <tr>
+        <td style="padding:6px 0;color:#6b7280;font-size:14px">Item charges (cleaning, alterations, etc.)</td>
+        <td style="padding:6px 0;color:#b91c1c;font-size:14px;text-align:right">−${fmt(charges)}</td>
       </tr>
+      <tr>
+        <td style="padding:6px 0;color:#6b7280;font-size:14px">Added to your balance</td>
+        <td style="padding:6px 0;color:#059669;font-weight:700;font-size:16px;text-align:right">${fmt(opts.consignorShare - charges)}</td>
+      </tr>` : ""}
       <tr style="border-top:1px solid #d1d5db">
         <td style="padding:10px 0 0;color:#6b7280;font-size:14px">New Balance</td>
         <td style="padding:10px 0 0;color:#b4532a;font-weight:700;font-size:16px;text-align:right">${fmt(opts.newBalance)}</td>

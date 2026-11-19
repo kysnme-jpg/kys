@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { calcConsignorCredit } from "@/lib/utils";
+import { chargedFeesTotal, returnItemFees } from "@/lib/item-fees";
 
 // Work out how much a consignor was credited for a sold item, so a refund can
 // reverse exactly that. Prefer the recorded POS sale line (its price/split may
@@ -72,7 +73,11 @@ export async function GET(req: NextRequest) {
   }
 
   const { credit, refundAmount } = await creditForSoldItem(db, storeId, item.id);
-  return NextResponse.json({ ...base, refundable: true, reversal: item.type === "CONSIGNED" ? credit : 0, refundAmount });
+  // The consignor's net change: their credit comes back off, any item charges
+  // (cleaning, alterations…) that were deducted go back on.
+  const charges = item.type === "CONSIGNED" ? await chargedFeesTotal(db, item.id) : 0;
+  const reversal = item.type === "CONSIGNED" ? Math.round((credit - charges) * 100) / 100 : 0;
+  return NextResponse.json({ ...base, refundable: true, reversal, credit: item.type === "CONSIGNED" ? credit : 0, charges, refundAmount });
 }
 
 // POST /api/refunds { itemId, returnTo: "ACTIVE" | "RETURNED" }
@@ -134,7 +139,13 @@ export async function POST(req: NextRequest) {
       await tx.consignor.update({ where: { id: item.consignorId }, data: { balance: { decrement: credit } } });
     }
 
-    return { reversed: item.type === "CONSIGNED" ? credit : 0, refundAmount };
+    // Give back any item charges deducted at the sale; they're charged again
+    // if the item sells again.
+    const chargesReturned = item.type === "CONSIGNED"
+      ? await returnItemFees(tx, item, destination === "RETURNED" ? "refunded, returned to consignor" : "refunded, relisted for sale", saleId)
+      : 0;
+
+    return { reversed: item.type === "CONSIGNED" ? Math.round((credit - chargesReturned) * 100) / 100 : 0, refundAmount };
   });
 
   return NextResponse.json({

@@ -301,7 +301,7 @@ export default function PortalPage() {
               return (
                 <div key={e.id} className="bg-surface border border-line rounded-[16px] p-3.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className={`text-[10.5px] font-extrabold tracking-wide ${tyCls}`}>{e.type.replace(/_/g, " ")}</p>
+                    <p className={`text-[10.5px] font-extrabold tracking-wide ${tyCls}`}>{e.type === "FEE_DEBIT" ? "CHARGES" : e.type.replace(/_/g, " ")}</p>
                     <p className="text-[13px] mt-0.5 leading-snug">{e.note || "—"}</p>
                     <p className="text-[11.5px] text-[var(--muted)] mt-0.5">{new Date(e.createdAt).toLocaleDateString()}</p>
                   </div>

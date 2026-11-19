@@ -618,7 +618,7 @@ export default function ConsignorDetailPage({ params }: { params: Promise<{ id: 
                     <tr key={entry.id} className="hover:bg-gray-50">
                       <td className="p-4">
                         <span className={`font-medium text-xs ${ledgerColors[entry.type]}`}>
-                          {entry.type.replace(/_/g, " ")}
+                          {entry.type === "FEE_DEBIT" ? "CHARGES" : entry.type.replace(/_/g, " ")}
                         </span>
                       </td>
                       <td className="p-4 text-gray-600 text-xs">{entry.note || "—"}</td>

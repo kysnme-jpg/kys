@@ -45,7 +45,7 @@ export default function DealerPortalPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("portal_token");
+    const token = (() => { try { return localStorage.getItem("portal_token"); } catch { return null; } })();
     fetch("/api/portal/me", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
@@ -86,7 +86,7 @@ export default function DealerPortalPage() {
     if (valid.length === 0) return;
 
     setSubmitting(true);
-    const token = localStorage.getItem("portal_token");
+    const token = (() => { try { return localStorage.getItem("portal_token"); } catch { return null; } })();
 
     const res = await fetch("/api/dealer/submit", {
       method: "POST",
@@ -156,7 +156,7 @@ export default function DealerPortalPage() {
               {submitting ? "Submitting..." : `Submit ${items.filter((i) => i.title.trim()).length} Item(s)`}
             </Button>
             <button
-              onClick={() => { localStorage.removeItem("portal_token"); router.push("/portal/login"); }}
+              onClick={async () => { try { localStorage.removeItem("portal_token"); } catch {} try { await fetch("/api/portal/logout", { method: "POST" }); } catch {} router.push("/portal/login"); }}
               className="text-gray-400 hover:text-gray-600"
             >
               <LogOut className="h-5 w-5" />

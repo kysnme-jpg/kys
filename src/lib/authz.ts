@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { portalTokenFrom } from "@/lib/portal-session";
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { auth } from "@/lib/auth";
@@ -60,8 +61,7 @@ async function resolveInternal(): Promise<Actor | null> {
 
 // Resolve the EXTERNAL (consignor portal) actor from the portal JWT + fresh DB read.
 async function resolveExternal(req: NextRequest): Promise<Extract<Actor, { class: "EXTERNAL" }> | null> {
-  const token = req.cookies.get("portal_token")?.value
-    || (req.headers.get("authorization")?.startsWith("Bearer ") ? req.headers.get("authorization")!.slice(7) : undefined);
+  const token = portalTokenFrom(req);
   if (!token) return null;
   let consignorId: string;
   let preview = false;

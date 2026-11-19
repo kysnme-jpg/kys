@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { setPortalCookie } from "@/lib/portal-session";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
@@ -61,14 +62,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Also set as httpOnly cookie
-  res.cookies.set("portal_token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-    path: "/portal",
-  });
+  // Also as an httpOnly cookie, so the portal works even where site storage is blocked.
+  setPortalCookie(res, token);
 
   return res;
 }

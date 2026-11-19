@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { portalTokenFrom } from "@/lib/portal-session";
 import { db } from "@/lib/db";
 import { jwtVerify } from "jose";
 import { z } from "zod";
@@ -24,8 +25,7 @@ const submitSchema = z.object({
 });
 
 async function getConsignorFromToken(req: NextRequest) {
-  const token = req.cookies.get("portal_token")?.value
-    || req.headers.get("authorization")?.replace("Bearer ", "");
+  const token = portalTokenFrom(req);
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, PORTAL_SECRET);

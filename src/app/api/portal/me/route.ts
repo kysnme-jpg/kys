@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { portalTokenFrom } from "@/lib/portal-session";
 import { db } from "@/lib/db";
 import { jwtVerify } from "jose";
 
@@ -7,8 +8,7 @@ const PORTAL_SECRET = new TextEncoder().encode(
 );
 
 export async function getPortalConsignor(req: NextRequest) {
-  const token = req.cookies.get("portal_token")?.value
-    || req.headers.get("authorization")?.replace("Bearer ", "");
+  const token = portalTokenFrom(req);
 
   if (!token) return null;
 

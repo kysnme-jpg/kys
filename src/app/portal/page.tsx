@@ -112,9 +112,10 @@ export default function PortalPage() {
     setSending(false);
   };
 
-  const signOut = () => {
+  const signOut = async () => {
     try { localStorage.removeItem("portal_token"); localStorage.removeItem("portal_preview"); } catch {}
-    if (preview) { window.close(); return; }
+    if (preview) { window.close(); return; } // a staff preview never touches the consignor's sign-in
+    try { await fetch("/api/portal/logout", { method: "POST" }); } catch {}
     router.push("/portal/login");
   };
 

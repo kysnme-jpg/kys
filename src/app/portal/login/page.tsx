@@ -18,13 +18,20 @@ export default function PortalLoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/portal/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
+    let res: Response;
+    let data: any;
+    try {
+      res = await fetch("/api/portal/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      data = await res.json().catch(() => ({}));
+    } catch {
+      setError("Couldn't reach the store's portal. Check your internet connection and try again.");
+      setLoading(false);
+      return;
+    }
 
     if (!res.ok) {
       setError(data.error || "Invalid credentials");
@@ -32,9 +39,9 @@ export default function PortalLoginPage() {
       return;
     }
 
-    // Store token in localStorage as backup
-    localStorage.setItem("portal_token", data.token);
-    try { localStorage.removeItem("portal_preview"); } catch {}
+    // The sign-in cookie is already set; keeping a copy in storage is optional
+    // (some phones block site storage, and that must not stop the sign-in).
+    try { localStorage.setItem("portal_token", data.token); localStorage.removeItem("portal_preview"); } catch {}
     router.push("/portal");
   }
 

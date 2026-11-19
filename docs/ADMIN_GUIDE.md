@@ -542,6 +542,14 @@ for a local Postgres, `npm run db:push`, `npm run db:seed`, `npm run dev`).
   its own token on every request. If you add a page consignors or the public must
   reach, it has to be added to that list — otherwise they are bounced to the
   staff login.
+- **Portal sign-in works without browser storage.** The consignor's sign-in
+  token is an httpOnly, SameSite=Lax cookie for the whole site
+  (`src/lib/portal-session.ts`), plus a copy in localStorage when the browser
+  allows it. Phones that block site storage (Safari "Block All Cookies"-style
+  settings, some privacy browsers, email apps' built-in browsers) used to hang
+  on "Signing in…"; they now sign in through the cookie. An explicit Bearer
+  token wins over the cookie, so a staff "Preview portal" tab always shows the
+  previewed consignor. **Sign out** calls `POST /api/portal/logout` to clear it.
 - **Password hashes never leave the database layer.** The Prisma client is
   configured to omit `User.passwordHash` and `Consignor.portalPassword` from
   every query unless the query explicitly opts in (only the two login checks do).

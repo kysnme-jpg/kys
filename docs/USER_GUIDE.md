@@ -675,6 +675,16 @@ leave it blank to use your store email).
 
 ## 10. Consignor & Dealer portals
 
+**If a consignor can't sign in on their phone**, check these in order:
+1. They're on the **Consignor Portal** page (light screen, "Consignor Portal"
+   title) — the link in the email ends in **/portal/login**. The dark "Staff
+   sign in" page won't accept a consignor's password.
+2. Their email is older than Nov 5: its link may point to "localhost". Click
+   **Resend portal access** on their page to send a fresh, correct link.
+3. Still stuck? Have them open the link in their phone's regular browser
+   (Safari or Chrome) rather than inside the email app. Private/incognito tabs
+   work fine, and so do phones with strict privacy settings.
+
 - **Consignor portal** (`/portal`) — consignors with portal access sign in to
   see their items, earnings, and balance, and to **request a payout**. They can
   also:

@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
-import { Figtree, Instrument_Serif } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const figtree = Figtree({
+// Fonts are bundled in ./fonts (SIL Open Font License) instead of fetched from
+// Google Fonts, so a build never fails because the font download did.
+const figtree = localFont({
   variable: "--font-figtree",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  src: [
+    { path: "./fonts/figtree-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/figtree-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/figtree-latin-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/figtree-latin-700-normal.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
+const instrumentSerif = localFont({
   variable: "--font-instrument",
-  subsets: ["latin"],
-  weight: "400",
+  src: [{ path: "./fonts/instrument-serif-latin-400-normal.woff2", weight: "400", style: "normal" }],
   display: "swap",
 });
 

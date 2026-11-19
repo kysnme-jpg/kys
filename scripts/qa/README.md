@@ -27,5 +27,8 @@ without emailing anyone), `CRON_SECRET=qa-cron` and
 `DISABLE_REMINDER_SCHEDULER=1`, and `psql` access to the scratch database
 (override with `QA_PSQL`).
 
+`07-split.mjs` checks splitting an item into pieces (pieces, original removed,
+selling one piece credits the consignor, and the safety rules).
+
 Set `QA_BASE_URL` to use a different port. Every script prints `PASS`/`FAIL`
 lines and a summary; `05` is informational (it reports, it does not assert).

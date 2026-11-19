@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhotoUpload } from "@/components/inventory/photo-upload";
-import { PrintKysTagButton, PrintLabelButton } from "@/components/inventory/label-print";
+import { PrintKysTagButton, PrintLabelButton, printKysTags } from "@/components/inventory/label-print";
+import { Modal } from "@/components/ui/modal";
 import { AIEntry } from "@/components/inventory/ai-entry";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Scissors, Printer, CheckCircle } from "lucide-react";
 
 interface Consignor { id: string; firstName: string; lastName: string; splitPercent: number; }
 interface Category { id: string; name: string; }
@@ -27,6 +28,16 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   const [from, setFrom] = useState("/inventory");
 
   const [form, setForm] = useState<any>(null);
+
+  // Split into pieces
+  const [splitOpen, setSplitOpen] = useState(false);
+  const [splitPieces, setSplitPieces] = useState("2");
+  const [splitPrice, setSplitPrice] = useState("");
+  const [splitPriceTouched, setSplitPriceTouched] = useState(false);
+  const [splitTitle, setSplitTitle] = useState("");
+  const [splitBusy, setSplitBusy] = useState(false);
+  const [splitError, setSplitError] = useState("");
+  const [splitDone, setSplitDone] = useState<any[] | null>(null);
 
   useEffect(() => {
     const f = new URLSearchParams(window.location.search).get("from");
@@ -58,6 +69,33 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   }, [id]);
 
   const set = (key: string, value: any) => setForm((f: any) => ({ ...f, [key]: value }));
+
+  const evenPrice = (total: number, n: number) => (n > 0 && total > 0 ? (Math.floor((total / n) * 100) / 100).toFixed(2) : "");
+  const openSplit = () => {
+    setSplitPieces("2"); setSplitPriceTouched(false); setSplitPrice(evenPrice(parseFloat(form.price) || 0, 2));
+    setSplitTitle(form.title); setSplitError(""); setSplitDone(null); setSplitOpen(true);
+  };
+  const changePieces = (v: string) => {
+    setSplitPieces(v);
+    if (!splitPriceTouched) setSplitPrice(evenPrice(parseFloat(form.price) || 0, parseInt(v) || 0));
+  };
+  const consignorName = () => { const c = consignors.find((c) => c.id === form.consignorId); return c ? `${c.firstName} ${c.lastName}` : undefined; };
+  const doSplit = async () => {
+    setSplitBusy(true); setSplitError("");
+    const res = await fetch(`/api/items/${id}/split`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pieces: parseInt(splitPieces), priceEach: parseFloat(splitPrice), title: splitTitle }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setSplitBusy(false);
+    if (!res.ok) { setSplitError(d.error || "Couldn't split this item."); return; }
+    setSplitDone(d.pieces || []);
+  };
+  const printSplitTags = () => {
+    if (!splitDone) return;
+    printKysTags(splitDone.map((p: any) => ({ title: p.title, sku: p.sku, barcode: p.barcode, price: p.price, size: p.size || undefined, brand: p.brand || undefined, condition: p.condition || undefined, consignor: consignorName() })));
+  };
+  const finishSplit = () => { setSplitOpen(false); router.push(from); };
 
   const handleConsignorChange = (cid: string) => {
     const c = consignors.find((c) => c.id === cid);
@@ -246,6 +284,15 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                 <PrintLabelButton item={tagItem} size="default" />
               </CardContent>
             </Card>
+            {form.status === "ACTIVE" && (
+              <Card>
+                <CardHeader><CardTitle>Split into pieces</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-gray-500">For a set that can sell piece by piece (like jewelry): turn this item into separate items, each with its own price and tag. When one sells, the consignor is credited for that piece.</p>
+                  <Button type="button" variant="outline" onClick={openSplit} className="gap-2"><Scissors className="h-4 w-4" /> Split into pieces</Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
@@ -258,6 +305,57 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
           <Button variant="outline" type="button" onClick={remove} className="gap-1.5 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /> Delete</Button>
         </div>
       </form>
+
+      <Modal open={splitOpen} onClose={() => (splitDone ? finishSplit() : setSplitOpen(false))} title={splitDone ? "Split complete" : "Split into pieces"} className="max-w-md">
+        {splitDone ? (
+          <div className="space-y-4">
+            <p className="flex items-center gap-2 text-sm text-green-700"><CheckCircle className="h-4 w-4" /> Created {splitDone.length} separate items{consignorName() ? ` for ${consignorName()}` : ""}.</p>
+            <ul className="max-h-48 overflow-y-auto divide-y divide-gray-100 rounded-lg border border-gray-200 text-sm">
+              {splitDone.map((p: any) => (
+                <li key={p.id} className="flex justify-between gap-3 px-3 py-2"><span className="truncate">{p.title}</span><span className="shrink-0 text-gray-500">${Number(p.price).toFixed(2)} · {p.sku}</span></li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <Button type="button" onClick={printSplitTags} className="gap-2"><Printer className="h-4 w-4" /> Print {splitDone.length} tags</Button>
+              <Button type="button" variant="outline" onClick={finishSplit}>Done</Button>
+            </div>
+          </div>
+        ) : (() => {
+          const n = parseInt(splitPieces) || 0;
+          const each = parseFloat(splitPrice) || 0;
+          const valid = n >= 2 && n <= 50 && each > 0 && splitTitle.trim().length > 0;
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of pieces</label>
+                  <Input type="number" min={2} max={50} value={splitPieces} onChange={(e) => changePieces(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price each</label>
+                  <Input type="number" min={0} step="0.01" value={splitPrice} onChange={(e) => { setSplitPrice(e.target.value); setSplitPriceTouched(true); }} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name for the pieces</label>
+                <Input value={splitTitle} onChange={(e) => setSplitTitle(e.target.value)} placeholder="e.g. Jewelry piece" />
+                <p className="text-xs text-gray-500 mt-1">Each is named “{(splitTitle.trim() || "…").slice(0, 40)} — 1 of {n || "N"}”. You can edit any piece afterwards.</p>
+              </div>
+              {valid && (
+                <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700">
+                  Creates <b>{n}</b> items at <b>${each.toFixed(2)}</b> each (<b>${(n * each).toFixed(2)}</b> total), each with its own SKU and tag, for the same consignor and split. <b>This item is replaced</b> by the pieces.
+                </div>
+              )}
+              <p className="text-xs text-gray-500">Uses the item&apos;s saved details, so save any edits first.</p>
+              {splitError && <p className="text-sm text-red-600">{splitError}</p>}
+              <div className="flex gap-2">
+                <Button type="button" onClick={doSplit} disabled={!valid || splitBusy} className="gap-2"><Scissors className="h-4 w-4" /> {splitBusy ? "Splitting…" : `Split into ${n >= 2 ? n : ""} pieces`}</Button>
+                <Button type="button" variant="outline" onClick={() => setSplitOpen(false)}>Cancel</Button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 }

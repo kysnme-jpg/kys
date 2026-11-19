@@ -165,6 +165,24 @@ consignor's **Items** tab (the pencil opens the full editor directly). After
 saving, you're returned to wherever you came from (e.g. back to the consignor
 you were reviewing). Deletion is blocked for sold items.
 
+### Splitting a set into pieces
+For a set that can sell piece by piece (for example five pieces of jewelry at
+$25 each, or $125 for all): open the item's full editor and click **Split into
+pieces** (it's under **Print** on the right).
+1. Enter the **number of pieces** and the **price each** (it fills in the total
+   divided evenly — change it if the pieces aren't equal), and a **name for the
+   pieces** (e.g. "Jewelry piece").
+2. Click **Split**. The set is replaced by separate items named "Jewelry piece —
+   1 of 5" and so on, each with its own SKU, for the same consignor and split %.
+   Any cost is shared out evenly.
+3. Click **Print N tags** to tag every piece, then **Done**.
+
+Each piece now sells on its own at the POS (scan its tag), and the consignor is
+credited for just that piece — it shows as sold on their page while the rest
+stay active. To change one piece's price or name, edit it like any item. Only
+an unsold item that has never been through a sale can be split; save any edits
+to the set before splitting, because the pieces copy its saved details.
+
 ### Bulk actions
 Select items with the checkboxes (or "select all"), then use the blue bar:
 - **Print labels** — prints a scannable label for every selected item.

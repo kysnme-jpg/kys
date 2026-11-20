@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
 import { Search, X, ShoppingCart, Trash2, Star, Check, RotateCcw } from "lucide-react";
 import { ReceiptModal } from "@/components/pos/receipt-modal";
+import { DaySales } from "@/components/pos/day-sales";
 
 interface Item {
   id: string; title: string; sku: string; barcode?: string; price: number;
@@ -33,6 +34,7 @@ export default function POSPage() {
   const [refundBusy, setRefundBusy] = useState(false);
   const [refundMsg, setRefundMsg] = useState("");
   const [refundDone, setRefundDone] = useState<any>(null);
+  const [salesKey, setSalesKey] = useState(0); // bump to reload the day's sales list
   const searchRef = useRef<HTMLInputElement>(null);
   // Scanner auto-submit: a barcode scanner types a burst of very fast keystrokes.
   // We detect that burst and auto-add without needing the Enter key, while plain
@@ -193,7 +195,7 @@ export default function POSPage() {
       });
       if (res.ok) {
         const sale = await res.json();
-        setLastSale(sale); setReceiptSale(sale); setCart([]); setDiscount(0); clearCustomer(); searchRef.current?.focus();
+        setLastSale(sale); setReceiptSale(sale); setSalesKey((k) => k + 1); setCart([]); setDiscount(0); clearCustomer(); searchRef.current?.focus();
       } else {
         const d = await res.json().catch(() => ({}));
         alert(`The sale did not go through — nothing was recorded.\n\n${d.error || "Please try again."}`);
@@ -277,6 +279,8 @@ export default function POSPage() {
               <button onClick={() => setLastSale(null)}><X className="h-5 w-5 text-[var(--ok-ink)]" /></button>
             </div>
           )}
+
+          {mode === "sell" && <DaySales refreshKey={salesKey} />}
         </div>
 
         {/* RIGHT: cart (sell) or refund panel */}

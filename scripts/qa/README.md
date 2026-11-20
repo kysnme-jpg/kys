@@ -34,5 +34,9 @@ selling one piece credits the consignor, and the safety rules).
 item sells, given back on a refund and charged again on resale, added/removed
 after a sale, manual and bulk "sold", shared across split pieces, and the rules).
 
+`09-day-sales.mjs` checks the POS "Sold today" list (register, hand-marked and
+store-owned sales with consignor names, refunds flagged and left out of the
+total, other days, and sign-in).
+
 Set `QA_BASE_URL` to use a different port. Every script prints `PASS`/`FAIL`
 lines and a summary; `05` is informational (it reports, it does not assert).

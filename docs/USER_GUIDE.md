@@ -46,6 +46,24 @@ The POS is where you ring up sales.
 7. A **receipt** pops up — **Print Receipt** or Close. Points are awarded to the
    customer automatically (1 point per $1 spent) when a customer is attached.
 
+### Sold today (the day's sold items)
+Under the search box on **New sale**, the **Sold today** list shows every item
+sold that day, newest first: the **time**, the item and SKU, **the consignor's
+name** (or *Store-owned*), the customer if one was attached, how it was paid
+(**Cash**, **Card**, **Online** for web orders, or **Marked sold** for items you
+set to Sold by hand), and the price. Use it to find something you sold, or to
+check what a consignor sold today.
+- The line above the list shows the **number of items sold and their total**
+  (tag prices, before tax and discounts).
+- **Other days:** use the **‹ ›** arrows or the date box to look at an earlier
+  day; **Today** jumps back. Days follow the store's own timezone.
+- **Find in this list:** on a busy day, type part of an item name, SKU,
+  consignor or customer to narrow the list.
+- **Refunded** items stay on the list crossed out with a red *Refunded* tag,
+  and don't count toward the day's total.
+- Click any line to open that item.
+- The list updates as soon as you finish a sale.
+
 ### Refunds
 At the top of the POS screen, switch from **Sell** to **Refund** to undo a sale.
 1. **Scan the sold item** (or type its SKU) in the box. A refund card appears on
